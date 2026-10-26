@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PlansGuruProtocolMessage",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": ["HELLO", "GRAPH_UPDATE", "PLAN_REQUEST", "PROPOSAL", "CHALLENGE", "REVISE", "CONSENSUS", "ACK"]
+    },
+    "senderId": { "type": "string" },
+    "sessionId": { "type": "string" },
+    "payload": { "type": "object" },
+    "signature": { "type": "string" },
+    "timestamp": { "type": "integer" }
+  },
+  "required": ["type", "senderId", "payload", "signature", "timestamp"]
+}
