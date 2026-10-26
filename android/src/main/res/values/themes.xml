@@ -1,7 +1,5 @@
 <resources>
     <style name="Theme.PlansGuru" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your theme here -->
         <item name="colorPrimary">@color/purple_primary</item>
     </style>
-    <color name="purple_primary">#6750A4</color>
 </resources>

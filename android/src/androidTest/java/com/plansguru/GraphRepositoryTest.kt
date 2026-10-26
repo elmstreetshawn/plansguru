@@ -18,7 +18,7 @@ class GraphRepositoryTest {
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-        net.zetetic.database.sqlcipher.SQLiteDatabase.loadLibs(context)
+        net.sqlcipher.database.SQLiteDatabase.loadLibs(context)
         graphRepository = GraphRepository(context)
     }
 

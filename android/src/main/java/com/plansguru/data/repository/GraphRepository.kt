@@ -18,23 +18,24 @@ class GraphRepository(context: Context) {
             put("publicIdentityKey", person.publicIdentityKey)
             put("creationTimestamp", person.creationTimestamp)
         }
-        db.insertWithOnConflict("persons", null, values, android.database.sqlite.SQLiteDatabase.CONFLICT_REPLACE)
+        db.insertWithOnConflict("persons", null, values, net.sqlcipher.database.SQLiteDatabase.CONFLICT_REPLACE)
     }
 
     fun getPerson(personId: String): Person? {
         val db = dbHelper.getReadableEncryptedDatabase()
         val cursor = db.query("persons", null, "localPersonId = ?", arrayOf(personId), null, null, null)
-        cursor.use {
+        return cursor.use {
             if (it.moveToFirst()) {
-                return Person(
+                Person(
                     localPersonId = it.getString(it.getColumnIndexOrThrow("localPersonId")),
                     displayName = it.getString(it.getColumnIndexOrThrow("displayName")),
                     publicIdentityKey = it.getString(it.getColumnIndexOrThrow("publicIdentityKey")),
                     creationTimestamp = it.getLong(it.getColumnIndexOrThrow("creationTimestamp"))
                 )
+            } else {
+                null
             }
         }
-        return null
     }
 
     fun saveAssertion(assertion: Assertion) {
@@ -51,7 +52,7 @@ class GraphRepository(context: Context) {
             put("validityTimestampEnd", assertion.validityTimestampEnd ?: -1L)
             put("visibilityPolicy", assertion.visibilityPolicy)
         }
-        db.insertWithOnConflict("assertions", null, values, android.database.sqlite.SQLiteDatabase.CONFLICT_REPLACE)
+        db.insertWithOnConflict("assertions", null, values, net.sqlcipher.database.SQLiteDatabase.CONFLICT_REPLACE)
     }
 
     fun getAssertionsForSubject(subjectId: String): List<Assertion> {
@@ -89,6 +90,6 @@ class GraphRepository(context: Context) {
             put("trustState", relationship.trustState)
             put("sharingPermissions", relationship.sharingPermissions)
         }
-        db.insertWithOnConflict("relationships", null, values, android.database.sqlite.SQLiteDatabase.CONFLICT_REPLACE)
+        db.insertWithOnConflict("relationships", null, values, net.sqlcipher.database.SQLiteDatabase.CONFLICT_REPLACE)
     }
 }

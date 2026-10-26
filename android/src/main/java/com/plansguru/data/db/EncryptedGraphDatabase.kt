@@ -2,8 +2,8 @@ package com.plansguru.data.db
 
 import android.content.Context
 import com.plansguru.data.crypto.KeyManager
-import net.zetetic.database.sqlcipher.SQLiteDatabase
-import net.zetetic.database.sqlcipher.SQLiteOpenHelper
+import net.sqlcipher.database.SQLiteDatabase
+import net.sqlcipher.database.SQLiteOpenHelper
 
 class EncryptedGraphDatabase(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
     
