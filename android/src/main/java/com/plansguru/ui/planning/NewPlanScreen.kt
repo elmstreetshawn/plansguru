@@ -18,12 +18,7 @@ fun NewPlanScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("New Coordination Plan") },
-                navigationIcon = {
-                    TextButton(onClick = onBack) {
-                        Text("Back")
-                    }
-                },
+                title = { Text("One plan • PlansGuru") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -39,19 +34,32 @@ fun NewPlanScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("What would you like to coordinate?", style = MaterialTheme.typography.titleMedium)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Less planning. More doing.", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("Independent AI agents negotiate across your encrypted social graph to find the perfect spot.", style = MaterialTheme.typography.bodySmall)
+                }
+            }
 
             OutlinedTextField(
                 value = promptInput,
                 onValueChange = { promptInput = it },
-                label = { Text("Request / Prompt") },
+                label = { Text("What are we planning?") },
                 modifier = Modifier.fillMaxWidth(),
-                minLines = 3
+                minLines = 3,
+                shape = MaterialTheme.shapes.medium
             )
 
-            Card(modifier = Modifier.fillMaxWidth()) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Participants", style = MaterialTheme.typography.titleSmall)
+                    Text("Participants (Dinner Group)", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.height(4.dp))
                     Text("• Me (PlansGuru Owner)\n• Mike (Verified Peer)\n• Sarah (Verified Peer)\n• Jen (Verified Peer)")
                 }
@@ -61,7 +69,8 @@ fun NewPlanScreen(
 
             Button(
                 onClick = { onStartCoordination(promptInput) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium
             ) {
                 Text("Start Multi-Agent Coordination")
             }

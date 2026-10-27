@@ -20,12 +20,7 @@ fun FriendsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Friends & Peer Network") },
-                navigationIcon = {
-                    TextButton(onClick = onBack) {
-                        Text("Back")
-                    }
-                },
+                title = { Text("Your people • PlansGuru") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -40,11 +35,23 @@ fun FriendsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Less planning. More doing.", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("Coordinate privately with verified peers using local, encrypted social graphs.", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+
             OutlinedTextField(
                 value = inviteCodeInput,
                 onValueChange = { inviteCodeInput = it },
                 label = { Text("Enter Invitation Code / QR Peer ID") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium
             )
 
             Button(
@@ -54,25 +61,32 @@ fun FriendsScreen(
                         inviteCodeInput = ""
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium
             ) {
                 Text("Pair with Friend")
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
-            Text("Connected Friends (Dinner Group for 4)", style = MaterialTheme.typography.titleMedium)
+            Text("Connected Dinner Group (4 People)", style = MaterialTheme.typography.titleMedium)
 
             LazyColumn(
-                modifier = Modifier.fillMaxWidth().weight(1f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(friends) { friend ->
-                    Card(modifier = Modifier.fillMaxWidth()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Friend ID: ${friend.relatedPersonId}", style = MaterialTheme.typography.titleSmall)
+                            Text("Peer: ${friend.relatedPersonId.replace("friend_", "").replaceFirstChar { it.uppercase() }}", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text("Trust State: ${friend.trustState}", style = MaterialTheme.typography.bodyMedium)
-                            Text("Sharing: ${friend.sharingPermissions}", style = MaterialTheme.typography.bodySmall)
+                            Text("Sharing Policy: ${friend.sharingPermissions}", style = MaterialTheme.typography.bodySmall)
                         }
                     }
                 }
