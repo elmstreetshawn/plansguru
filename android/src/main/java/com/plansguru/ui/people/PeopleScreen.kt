@@ -1,5 +1,10 @@
 package com.plansguru.ui.people
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.provider.ContactsContract
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -8,17 +13,17 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 
 data class FriendItem(
     val id: String,
@@ -34,6 +39,9 @@ fun PeopleScreen(
     onProceedToGroup: (List<String>) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
+    var showAddDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
     val friends = remember {
         mutableStateListOf(
             FriendItem("1", "Maya", "MA", listOf("Circle 1", "taco crew"), true),
@@ -44,6 +52,15 @@ fun PeopleScreen(
         )
     }
 
+    // Contact import permission launcher
+    val contactPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            importPhoneContacts(context, friends)
+        }
+    }
+
     val selectedFriends = friends.filter { it.isSelected }
 
     Scaffold(
@@ -52,7 +69,7 @@ fun PeopleScreen(
                 title = { Text("People", style = MaterialTheme.typography.headlineMedium) },
                 actions = {
                     IconButton(onClick = {}) {
-                        Icon(Icons.Default.Search, contentDescription = "More")
+                        Icon(Icons.Default.Search, contentDescription = "Search")
                     }
                 }
             )
@@ -65,7 +82,7 @@ fun PeopleScreen(
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     shape = CircleShape
                 ) {
-                    Icon(Icons.Default.ArrowForward, contentDescription = "Next")
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next")
                 }
             }
         }
@@ -120,9 +137,11 @@ fun PeopleScreen(
                 )
             )
 
-            // Add a friend button
+            // Add a friend button (clickable to open dialog)
             Card(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showAddDialog = true },
                 shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
@@ -144,7 +163,7 @@ fun PeopleScreen(
                     }
                     Column {
                         Text("Add a friend", style = MaterialTheme.typography.titleSmall)
-                        Text("Invite link · QR · code", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Invite link · QR · Import Contacts", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -167,7 +186,8 @@ fun PeopleScreen(
             }
 
             // Friends list
-            Text("FRIENDS ON PLANS GURU · ${friends.size}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            val filteredFriends = friends.filter { it.name.contains(searchQuery, ignoreCase = true) }
+            Text("FRIENDS ON PLANS GURU · ${filteredFriends.size}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             LazyColumn(
                 modifier = Modifier
@@ -175,7 +195,7 @@ fun PeopleScreen(
                     .weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(friends) { friend ->
+                items(filteredFriends) { friend ->
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -217,6 +237,64 @@ fun PeopleScreen(
                         }
                     }
                 }
+            }
+        }
+    }
+
+    // Add Friend Dialog / Bottom Sheet
+    if (showAddDialog) {
+        AlertDialog(
+            onDismissRequest = { showAddDialog = false },
+            title = { Text("Add a Friend") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Connect with friends to securely coordinate plans and share preferences.")
+                    Button(
+                        onClick = {
+                            showAddDialog = false
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
+                                importPhoneContacts(context, friends)
+                            } else {
+                                contactPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Import from Phone Contacts")
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showAddDialog = false }) {
+                    Text("Done")
+                }
+            }
+        )
+    }
+}
+
+fun importPhoneContacts(context: android.content.Context, friendsList: MutableList<FriendItem>) {
+    val cursor = context.contentResolver.query(
+        ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+        arrayOf(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME, ContactsContract.CommonDataKinds.Phone.NUMBER),
+        null, null, ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " ASC"
+    )
+
+    cursor?.use {
+        val nameIdx = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+        while (it.moveToNext()) {
+            val name = if (nameIdx != -1) it.getString(nameIdx) else "Unknown"
+            val initials = name.split(" ").mapNotNull { part -> part.firstOrNull()?.toString() }.take(2).joinToString("").uppercase()
+            if (friendsList.none { f -> f.name.equals(name, ignoreCase = true) }) {
+                friendsList.add(
+                    FriendItem(
+                        id = "contact_${System.currentTimeMillis()}_${friendsList.size}",
+                        name = name,
+                        initials = initials.ifEmpty { "P" },
+                        tags = listOf("Phone Contact"),
+                        isSelected = true
+                    )
+                )
             }
         }
     }
