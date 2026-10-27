@@ -142,6 +142,34 @@
   .level .who { font-size: 11px; color: var(--muted); }
   .level .text { margin-top: 8px; background: #f6f6f9; border-radius: 8px; padding: 8px; min-height: 40px; font-size: 13px; color: #50505a; }
 
+  /* 5b. Ticket ("boarding pass") layout */
+  .ticket { background: #fff; border: 1px solid var(--line); border-radius: 18px; position: relative; margin-top: 4px; }
+  .ticket .band { background: var(--ink); color: #fff; border-radius: 17px 17px 0 0; padding: 12px 14px; display: flex; gap: 10px; align-items: center; }
+  .ticket .band .grow { flex: 1; min-width: 0; }
+  .ticket .band small { display: block; font-size: 10px; letter-spacing: .12em; opacity: .7; }
+  .ticket .band b { display: block; font-size: 24px; line-height: 1.15; }
+  .ticket .band span.sub { font-size: 12px; opacity: .8; }
+  .ticket .fields { display: grid; grid-template-columns: 1.3fr 1fr .7fr; gap: 10px 8px; padding: 12px 14px 4px; }
+  .ticket .fields small { display: block; font-size: 10px; letter-spacing: .1em; color: var(--muted); }
+  .ticket .fields b { font-size: 15px; }
+  .ticket .faces { display: flex; align-items: center; gap: 10px; padding: 8px 14px 12px; cursor: pointer; }
+  .ticket .faces .stack .avatar { position: relative; overflow: visible; }
+  .ticket .faces .stack .avatar::after { content: ""; position: absolute; right: -2px; bottom: -2px; width: 9px; height: 9px; border-radius: 50%; border: 2px solid #fff; background: #b5b5c0; }
+  .ticket .faces .stack .avatar.in::after { background: var(--ok); }
+  .ticket .faces .stack .avatar.maybe::after { background: #e0a400; }
+  .ticket .perf { position: relative; height: 0; border-top: 2px dashed var(--line); margin: 0 14px; }
+  .ticket .perf::before, .ticket .perf::after { content: ""; position: absolute; top: -12px; width: 22px; height: 22px; border-radius: 50%; background: var(--phone); border: 1px solid var(--line); }
+  .ticket .perf::before { left: -26px; clip-path: inset(0 0 0 50%); }
+  .ticket .perf::after { right: -26px; clip-path: inset(0 50% 0 0); }
+  .ticket .stub { padding: 10px 14px 14px; }
+  .ticket .stub .state { display: flex; justify-content: space-between; align-items: baseline; }
+  .ticket .stub .state small { font-size: 10px; letter-spacing: .1em; color: var(--muted); }
+  .ticket .ref { margin-top: 10px; border: 1px dashed var(--line); border-radius: 10px; padding: 8px; text-align: center; font-size: 11px; color: var(--muted); }
+  .ticket .ref .bars { height: 22px; margin: 0 auto 4px; width: 70%; opacity: .25; background: repeating-linear-gradient(90deg, #222 0 2px, transparent 2px 4px, #222 4px 5px, transparent 5px 8px); }
+  .quick { display: flex; gap: 8px; margin: 12px 0 10px; }
+  .quick a { flex: 1; text-align: center; border: 1px solid var(--line); border-radius: 14px; padding: 8px 4px; font-size: 11px; color: var(--ink); text-decoration: none; cursor: pointer; }
+  .quick a i { display: block; font-style: normal; font-size: 18px; }
+
   /* Sheets & dialogs */
   .scrim { position: absolute; inset: 0; background: rgba(0,0,0,.35); display: none; z-index: 5; }
   .scrim.show { display: block; }
@@ -419,7 +447,80 @@
     <p><b>Borrowed from:</b> food-delivery trackers (Uber Eats, Domino's) for the 4-step bar; Partiful / Luma for "who's coming".</p>
     <p><b>Top to bottom = most to least urgent:</b> where it stands → who → where → actions.</p>
     <p><b>Share with trusted contact</b> copies a plain summary (what, where, when, who) for your normal texting app.</p>
-    <p class="ask">Alternative look: a "ticket" layout (like a boarding pass in Google Wallet) with the tracker on the stub. More premium, less room. Want to see both?</p>
+    <p class="ask">Alternative look: <a class="go" data-go="s-ticket" style="color:var(--accent);font-weight:600">the ticket version, 5b →</a></p>
+  </div>
+</section>
+
+<!-- 5b. PLAN DETAIL, TICKET VERSION -->
+<section class="frame" id="s-ticket">
+  <h2>5b · Plan detail, ticket version <span>(compare with 5)</span></h2>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮▮ ◔</span></div>
+    <div class="appbar">
+      <a class="icon go" data-go="s-howwas">←</a>
+      <div class="title"><b>Your plan</b></div>
+      <span class="icon" title="Cancel plan, edit">⋮</span>
+    </div>
+    <div class="content tight">
+      <div class="ticket">
+        <div class="band">
+          <div class="grow">
+            <small>PLANS GURU · DINNER</small>
+            <b>Casa Luz</b>
+            <span class="sub">Tacos · $$ · big patio</span>
+          </div>
+          <div class="guru round" data-crop="912,268,118,150" data-scale=".3"></div>
+        </div>
+        <div class="fields">
+          <div><small>DATE</small><b>Thu, Oct 29</b></div>
+          <div><small>TIME</small><b>7:00 pm</b></div>
+          <div><small>PARTY</small><b>4</b></div>
+          <div><small>WHERE</small><b>East Austin</b></div>
+          <div><small>TRAVEL</small><b>14 min</b></div>
+          <div><small>TABLE</small><b>Patio</b></div>
+        </div>
+        <div class="faces" id="ticket-faces" title="See everyone's answer">
+          <span class="stack"><span class="avatar sm in">ME</span><span class="avatar sm in">MA</span><span class="avatar sm maybe">JO</span><span class="avatar sm">PR</span></span>
+          <small class="note-inline" style="flex:1">2 in · 1 maybe · 1 waiting</small><span>›</span>
+        </div>
+        <div class="perf"></div>
+        <div class="stub">
+          <div class="state"><small>STATUS</small><b>Gathering</b></div>
+          <div class="tracker">
+            <div class="step done"><i></i>Proposed</div>
+            <div class="step now"><i></i>Gathering</div>
+            <div class="step"><i></i>Booking</div>
+            <div class="step"><i></i>Happening</div>
+          </div>
+          <p class="note-inline" style="text-align:center;margin:6px 0 0">Needs 3 yeses by Wed, Oct 28, 6 pm</p>
+          <div class="ref"><div class="bars"></div>Booking reference shows here once it's booked</div>
+        </div>
+      </div>
+
+      <div class="quick">
+        <a><i>🧭</i>Directions</a>
+        <a><i>📅</i>Calendar</a>
+        <a><i>🛡</i>Trusted contact</a>
+      </div>
+      <a class="btn disabled">Yes, book it · unlocks at 3 yeses</a>
+      <p class="note-inline" style="text-align:center">You're in · <a style="color:var(--accent)">Change my answer</a></p>
+    </div>
+    <div class="scrim" id="ticket-scrim"></div>
+    <div class="sheet" id="sheet-faces">
+      <div class="grab"></div>
+      <h3>Who's coming</h3>
+      <div class="row" style="cursor:default"><span class="avatar sm">ME</span><span class="grow">You <small>· organizer</small></span><span class="status-pill in">In</span></div>
+      <div class="row" style="cursor:default"><span class="avatar sm">MA</span><span class="grow">Maya</span><span class="status-pill in">In</span></div>
+      <div class="row" style="cursor:default"><span class="avatar sm">JO</span><span class="grow">Jo</span><span class="status-pill">Maybe</span></div>
+      <div class="row" style="cursor:default"><span class="avatar sm">PR</span><span class="grow">Priya</span><span class="status-pill">Waiting</span></div>
+    </div>
+  </div>
+  <div class="notes">
+    <p><b>Same information as 5,</b> laid out like a boarding pass: the facts in a grid on top, and progress on the tear-off stub.</p>
+    <p><b>Gained:</b> it looks like something you <i>have</i>, a ticket to a night out. It's also a natural spot for the big moment, "Booked!", and it can become the Invite card (6) too.</p>
+    <p><b>Lost:</b> the guest list shrinks to faces with colored dots (tap them to open the list), and the map becomes a button. Try tapping the faces.</p>
+    <p><b>Wallet:</b> "Add to Google Wallet" needs Google Play Services, so it won't work on your /e/OS phone. Keep the ticket in the app.</p>
+    <p class="ask">Q: Use 5 or 5b? Or use 5b for the summary at the top and put 5's full guest list and map underneath when you scroll?</p>
   </div>
 </section>
 
@@ -792,6 +893,11 @@
   howDialog.querySelectorAll('[data-close]').forEach(b => b.onclick = closeHow);
 
   renderPeople();
+
+  // ---- 5b ticket: faces open the guest list ----
+  const ticketScrim = document.getElementById('ticket-scrim'), sheetFaces = document.getElementById('sheet-faces');
+  document.getElementById('ticket-faces').addEventListener('click', () => { ticketScrim.classList.add('show'); sheetFaces.classList.add('show'); });
+  ticketScrim.addEventListener('click', () => { ticketScrim.classList.remove('show'); sheetFaces.classList.remove('show'); });
 </script>
 </body>
 </html>
