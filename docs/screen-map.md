@@ -12,7 +12,7 @@ Mascot sheet: [`docs/brand/guru-mascot-sheet-v1.webp`](brand/guru-mascot-sheet-v
 
 ```
 ┌─────────────────────────────────────┐
-│ (Avatar)  People               ⋮    │  ← avatar opens the "You" hub
+│ (Avatar)  People               ⋮    │  ← avatar: "You" hub · ⋮: Tags & squads, Settings
 │ [ Search friends               ]    │
 │ (Maya ×) (Jo ×)                     │  ← selected people, like WhatsApp New group
 │                                     │
@@ -25,8 +25,11 @@ Mascot sheet: [`docs/brand/guru-mascot-sheet-v1.webp`](brand/guru-mascot-sheet-v
 - **People** is the default tab and *is* the "who" picker. There is no separate "Who?" screen.
 - The human picks **only who**. The Guru picks what, when, and where, and offers **one** plan: yes or no.
 - On Places and Plans, a **+ Plan** button jumps to People with selection ready.
-- **You hub** (avatar) holds About me, taste, free times, privacy, export/backup, settings.
-- No chat anywhere. No notification inbox: invites live in Plans.
+- Three bottom tabs only. **Preferences is not a tab.**
+- **Avatar → You hub:** things *about you*: About me, Tell your Guru (taste), free times.
+- **⋮ menu → Tags & squads, Settings:** things that *organize the app*. Settings includes your data (export, backup, delete).
+- **Chat exists in two places only:** Guru Chat, the default way to set your preferences (with a tap-only option for people who'd rather not type), and **one group chat per plan** (see Plan chat rules below).
+- No notification inbox: invites live in Plans.
 
 ## Map
 
@@ -71,6 +74,9 @@ flowchart TD
     Plans --> PlanDetail
     Plans --> InviteCard["Invite card: same card as Guru's pick"]
     InviteCard --> PlanDetail
+    InviteCard --> PlanChat["Plan chat"]
+    PlanDetail --> PlanChat
+    PlanChat --> FriendReq["Friend request: pick what to share"]
     PlanDetail --> BookIt["Yes, book it"]
     PlanDetail --> ShareSafety["Share with trusted contact"]
     Plans --> HowWasIt["Did you go, how was it"]
@@ -78,13 +84,14 @@ flowchart TD
     Avatar(["Avatar"]) --> You["You hub"]
     You --> AboutMe["About me, by circle"]
     AboutMe --> ViewAs["See my profile as a friend"]
-    You --> Taste["My taste and travel time"]
+    You --> Taste["Tell your Guru: chat or tap-only"]
     You --> FreeTimes["My free times and calendar"]
-    You --> Privacy["Privacy center"]
-    Privacy --> Export["Export my data"]
-    Privacy --> Backup["Back up or restore"]
-    Privacy --> DeleteAll["Delete everything"]
-    You --> Settings["Settings"]
+
+    Menu(["Three-dot menu"]) --> Tags["Tags and squads"]
+    Menu --> Settings["Settings"]
+    Settings --> Export["Export my data"]
+    Settings --> Backup["Back up or restore"]
+    Settings --> DeleteAll["Delete everything"]
 ```
 
 ## Screen inventory
@@ -113,8 +120,9 @@ Buttons: **Not this one** (quick reason chips, then the Guru tries again) / **Ye
 | Screen | Notes |
 |---|---|
 | Plans list | Sections: Needs your answer · In motion ("2 of 4 in, needs 3 by Wed") · Upcoming · Past. List/Calendar toggle. |
-| Invite card | The same plan card as Guru's pick. Buttons: I'm in / Maybe / Can't make it. |
+| Invite card | The same plan card as Guru's pick. Buttons: I'm in / Maybe / Can't make it. **Chat with the group** button, so you can ask questions before answering. |
 | Plan detail | Tracker: Proposed → Gathering → Booking → Happening. Who's coming with status. Deadline as a plain date. Directions, Add to my calendar, Share with trusted contact. Organizer: **Yes, book it** (unlocks when enough people are in), Cancel plan. |
+| Plan chat | One per plan. Plan card pinned on top. Friends-of-friends show as "Priya · Dee's friend". Tap a name to send a friend request. ⋮ → Mute, Leave. |
 | Did you go? / How was it? | Pops up once after the scheduled time. Skippable; reachable later from Past. Venue and activity only: Do it again / Once was enough / Not for me. Never rates people. |
 
 ### Places
@@ -128,10 +136,15 @@ Buttons: **Not this one** (quick reason chips, then the Guru tries again) / **Ye
 | Screen | Notes |
 |---|---|
 | About me, by circle | One box per privacy level (see below). **View as…** button shows exactly what one friend sees. |
-| My taste | Interests, diet, budget, drinks, vibe, accessibility, travel radius in minutes. |
+| Tell your Guru | Guru Chat by default; "Prefer tapping?" link switches to the tap-only form. Interests, diet, budget, drinks, vibe, accessibility, travel radius in minutes. |
 | My free times | Paint a week, connect a calendar, "I'm free right now". |
-| Privacy center | What I've shared and with whom · connected calendars · **Export my data** · **Back up / Restore** · **Delete everything**. |
-| Settings | Notifications · **Nearby: "I use Plans Guru"** (off by default; both people must turn it on) · about. |
+
+### ⋮ menu (top-right of People)
+| Screen | Notes |
+|---|---|
+| Tags & squads | Replaces the Preferences tab. Squads at the top, other tags below. **A squad is a tag with "Show as a quick start" on.** Tap a tag: members (add via the People picker, never typed), rename, delete (removes the label only). Circles are not here. |
+| Settings | Account (name, photo, phone) · **Your Guru** (chat or tap-only, on-device model size) · **Notifications** (invites, plan chats) · **Privacy & safety** (Nearby "I use Plans Guru", off by default and both people must turn it on; circle for new friends; removed people) · **Your data** (export, back up / restore, delete everything) · **App** (theme, help, about). |
+| Developer (debug builds only) | Raw view of the stored graph (`likes_cuisine` etc.), from Shawn's "People Graph" screen. |
 
 ## Privacy levels
 
@@ -165,8 +178,15 @@ Plain, no reminders or streaks. Lock-screen text never reveals details:
 > your Guru handles the what, when and where, so nobody has to coordinate by hand.
 > [link]
 
-## Guest list rule (proposed)
-Invitees see everyone coming: first name and photo. People who aren't their friend are labeled "Dee's friend", and their profiles can't be opened. Reason: knowing who will be at the table is a safety need, and being in a plan means agreeing to be seen by the others in it.
+## Guest list rule
+Invitees see everyone invited. Their friends show with photo. People who aren't their friend show as **first name + whose friend they are**: no photo, no profile. Sarah sees "Jim · Dee's friend", nothing more. Reason: knowing who will be at the table is a safety need, and being in a plan means agreeing to be seen by the others in it.
+
+## Plan chat rules
+- **Who's in it:** everyone invited, from the moment the invite arrives (no need to say yes first).
+- **Safety:** you can mute or leave a plan's chat. You can remove a friend later, or never add them.
+- **Lifetime:** stays open until everyone has left, then becomes read-only history under Past. You can still send a friend request from history.
+- **Friend requests:** sent privately, not in the group. The sender picks what to share (first name always; photo, phone, About me optional), and the receiver picks what to share back, or declines. Nothing stops someone from adding a contact manually outside Plans Guru.
+- **No Guru recommendations or scores in the chat.** The plan card is pinned at the top instead.
 
 ## Screenshots
 Blocked app-wide in release builds (Android `FLAG_SECURE`). This also blocks screen recording and casting, so **debug builds leave it off** so the demo video can be recorded.
@@ -177,7 +197,9 @@ Blocked app-wide in release builds (Android `FLAG_SECURE`). This also blocks scr
 - **"Why" text that is safe to show other people.** The front end only displays high-level reasons; the backend should never send private-note reasons to other phones.
 - **"Not this one"**: the Guru needs a next-best plan, ideally using the reason chip.
 - **Sponsored boost numbers**: boost amount, cap, and "rank without sponsorship" per suggestion.
-- **Squads, tags, circles**, and the **draft vs. shared** sync model.
+- **Squads, tags, circles**, and the **draft vs. shared** sync model. Squads = tags with a "quick start" flag.
+- **Plan chat**: end-to-end encrypted group per plan, membership = everyone invited, mute/leave, read-only once everyone has left.
+- **Friend requests** with per-field sharing (request and approval each choose fields).
 - **Restaurant booking**: who confirms on the restaurant side, and does the restaurant need an app?
 - **Nearby "I use Plans Guru"**: mutual opt-in only.
 - **Degoogled phones** (one demo phone runs /e/OS): avoid depending on Google Play Services for maps, push notifications, or the install referrer.
