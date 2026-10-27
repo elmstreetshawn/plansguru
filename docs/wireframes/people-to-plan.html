@@ -142,33 +142,35 @@
   .level .who { font-size: 11px; color: var(--muted); }
   .level .text { margin-top: 8px; background: #f6f6f9; border-radius: 8px; padding: 8px; min-height: 40px; font-size: 13px; color: #50505a; }
 
-  /* 5b. Ticket ("boarding pass") layout */
-  .ticket { background: #fff; border: 1px solid var(--line); border-radius: 18px; position: relative; margin-top: 4px; }
-  .ticket .band { background: var(--ink); color: #fff; border-radius: 17px 17px 0 0; padding: 12px 14px; display: flex; gap: 10px; align-items: center; }
-  .ticket .band .grow { flex: 1; min-width: 0; }
-  .ticket .band small { display: block; font-size: 10px; letter-spacing: .12em; opacity: .7; }
-  .ticket .band b { display: block; font-size: 24px; line-height: 1.15; }
-  .ticket .band span.sub { font-size: 12px; opacity: .8; }
-  .ticket .fields { display: grid; grid-template-columns: 1.3fr 1fr .7fr; gap: 10px 8px; padding: 12px 14px 4px; }
-  .ticket .fields small { display: block; font-size: 10px; letter-spacing: .1em; color: var(--muted); }
-  .ticket .fields b { font-size: 15px; }
-  .ticket .faces { display: flex; align-items: center; gap: 10px; padding: 8px 14px 12px; cursor: pointer; }
-  .ticket .faces .stack .avatar { position: relative; overflow: visible; }
-  .ticket .faces .stack .avatar::after { content: ""; position: absolute; right: -2px; bottom: -2px; width: 9px; height: 9px; border-radius: 50%; border: 2px solid #fff; background: #b5b5c0; }
-  .ticket .faces .stack .avatar.in::after { background: var(--ok); }
-  .ticket .faces .stack .avatar.maybe::after { background: #e0a400; }
-  .ticket .perf { position: relative; height: 0; border-top: 2px dashed var(--line); margin: 0 14px; }
-  .ticket .perf::before, .ticket .perf::after { content: ""; position: absolute; top: -12px; width: 22px; height: 22px; border-radius: 50%; background: var(--phone); border: 1px solid var(--line); }
-  .ticket .perf::before { left: -26px; clip-path: inset(0 0 0 50%); }
-  .ticket .perf::after { right: -26px; clip-path: inset(0 50% 0 0); }
-  .ticket .stub { padding: 10px 14px 14px; }
-  .ticket .stub .state { display: flex; justify-content: space-between; align-items: baseline; }
-  .ticket .stub .state small { font-size: 10px; letter-spacing: .1em; color: var(--muted); }
-  .ticket .ref { margin-top: 10px; border: 1px dashed var(--line); border-radius: 10px; padding: 8px; text-align: center; font-size: 11px; color: var(--muted); }
-  .ticket .ref .bars { height: 22px; margin: 0 auto 4px; width: 70%; opacity: .25; background: repeating-linear-gradient(90deg, #222 0 2px, transparent 2px 4px, #222 4px 5px, transparent 5px 8px); }
-  .quick { display: flex; gap: 8px; margin: 12px 0 10px; }
-  .quick a { flex: 1; text-align: center; border: 1px solid var(--line); border-radius: 14px; padding: 8px 4px; font-size: 11px; color: var(--ink); text-decoration: none; cursor: pointer; }
-  .quick a i { display: block; font-style: normal; font-size: 18px; }
+  /* Overflow menu (⋮) */
+  .menu { position: absolute; top: 70px; right: 12px; background: #fff; border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.18); z-index: 7; min-width: 190px; padding: 6px 0; display: none; }
+  .menu.show { display: block; }
+  .menu a { display: block; padding: 11px 16px; color: var(--ink); text-decoration: none; cursor: pointer; }
+  .menu a:hover { background: #f6f6f9; }
+  .menu small { display: block; color: var(--muted); }
+
+  /* Plan chat */
+  .pinned { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 14px; padding: 8px 10px; margin: 2px 0 10px; text-decoration: none; color: var(--ink); }
+  .pinned .grow { flex: 1; }
+  .pinned small { color: var(--muted); display: block; }
+  .sys { text-align: center; font-size: 11px; color: var(--muted); margin: 10px 0; }
+  .msg { display: flex; gap: 8px; align-items: flex-end; margin: 8px 0; }
+  .msg .bubble { background: #f1f1f5; border-radius: 16px 16px 16px 4px; padding: 7px 11px; max-width: 75%; }
+  .msg .bubble .from { display: block; font-size: 11px; font-weight: 600; color: var(--accent); margin-bottom: 1px; }
+  .msg .bubble .from.tap { cursor: pointer; text-decoration: underline dotted; }
+  .msg .bubble .from small { color: var(--muted); font-weight: 400; }
+  .msg.me { justify-content: flex-end; }
+  .msg.me .bubble { background: var(--accent-soft); border-radius: 16px 16px 4px 16px; }
+  .composer { flex: none; display: flex; gap: 8px; align-items: center; padding: 10px 12px 16px; border-top: 1px solid var(--line); }
+  .composer .search { flex: 1; margin: 0; }
+  .composer .send { width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; flex: none; }
+
+  /* Settings list */
+  .set-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid #eee; }
+  .set-row:first-of-type { border-top: 0; }
+  .set-row > i { font-style: normal; width: 22px; text-align: center; flex: none; }
+  .set-row .grow { flex: 1; min-width: 0; }
+  .set-row small { display: block; color: var(--muted); }
 
   /* Sheets & dialogs */
   .scrim { position: absolute; inset: 0; background: rgba(0,0,0,.35); display: none; z-index: 5; }
@@ -222,7 +224,11 @@
     <div class="appbar">
       <a class="avatar sm go" data-go="s-aboutme" title="You hub">ME</a>
       <div class="title"><b>People</b><small id="pick-count">Tap who you want to see</small></div>
-      <span class="icon">⋮</span>
+      <a class="icon" data-menu="people-menu" title="More">⋮</a>
+    </div>
+    <div class="menu" id="people-menu">
+      <a class="go" data-go="s-tags">🏷 Tags &amp; squads<small>Group your friends</small></a>
+      <a class="go" data-go="s-settings">⚙ Settings</a>
     </div>
     <div class="content">
       <div class="search">🔍 <span>Search friends</span></div>
@@ -255,6 +261,7 @@
     <p><b>Borrowed from:</b> WhatsApp → New group. Search on top, picked people as a row of avatars with ×, arrow button bottom-right.</p>
     <p><b>Tap a row</b> to select. <b>Tap the photo</b> to open that friend (WhatsApp does the same in chat lists).</p>
     <p><b>Squad chips</b> select a saved group in one tap. Try one.</p>
+    <p><b>⋮ menu</b> (top right): <b>Tags &amp; squads</b> and <b>Settings</b>. Preferences is not a bottom tab. Try it.</p>
     <p class="ask">Q: Should squads be a row of chips (shown) or their own section at the top of the list, like WhatsApp's "Groups in common"?</p>
   </div>
 </section>
@@ -430,6 +437,7 @@
       <div class="row" style="cursor:default"><span class="avatar sm">MA</span><span class="grow">Maya</span><span class="status-pill in">In</span></div>
       <div class="row" style="cursor:default"><span class="avatar sm">JO</span><span class="grow">Jo</span><span class="status-pill">Maybe</span></div>
       <div class="row" style="cursor:default"><span class="avatar sm">PR</span><span class="grow">Priya</span><span class="status-pill">Waiting</span></div>
+      <a class="row go" data-go="s-chat" style="text-decoration:none;color:inherit"><span class="avatar sm" style="background:var(--accent-soft);color:var(--accent)">💬</span><span class="grow"><b>Plan chat</b><small>Priya: Works for me! First time meeting…</small></span><span class="status-pill">3 new</span></a>
 
       <div class="label">Where</div>
       <div class="map">map</div>
@@ -447,80 +455,6 @@
     <p><b>Borrowed from:</b> food-delivery trackers (Uber Eats, Domino's) for the 4-step bar; Partiful / Luma for "who's coming".</p>
     <p><b>Top to bottom = most to least urgent:</b> where it stands → who → where → actions.</p>
     <p><b>Share with trusted contact</b> copies a plain summary (what, where, when, who) for your normal texting app.</p>
-    <p class="ask">Alternative look: <a class="go" data-go="s-ticket" style="color:var(--accent);font-weight:600">the ticket version, 5b →</a></p>
-  </div>
-</section>
-
-<!-- 5b. PLAN DETAIL, TICKET VERSION -->
-<section class="frame" id="s-ticket">
-  <h2>5b · Plan detail, ticket version <span>(compare with 5)</span></h2>
-  <div class="phone">
-    <div class="status"><span>9:41</span><span>▮▮▮ ◔</span></div>
-    <div class="appbar">
-      <a class="icon go" data-go="s-howwas">←</a>
-      <div class="title"><b>Your plan</b></div>
-      <span class="icon" title="Cancel plan, edit">⋮</span>
-    </div>
-    <div class="content tight">
-      <div class="ticket">
-        <div class="band">
-          <div class="grow">
-            <small>PLANS GURU · DINNER</small>
-            <b>Casa Luz</b>
-            <span class="sub">Tacos · $$ · big patio</span>
-          </div>
-          <div class="guru round" data-crop="912,268,118,150" data-scale=".3"></div>
-        </div>
-        <div class="fields">
-          <div><small>DATE</small><b>Thu, Oct 29</b></div>
-          <div><small>TIME</small><b>7:00 pm</b></div>
-          <div><small>PARTY</small><b>4</b></div>
-          <div><small>WHERE</small><b>East Austin</b></div>
-          <div><small>TRAVEL</small><b>14 min</b></div>
-          <div><small>TABLE</small><b>Patio</b></div>
-        </div>
-        <div class="faces" id="ticket-faces" title="See everyone's answer">
-          <span class="stack"><span class="avatar sm in">ME</span><span class="avatar sm in">MA</span><span class="avatar sm maybe">JO</span><span class="avatar sm">PR</span></span>
-          <small class="note-inline" style="flex:1">2 in · 1 maybe · 1 waiting</small><span>›</span>
-        </div>
-        <div class="perf"></div>
-        <div class="stub">
-          <div class="state"><small>STATUS</small><b>Gathering</b></div>
-          <div class="tracker">
-            <div class="step done"><i></i>Proposed</div>
-            <div class="step now"><i></i>Gathering</div>
-            <div class="step"><i></i>Booking</div>
-            <div class="step"><i></i>Happening</div>
-          </div>
-          <p class="note-inline" style="text-align:center;margin:6px 0 0">Needs 3 yeses by Wed, Oct 28, 6 pm</p>
-          <div class="ref"><div class="bars"></div>Booking reference shows here once it's booked</div>
-        </div>
-      </div>
-
-      <div class="quick">
-        <a><i>🧭</i>Directions</a>
-        <a><i>📅</i>Calendar</a>
-        <a><i>🛡</i>Trusted contact</a>
-      </div>
-      <a class="btn disabled">Yes, book it · unlocks at 3 yeses</a>
-      <p class="note-inline" style="text-align:center">You're in · <a style="color:var(--accent)">Change my answer</a></p>
-    </div>
-    <div class="scrim" id="ticket-scrim"></div>
-    <div class="sheet" id="sheet-faces">
-      <div class="grab"></div>
-      <h3>Who's coming</h3>
-      <div class="row" style="cursor:default"><span class="avatar sm">ME</span><span class="grow">You <small>· organizer</small></span><span class="status-pill in">In</span></div>
-      <div class="row" style="cursor:default"><span class="avatar sm">MA</span><span class="grow">Maya</span><span class="status-pill in">In</span></div>
-      <div class="row" style="cursor:default"><span class="avatar sm">JO</span><span class="grow">Jo</span><span class="status-pill">Maybe</span></div>
-      <div class="row" style="cursor:default"><span class="avatar sm">PR</span><span class="grow">Priya</span><span class="status-pill">Waiting</span></div>
-    </div>
-  </div>
-  <div class="notes">
-    <p><b>Same information as 5,</b> laid out like a boarding pass: the facts in a grid on top, and progress on the tear-off stub.</p>
-    <p><b>Gained:</b> it looks like something you <i>have</i>, a ticket to a night out. It's also a natural spot for the big moment, "Booked!", and it can become the Invite card (6) too.</p>
-    <p><b>Lost:</b> the guest list shrinks to faces with colored dots (tap them to open the list), and the map becomes a button. Try tapping the faces.</p>
-    <p><b>Wallet:</b> "Add to Google Wallet" needs Google Play Services, so it won't work on your /e/OS phone. Keep the ticket in the app.</p>
-    <p class="ask">Q: Use 5 or 5b? Or use 5b for the summary at the top and put 5's full guest list and map underneath when you scroll?</p>
   </div>
 </section>
 
@@ -546,13 +480,15 @@
               <span>
                 <span style="display:flex;align-items:center;gap:6px"><span class="avatar sm">DE</span> Dee <small class="note-inline">· host</small></span>
                 <span style="display:flex;align-items:center;gap:6px;margin-top:4px"><span class="avatar sm">JO</span> Jo</span>
-                <span style="display:flex;align-items:center;gap:6px;margin-top:4px"><span class="avatar sm" style="background:#e3e3ea">PR</span> Priya <small class="note-inline">· Dee's friend</small></span>
+                <span style="display:flex;align-items:center;gap:6px;margin-top:4px"><span class="avatar sm" style="background:#e3e3ea;color:#a0a0aa">👤</span> Priya <small class="note-inline">· Dee's friend</small></span>
               </span>
             </div>
           </div>
           <div class="why">💡 Fits everyone's schedule and tastes.</div>
         </div>
       </div>
+      <a class="btn secondary go" data-go="s-chat" style="margin-top:10px">💬 Chat with the group · 3 new</a>
+      <p class="note-inline" style="text-align:center;margin:6px 0 0">Ask questions before you answer. You don't have to say yes first.</p>
     </div>
     <div class="bottom-actions">
       <div class="btn-row">
@@ -564,8 +500,8 @@
   </div>
   <div class="notes">
     <p><b>Same card component</b> as Guru's pick, with different buttons. You design it once and it looks the same everywhere.</p>
-    <p><b>Guest list (proposed):</b> show everyone's first name and photo. People who aren't your friend are labeled "Dee's friend" and their profile can't be opened. Knowing who'll be at the table is a safety need for a women-first app.</p>
-    <p class="ask">Q: Or show only mutual friends by name and the rest as "+1 more"? That protects Priya more, but Maya walks in not knowing who's there.</p>
+    <p><b>Guest list (decided):</b> everyone invited is listed. Your friends show with their photo. Anyone who isn't your friend (Priya) shows as <b>first name + whose friend she is</b> ("Dee's friend"): no photo, no profile to open.</p>
+    <p><b>Chat before committing:</b> the plan chat opens from here, so Maya can ask questions (or meet Priya) before answering.</p>
   </div>
 </section>
 
@@ -670,6 +606,152 @@
     <p><b>Pops up once</b>, based on when the plan was scheduled. Skippable, and it stays reachable from Past (the ● dot).</p>
     <p><b>Plans tab layout</b>, most urgent first: needs your answer → in motion → upcoming → past. Calendar is a toggle at the top right.</p>
     <p>Close the popup to see the list. Rows jump to screens 5 and 6.</p>
+  </div>
+</section>
+
+<!-- 9. PLAN CHAT -->
+<section class="frame" id="s-chat">
+  <h2>9 · Plan chat <span>(on Maya's phone)</span></h2>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮▮ ◔</span></div>
+    <div class="appbar">
+      <a class="icon go" data-go="s-invite">←</a>
+      <div class="title"><b>Dinner at Casa Luz</b><small>🔒 Only the 4 people invited can read this</small></div>
+      <a class="icon" data-menu="chat-menu" title="More">⋮</a>
+    </div>
+    <div class="menu" id="chat-menu">
+      <a>🔕 Mute chat</a>
+      <a>🚪 Leave chat</a>
+    </div>
+    <div class="content tight">
+      <a class="pinned go" data-go="s-invite"><span>🌮</span><span class="grow"><b>Thu, Oct 29 · 7:00 pm</b><small>Casa Luz · 2 of 4 in · you haven't answered</small></span><span>›</span></a>
+      <div class="sys">Dee started the plan. Everyone invited can chat here.</div>
+      <div class="msg"><span class="avatar sm">DE</span><div class="bubble"><span class="from">Dee</span>Patio if the weather's nice? 🌤</div></div>
+      <div class="msg"><span class="avatar sm">JO</span><div class="bubble"><span class="from">Jo</span>Yes please</div></div>
+      <div class="msg"><span class="avatar sm" style="background:#e3e3ea;color:#a0a0aa">👤</span><div class="bubble"><span class="from tap" data-sheet="sheet-request">Priya <small>· Dee's friend</small></span>Works for me! First time meeting most of you 👋</div></div>
+      <div class="msg me"><div class="bubble">Hi Priya! Is it OK if I come a bit late?</div></div>
+      <div class="sys">Tap "Priya" to send her a friend request</div>
+    </div>
+    <div class="composer"><div class="search">Message the plan…</div><span class="send">➤</span></div>
+
+    <div class="scrim" data-scrim></div>
+    <div class="sheet" id="sheet-request">
+      <div class="grab"></div>
+      <h3>Send Priya a friend request</h3>
+      <p class="note-inline" style="margin:0 0 6px">She gets it privately, not in this chat. Pick what she can see if she says yes:</p>
+      <div class="row" style="cursor:default"><span class="box-check" style="background:var(--accent);border-color:var(--accent)">✓</span><span class="grow">First name <small>always included</small></span></div>
+      <div class="row on" data-check><span class="box-check"></span><span class="grow">Photo</span></div>
+      <div class="row" data-check><span class="box-check"></span><span class="grow">Phone number</span></div>
+      <div class="row" data-check><span class="box-check"></span><span class="grow">About me <small>your "All friends" box</small></span></div>
+      <a class="btn primary" data-sheet="sheet-approve" style="margin-top:10px">Send request</a>
+    </div>
+    <div class="sheet" id="sheet-approve">
+      <div class="grab"></div>
+      <h3>Maya wants to be friends</h3>
+      <p class="note-inline" style="margin:0 0 6px">(Wireframe: this is Priya's phone.) You met in <b>Dinner at Casa Luz</b>. Maya shares: first name, photo.</p>
+      <div class="label">Share back</div>
+      <div class="row" style="cursor:default"><span class="box-check" style="background:var(--accent);border-color:var(--accent)">✓</span><span class="grow">First name <small>always included</small></span></div>
+      <div class="row on" data-check><span class="box-check"></span><span class="grow">Photo</span></div>
+      <div class="row" data-check><span class="box-check"></span><span class="grow">Phone number</span></div>
+      <div class="btn-row" style="margin-top:10px"><a class="btn secondary" data-close>Not now</a><a class="btn primary" data-close>Accept</a></div>
+    </div>
+  </div>
+  <div class="notes">
+    <p><b>Who's in it:</b> everyone invited, from the moment the invite arrives, before anyone says yes. Opens from the Invite (6) and Plan detail (5).</p>
+    <p><b>Friend-of-friend:</b> Priya shows as "Priya · Dee's friend", with no photo. Tap her name to send a <b>friend request</b>: you pick what you share, she picks what she shares back. Try it.</p>
+    <p><b>Safety:</b> ⋮ → Mute or Leave. You can also remove a friend later, or never add them.</p>
+    <p><b>After the plan:</b> the chat stays open until everyone has left. Then it becomes read-only history under Past, and you can still send a friend request from it.</p>
+    <p><b>Not in the chat:</b> no Guru recommendations or scores. The plan card is pinned at the top instead.</p>
+    <p class="ask">Q: If you leave, can you come back? Does someone who said "Can't make it" stay in the chat?</p>
+  </div>
+</section>
+
+<!-- 10. TAGS & SQUADS -->
+<section class="frame" id="s-tags">
+  <h2>10 · Tags &amp; squads <span>(People → ⋮)</span></h2>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮▮ ◔</span></div>
+    <div class="appbar">
+      <a class="icon go" data-go="s-people">←</a>
+      <div class="title"><b>Tags &amp; squads</b><small>Only you see these</small></div>
+      <span class="icon" title="New tag">＋</span>
+    </div>
+    <div class="content tight">
+      <div class="label">Squads · shown as quick starts on People</div>
+      <a class="row" data-sheet="sheet-tagdetail"><span class="avatar sm" style="background:var(--accent-soft)">🌮</span><span class="grow"><b>Taco crew</b><small>Maya, Jo, Priya</small></span><span class="note-inline">3 ›</span></a>
+      <a class="row" data-sheet="sheet-tagdetail"><span class="avatar sm" style="background:var(--accent-soft)">🥗</span><span class="grow"><b>Salad friends</b><small>Lena, Sam</small></span><span class="note-inline">2 ›</span></a>
+      <a class="row" data-sheet="sheet-tagdetail"><span class="avatar sm" style="background:var(--accent-soft)">🏢</span><span class="grow"><b>Work lunch</b><small>Marcus, Dee, Jo, Alex</small></span><span class="note-inline">4 ›</span></a>
+      <div class="label">Other tags</div>
+      <a class="row" data-sheet="sheet-tagdetail"><span class="avatar sm">🏷</span><span class="grow"><b>work</b><small>Jo, Marcus, Dee, Alex</small></span><span class="note-inline">4 ›</span></a>
+      <a class="row" data-sheet="sheet-tagdetail"><span class="avatar sm">🏷</span><span class="grow"><b>gym</b><small>Lena</small></span><span class="note-inline">1 ›</span></a>
+      <p class="note-inline" style="margin-top:14px">Circles (who sees what about you) aren't here. They live in About me and on the Your group screen.</p>
+    </div>
+    <div class="scrim" data-scrim></div>
+    <div class="sheet" id="sheet-tagdetail">
+      <div class="grab"></div>
+      <h3>🌮 Taco crew</h3>
+      <div class="selected" style="border:0;min-height:0">
+        <div class="chip-person"><span class="avatar">MA</span>Maya<span class="x">×</span></div>
+        <div class="chip-person"><span class="avatar">JO</span>Jo<span class="x">×</span></div>
+        <div class="chip-person"><span class="avatar">PR</span>Priya<span class="x">×</span></div>
+        <div class="chip-person"><span class="avatar" style="background:var(--accent-soft);color:var(--accent)">＋</span>Add</div>
+      </div>
+      <div class="set-row"><span class="grow">Show as a quick start (squad)</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+      <div class="set-row"><span class="grow">Rename</span><span>›</span></div>
+      <div class="set-row"><span class="grow" style="color:#c0392b">Delete tag <small>Removes the label. Nobody is unfriended.</small></span></div>
+    </div>
+  </div>
+  <div class="notes">
+    <p><b>Replaces Shawn's Preferences tab.</b> His three sub-tabs map like this:</p>
+    <p>• <b>Squads &amp; Groups</b> + <b>Tags &amp; Taxonomy</b> → this one screen. <b>A squad is just a tag with "Show as a quick start" on</b>, so there's one idea to learn, not two.<br>
+       • <b>People Graph</b> → each friend's own page (tap their photo on People), and About me (7) for you. The raw view, with labels like <code>likes_cuisine</code>, can be a developer screen in debug builds.</p>
+    <p><b>Do tags own people?</b> No, and people don't own tags either. A tag is a label that links the two, like Google Contacts labels or Gmail labels. This screen and the People screen are two views of the same links: edit on either, both change.</p>
+    <p><b>"+ Add"</b> opens the People picker. Members are never typed in by name.</p>
+    <p class="ask">Q: Merge squads and tags into one idea (shown), or keep them separate?</p>
+  </div>
+</section>
+
+<!-- 11. SETTINGS -->
+<section class="frame" id="s-settings">
+  <h2>11 · Settings <span>(People → ⋮)</span></h2>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮▮ ◔</span></div>
+    <div class="appbar">
+      <a class="icon go" data-go="s-people">←</a>
+      <div class="title"><b>Settings</b></div>
+    </div>
+    <div class="content tight">
+      <a class="row go" data-go="s-aboutme" style="text-decoration:none;color:inherit"><span class="avatar">ME</span><span class="grow"><b>Maya R.</b><small>Name, photo, phone · About me</small></span><span>›</span></a>
+
+      <div class="label">Your Guru</div>
+      <div class="set-row"><i>💬</i><span class="grow">How you tell your Guru your tastes<small>Chat (default) · or tap-only</small></span><span class="chip">Chat</span></div>
+      <div class="set-row"><i>🧠</i><span class="grow">On-device Guru model<small>2.0 GB · stays on this phone</small></span><span>›</span></div>
+
+      <div class="label">Notifications</div>
+      <div class="set-row"><i>🔔</i><span class="grow">Invites and plan updates<small>Lock screen only says "You've been invited to an event."</small></span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+      <div class="set-row"><i>💬</i><span class="grow">Plan chats</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+
+      <div class="label">Privacy &amp; safety</div>
+      <div class="set-row"><i>📡</i><span class="grow">Nearby: "I use Plans Guru"<small>Off. Both people must turn it on.</small></span><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+      <div class="set-row"><i>👥</i><span class="grow">Circle for new friends<small>Friend (sees "All friends" only)</small></span><span>›</span></div>
+      <div class="set-row"><i>🚫</i><span class="grow">Removed people</span><span>›</span></div>
+
+      <div class="label">Your data</div>
+      <div class="set-row"><i>⬇</i><span class="grow">Export my data</span><span>›</span></div>
+      <div class="set-row"><i>☁</i><span class="grow">Back up or restore</span><span>›</span></div>
+      <div class="set-row"><i>🗑</i><span class="grow" style="color:#c0392b">Delete everything</span></div>
+
+      <div class="label">App</div>
+      <div class="set-row"><i>🌓</i><span class="grow">Theme<small>Dark</small></span><span>›</span></div>
+      <div class="set-row"><i>❓</i><span class="grow">Help and feedback</span><span>›</span></div>
+      <div class="set-row"><i>ℹ</i><span class="grow">About<small>Version, privacy policy, licenses</small></span><span>›</span></div>
+    </div>
+  </div>
+  <div class="notes">
+    <p><b>What people expect in Settings,</b> grouped the usual Android way: account on top, then app-specific, then data, then help/about at the bottom.</p>
+    <p><b>The old "Privacy center"</b> is folded in here (Your data). That keeps the avatar for things <i>about you</i>, and ⋮ for things that <i>organize the app</i>.</p>
+    <p><b>Chat vs. tap-only</b> is a setting, and should also be a visible link on the Guru Chat screen itself.</p>
+    <p class="ask">Q: Where should Guru Chat itself open from now that it isn't a tab? Suggestion: the avatar → "Tell your Guru".</p>
   </div>
 </section>
 
@@ -894,10 +976,25 @@
 
   renderPeople();
 
-  // ---- 5b ticket: faces open the guest list ----
-  const ticketScrim = document.getElementById('ticket-scrim'), sheetFaces = document.getElementById('sheet-faces');
-  document.getElementById('ticket-faces').addEventListener('click', () => { ticketScrim.classList.add('show'); sheetFaces.classList.add('show'); });
-  ticketScrim.addEventListener('click', () => { ticketScrim.classList.remove('show'); sheetFaces.classList.remove('show'); });
+
+  // ---- Generic: ⋮ menus, bottom sheets, checkbox rows ----
+  document.addEventListener('click', e => {
+    const m = e.target.closest('[data-menu]');
+    document.querySelectorAll('.menu.show').forEach(el => { if (!m || el.id !== m.dataset.menu) el.classList.remove('show'); });
+    if (m) { document.getElementById(m.dataset.menu).classList.toggle('show'); return; }
+    const phone = e.target.closest('.phone');
+    const closeSheets = () => phone.querySelectorAll('[data-scrim], .sheet').forEach(el => el.classList.remove('show'));
+    const opener = e.target.closest('[data-sheet]');
+    if (opener) {
+      closeSheets();
+      phone.querySelector('[data-scrim]').classList.add('show');
+      document.getElementById(opener.dataset.sheet).classList.add('show');
+      return;
+    }
+    if (e.target.closest('[data-scrim], [data-close]')) { closeSheets(); return; }
+    const chk = e.target.closest('[data-check]');
+    if (chk) chk.classList.toggle('on');
+  });
 </script>
 </body>
 </html>
