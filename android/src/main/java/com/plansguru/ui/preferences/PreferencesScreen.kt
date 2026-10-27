@@ -1,27 +1,33 @@
 package com.plansguru.ui.preferences
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PreferencesScreen(
-    viewModel: PreferencesViewModel,
-    onBack: () -> Unit
+    viewModel: GuruChatViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
+    onBack: () -> Unit = {}
 ) {
-    val assertions by viewModel.assertionsState.collectAsState()
-    var predicateInput by remember { mutableStateOf("likes_cuisine") }
-    var valueInput by remember { mutableStateOf("") }
+    val messages by viewModel.messages.collectAsState()
+    var inputMessage by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Your preferences • PlansGuru") },
+                title = { Text("Your preferences • PlansGuru", style = MaterialTheme.typography.titleLarge) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -34,69 +40,74 @@ fun PreferencesScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Self-declared & Inferred Taste", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text("Your preferences stay encrypted on your device and are only evaluated during private agent negotiation.", style = MaterialTheme.typography.bodySmall)
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text("🤖 On-Device AI Agent (Gemma / MediaPipe)", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text("Chat naturally with your local agent. It learns your tastes and saves them to your encrypted social graph.", style = MaterialTheme.typography.bodySmall)
                 }
             }
 
-            OutlinedTextField(
-                value = predicateInput,
-                onValueChange = { predicateInput = it },
-                label = { Text("Predicate (e.g. likes_cuisine, dietary_restriction)") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium
-            )
-
-            OutlinedTextField(
-                value = valueInput,
-                onValueChange = { valueInput = it },
-                label = { Text("Value (e.g. Italian, Gluten-Free)") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium
-            )
-
-            Button(
-                onClick = {
-                    if (valueInput.isNotBlank()) {
-                        viewModel.addPreference(predicateInput, valueInput)
-                        valueInput = ""
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Text("Add Preference Assertion")
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text("Stored Local Assertions", style = MaterialTheme.typography.titleMedium)
-
+            // Chat Messages List
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                reverseLayout = true
             ) {
-                items(assertions) { assertion ->
-                    Card(
+                items(messages.reversed()) { msg ->
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        horizontalArrangement = if (msg.isUser) Arrangement.End else Arrangement.Start
                     ) {
-                        Column(modifier = Modifier.padding(14.dp)) {
-                            Text("${assertion.predicate}: ${assertion.value}", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text("Source: ${assertion.source} • Confidence: ${(assertion.confidence * 100).toInt()}%", style = MaterialTheme.typography.bodySmall)
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = if (msg.isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                            modifier = Modifier.widthIn(max = 280.dp)
+                        ) {
+                            Text(
+                                text = msg.text,
+                                modifier = Modifier.padding(12.dp),
+                                color = if (msg.isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
                         }
                     }
+                }
+            }
+
+            // Chat Input Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = inputMessage,
+                    onValueChange = { inputMessage = it },
+                    placeholder = { Text("Tell Guru your preferences...") },
+                    modifier = Modifier.weight(1f),
+                    shape = MaterialTheme.shapes.extraLarge
+                )
+                FloatingActionButton(
+                    onClick = {
+                        if (inputMessage.isNotBlank()) {
+                            viewModel.sendMessage(inputMessage)
+                            inputMessage = ""
+                        }
+                    },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(50.dp),
+                    shape = CircleShape
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", modifier = Modifier.size(20.dp))
                 }
             }
         }

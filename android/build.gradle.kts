@@ -81,6 +81,9 @@ dependencies {
     // Network (OkHttp)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
+    // On-Device GenAI (MediaPipe / LiteRT-LM)
+    implementation("com.google.mediapipe:tasks-genai:0.10.14")
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
