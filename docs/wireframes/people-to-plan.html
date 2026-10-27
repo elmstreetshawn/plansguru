@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Plans Guru — Wireframe: People to Plan</title>
+<title>PlansGuru — Wireframe: People to Plan</title>
 <style>
   :root {
     --bg: #ececf1;
@@ -172,6 +172,32 @@
   .set-row .grow { flex: 1; min-width: 0; }
   .set-row small { display: block; color: var(--muted); }
 
+  /* People list scrolls clear of the arrow button */
+  .content.fab-pad { padding-bottom: 160px; }
+  /* Plan chat: non-friend markers */
+  .avatar.new { position: relative; overflow: visible; }
+  .avatar.new::after { content: "＋"; position: absolute; right: -4px; bottom: -4px; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 10px; line-height: 14px; text-align: center; border: 2px solid #fff; }
+  .addpill { display: inline-block; margin-left: 6px; border: 1px solid var(--accent); color: var(--accent); background: #fff; border-radius: 10px; padding: 0 7px; font-size: 10px; font-weight: 600; cursor: pointer; vertical-align: 1px; }
+  .steps { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .sheet-head { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+  .sheet-head h3 { flex: 1; margin: 0; }
+  .sheet-head .icon { width: 28px; height: 28px; cursor: pointer; }
+  /* Segmented control */
+  .seg { display: flex; background: var(--box); border-radius: 12px; padding: 3px; margin: 4px 0 8px; }
+  .seg a { flex: 1; text-align: center; padding: 7px; border-radius: 9px; font-size: 13px; cursor: pointer; color: var(--muted); }
+  .seg a.on { background: #fff; color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+  /* Developer view */
+  .devbar { background: #b3261e; color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-align: center; padding: 4px; flex: none; }
+  .dev { font: 11px/1.35 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
+  .dev .who { font-weight: 700; margin: 12px 0 4px; font-size: 12px; }
+  .dev table { width: 100%; border-collapse: collapse; }
+  .dev td, .dev th { border-top: 1px solid #eee; padding: 4px 3px; vertical-align: top; text-align: left; }
+  .dev th { color: var(--muted); font-weight: 400; }
+  .dev .warn { background: #fff4e5; }
+  .dev .warn td:last-child { color: #b25e00; }
+  /* Guru tab */
+  .quickreplies { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 0 36px; }
+
   /* Sheets & dialogs */
   .scrim { position: absolute; inset: 0; background: rgba(0,0,0,.35); display: none; z-index: 5; }
   .scrim.show { display: block; }
@@ -208,7 +234,7 @@
 <body>
 
 <header class="page">
-  <h1>Plans Guru — People → Plan</h1>
+  <h1>PlansGuru — People → Plan</h1>
   <p>Gray-box wireframe: layout and flow only, no final colors or fonts. Purple marks the main action on each screen.
      <b>Everything is clickable:</b> buttons jump to the next screen (it flashes), friend rows toggle, sheets open.</p>
   <p>Screens follow <code>docs/screen-map.md</code>. Names and places are made up.</p>
@@ -230,7 +256,7 @@
       <a class="go" data-go="s-tags">🏷 Tags &amp; squads<small>Group your friends</small></a>
       <a class="go" data-go="s-settings">⚙ Settings</a>
     </div>
-    <div class="content">
+    <div class="content fab-pad">
       <div class="search">🔍 <span>Search friends</span></div>
       <div class="selected" id="selected-strip"></div>
 
@@ -247,7 +273,7 @@
         <span class="chip" data-squad="marcus,dee,jo,alex">🏢 Work lunch · 4</span>
       </div>
 
-      <div class="label">Friends on Plans Guru · 8</div>
+      <div class="label">Friends on PlansGuru · 8</div>
       <div id="friend-list"></div>
     </div>
     <a class="fab go off" id="people-fab" data-go="s-group">→<span class="badge" id="fab-badge">0</span></a>
@@ -255,12 +281,14 @@
       <a class="on"><i>👥</i>People</a>
       <a><i>📍</i>Places</a>
       <a class="go" data-go="s-howwas"><i>🗓</i>Plans<span class="dot">2</span></a>
+      <a class="go" data-go="s-guru"><i><span class="guru" data-crop="912,268,118,150" data-scale=".15" style="display:inline-block;vertical-align:middle"></span></i>Guru</a>
     </nav>
   </div>
   <div class="notes">
     <p><b>Borrowed from:</b> WhatsApp → New group. Search on top, picked people as a row of avatars with ×, arrow button bottom-right.</p>
     <p><b>Tap a row</b> to select. <b>Tap the photo</b> to open that friend (WhatsApp does the same in chat lists).</p>
     <p><b>Squad chips</b> select a saved group in one tap. Try one.</p>
+    <p><b>Arrow button:</b> the list has extra space at the bottom, so the last friend scrolls up above the button and its checkbox is never hidden. Scroll down to see it.</p>
     <p><b>⋮ menu</b> (top right): <b>Tags &amp; squads</b> and <b>Settings</b>. Preferences is not a bottom tab. Try it.</p>
     <p class="ask">Q: Should squads be a row of chips (shown) or their own section at the top of the list, like WhatsApp's "Groups in common"?</p>
   </div>
@@ -285,14 +313,14 @@
         <div class="toggle" onclick="this.classList.toggle('on')"></div>
       </div>
 
-      <div class="label">Edit everyone at once</div>
+      <div class="label">Edit tags &amp; circles</div>
       <div class="bulkbar">
         <button id="bulk-all">☑ All</button>
         <button id="bulk-tag">🏷 Tag</button>
         <button id="bulk-circle">◎ Circle</button>
         <button id="bulk-undo" disabled>↶ Undo</button>
       </div>
-      <div class="note-inline" id="bulk-hint">Tick people below, then tag them or set their circle.</div>
+      <div class="note-inline" id="bulk-hint">Ticks are only for editing. Everyone below is in the plan either way.</div>
 
       <div class="pending" id="pending">
         <span style="flex:1"><b id="pending-n">1</b> circle change not shared yet. Only you can see it.</span>
@@ -300,17 +328,18 @@
         <a id="pending-share">Share changes</a>
       </div>
 
+      <div class="label">In this plan · <span id="group-count2">3</span></div>
       <div id="group-list"></div>
       <p class="note-inline">Tags are private and save instantly. Circle changes affect what friends see, so they wait for <b>Share changes</b>.</p>
     </div>
     <div class="bottom-actions">
-      <a class="btn primary go" data-go="s-thinking">✨ Ask the Guru</a>
+      <a class="btn primary go" data-go="s-thinking">✨ Guru, Plan it</a>
     </div>
 
     <div class="scrim" id="group-scrim"></div>
     <div class="sheet" id="sheet-circle">
       <div class="grab"></div>
-      <h3>Set circle for <span class="sel-n">0</span> people</h3>
+      <h3>Set circle for the <span class="sel-n">0</span> ticked</h3>
       <p class="note-inline" style="margin:0 0 6px">Decides which of your "About me" boxes they can see.</p>
       <div class="radio on" data-circle="Circle 1"><span class="dot"></span><div><b>Circle 1 · Inner circle</b><small>Sees Circle 1, Circle 2 and All-friends boxes</small></div></div>
       <div class="radio" data-circle="Circle 2"><span class="dot"></span><div><b>Circle 2 · Close friends</b><small>Sees Circle 2 and All-friends boxes</small></div></div>
@@ -319,7 +348,7 @@
     </div>
     <div class="sheet" id="sheet-tag">
       <div class="grab"></div>
-      <h3>Tag <span class="sel-n">0</span> people</h3>
+      <h3>Tag the <span class="sel-n">0</span> ticked</h3>
       <p class="note-inline" style="margin:0 0 10px">Tags are just for you: grouping and quick starts. They never change what anyone can see.</p>
       <div class="chips" id="tag-chips">
         <span class="chip">taco crew</span><span class="chip on">salad crew</span><span class="chip">work</span>
@@ -332,7 +361,8 @@
     <p><b>Borrowed from:</b> WhatsApp's second New group screen (name + photo, then members), plus Gmail-style bulk select.</p>
     <p><b>Bulk vs. one person:</b> tick several people and use the bar, or tap one person's row to edit just them.</p>
     <p><b>Undo</b> steps back through unshared changes. <b>Discard</b> goes back to the last shared version. Try: tick two people → Circle → Apply → Undo.</p>
-    <p class="ask">Q: Editing circles here slows down "make a plan". Should this screen open with the bulk tools collapsed, so the usual path is just → then Ask the Guru?</p>
+    <p><b>Ticks never change who's invited.</b> The hint and button labels say "Editing the 2 ticked" so nobody thinks unticking removes someone. To remove someone, go back and tap × on People.</p>
+    <p><b>Tools start open</b> (decided). The usual path is still one tap: <b>✨ Guru, Plan it</b>.</p>
   </div>
 </section>
 
@@ -533,7 +563,7 @@
       </div>
       <div class="level">
         <header><span class="tag">All</span><b>All friends</b></header>
-        <div class="who">Seen by all 8 friends on Plans Guru</div>
+        <div class="who">Seen by all 8 friends on PlansGuru</div>
         <div class="text">Vegetarian · love patios · free most Sundays</div>
       </div>
       <div class="pending show">
@@ -582,6 +612,7 @@
       <a class="go" data-go="s-people"><i>👥</i>People</a>
       <a><i>📍</i>Places</a>
       <a class="on"><i>🗓</i>Plans<span class="dot">2</span></a>
+      <a class="go" data-go="s-guru"><i><span class="guru" data-crop="912,268,118,150" data-scale=".15" style="display:inline-block;vertical-align:middle"></span></i>Guru</a>
     </nav>
     <div class="scrim show" id="how-scrim"></div>
     <div class="dialog" id="how-dialog">
@@ -628,41 +659,61 @@
       <div class="sys">Dee started the plan. Everyone invited can chat here.</div>
       <div class="msg"><span class="avatar sm">DE</span><div class="bubble"><span class="from">Dee</span>Patio if the weather's nice? 🌤</div></div>
       <div class="msg"><span class="avatar sm">JO</span><div class="bubble"><span class="from">Jo</span>Yes please</div></div>
-      <div class="msg"><span class="avatar sm" style="background:#e3e3ea;color:#a0a0aa">👤</span><div class="bubble"><span class="from tap" data-sheet="sheet-request">Priya <small>· Dee's friend</small></span>Works for me! First time meeting most of you 👋</div></div>
+      <div class="msg"><span class="avatar sm new" style="background:#e3e3ea;color:#a0a0aa;cursor:pointer" data-sheet="sheet-request">👤</span><div class="bubble"><span class="from">Priya <small>· Dee's friend</small><span class="addpill" data-sheet="sheet-request">＋ Add friend</span></span>Works for me! First time meeting most of you 👋</div></div>
       <div class="msg me"><div class="bubble">Hi Priya! Is it OK if I come a bit late?</div></div>
-      <div class="sys">Tap "Priya" to send her a friend request</div>
     </div>
     <div class="composer"><div class="search">Message the plan…</div><span class="send">➤</span></div>
 
     <div class="scrim" data-scrim></div>
     <div class="sheet" id="sheet-request">
       <div class="grab"></div>
-      <h3>Send Priya a friend request</h3>
-      <p class="note-inline" style="margin:0 0 6px">She gets it privately, not in this chat. Pick what she can see if she says yes:</p>
+      <div class="steps">Step 1 of 2 · Maya's phone</div>
+      <h3>What you share with Priya</h3>
+      <p class="note-inline" style="margin:0 0 6px">Priya gets this only if she accepts. She picks what she shares back with you next.</p>
       <div class="row" style="cursor:default"><span class="box-check" style="background:var(--accent);border-color:var(--accent)">✓</span><span class="grow">First name <small>always included</small></span></div>
       <div class="row on" data-check><span class="box-check"></span><span class="grow">Photo</span></div>
       <div class="row" data-check><span class="box-check"></span><span class="grow">Phone number</span></div>
       <div class="row" data-check><span class="box-check"></span><span class="grow">About me <small>your "All friends" box</small></span></div>
-      <a class="btn primary" data-sheet="sheet-approve" style="margin-top:10px">Send request</a>
+      <div class="btn-row" style="margin-top:10px"><a class="btn secondary" data-close>Cancel</a><a class="btn primary" data-sheet="sheet-review">Next</a></div>
+    </div>
+    <div class="sheet" id="sheet-review">
+      <div class="grab"></div>
+      <div class="steps">Step 2 of 2 · Maya's phone</div>
+      <div class="sheet-head"><a class="icon" data-sheet="sheet-request" title="Back">←</a><h3>Send to Priya?</h3></div>
+      <div class="level" style="margin-top:8px">
+        <header><b>You share</b><a class="note-inline" data-sheet="sheet-request" style="color:var(--accent);cursor:pointer">Change</a></header>
+        <div class="who">First name, photo</div>
+      </div>
+      <div class="level">
+        <header><b>Priya shares back</b></header>
+        <div class="who">Her choice. You'll see what she picks when she accepts.</div>
+      </div>
+      <p class="note-inline" style="margin:0">She gets it privately, not in the group chat.</p>
+      <div class="btn-row" style="margin-top:10px"><a class="btn secondary" data-sheet="sheet-request">← Back</a><a class="btn primary" data-sheet="sheet-approve">Send request</a></div>
     </div>
     <div class="sheet" id="sheet-approve">
       <div class="grab"></div>
+      <div class="steps">Priya's phone (wireframe preview)</div>
       <h3>Maya wants to be friends</h3>
-      <p class="note-inline" style="margin:0 0 6px">(Wireframe: this is Priya's phone.) You met in <b>Dinner at Casa Luz</b>. Maya shares: first name, photo.</p>
-      <div class="label">Share back</div>
+      <p class="note-inline" style="margin:0 0 6px">You met in <b>Dinner at Casa Luz</b>.</p>
+      <div class="level"><header><b>Maya shares with you</b></header><div class="who">First name, photo</div></div>
+      <div class="label">What you share with Maya</div>
       <div class="row" style="cursor:default"><span class="box-check" style="background:var(--accent);border-color:var(--accent)">✓</span><span class="grow">First name <small>always included</small></span></div>
       <div class="row on" data-check><span class="box-check"></span><span class="grow">Photo</span></div>
       <div class="row" data-check><span class="box-check"></span><span class="grow">Phone number</span></div>
       <div class="btn-row" style="margin-top:10px"><a class="btn secondary" data-close>Not now</a><a class="btn primary" data-close>Accept</a></div>
+      <a class="note-inline" data-sheet="sheet-review" style="display:block;text-align:center;margin-top:8px;cursor:pointer">← back to Maya's side</a>
     </div>
   </div>
   <div class="notes">
     <p><b>Who's in it:</b> everyone invited, from the moment the invite arrives, before anyone says yes. Opens from the Invite (6) and Plan detail (5).</p>
-    <p><b>Friend-of-friend:</b> Priya shows as "Priya · Dee's friend", with no photo. Tap her name to send a <b>friend request</b>: you pick what you share, she picks what she shares back. Try it.</p>
+    <p><b>Friend-of-friend:</b> Priya shows as "Priya · Dee's friend", with no photo. A <b>＋ badge</b> on her avatar and an <b>＋ Add friend</b> button next to her name show you can add her. Tap either.</p>
+    <p><b>Friend request in 2 steps:</b> pick what <i>you</i> share → review and send, with <b>← Back</b> to change your picks. Every heading says whose info it is ("What you share with Priya", "Priya shares back"), so first-timers don't mix up the two sides.</p>
     <p><b>Safety:</b> ⋮ → Mute or Leave. You can also remove a friend later, or never add them.</p>
+    <p><b>Leaving:</b> you keep what was said up to the moment you left, and see nothing new after that. The message box is replaced with "You left this chat". <b>"Can't make it" works the same way</b>, so the Invite should warn: "You'll leave the plan chat."</p>
     <p><b>After the plan:</b> the chat stays open until everyone has left. Then it becomes read-only history under Past, and you can still send a friend request from it.</p>
     <p><b>Not in the chat:</b> no Guru recommendations or scores. The plan card is pinned at the top instead.</p>
-    <p class="ask">Q: If you leave, can you come back? Does someone who said "Can't make it" stay in the chat?</p>
+    <p class="ask">Q: Can someone who left (or said "Can't make it") be re-invited later?</p>
   </div>
 </section>
 
@@ -704,10 +755,58 @@
   <div class="notes">
     <p><b>Replaces Shawn's Preferences tab.</b> His three sub-tabs map like this:</p>
     <p>• <b>Squads &amp; Groups</b> + <b>Tags &amp; Taxonomy</b> → this one screen. <b>A squad is just a tag with "Show as a quick start" on</b>, so there's one idea to learn, not two.<br>
-       • <b>People Graph</b> → each friend's own page (tap their photo on People), and About me (7) for you. The raw view, with labels like <code>likes_cuisine</code>, can be a developer screen in debug builds.</p>
-    <p><b>Do tags own people?</b> No, and people don't own tags either. A tag is a label that links the two, like Google Contacts labels or Gmail labels. This screen and the People screen are two views of the same links: edit on either, both change.</p>
+       • <b>People Graph</b> → each friend's own page (tap their photo on People), and About me (7) for you. The raw view, with labels like <code>likes_cuisine</code>, becomes a <a class="go" data-go="s-dev" style="color:var(--accent);font-weight:600">developer screen in debug builds (11b) →</a></p>
     <p><b>"+ Add"</b> opens the People picker. Members are never typed in by name.</p>
-    <p class="ask">Q: Merge squads and tags into one idea (shown), or keep them separate?</p>
+    <p class="ask">Q: Merge squads and tags into one idea (shown), or keep them separate (<a class="go" data-go="s-tags2" style="color:var(--accent);font-weight:600">10b →</a>)?</p>
+  </div>
+</section>
+
+<!-- 10b. TAGS & SQUADS, SEPARATE -->
+<section class="frame" id="s-tags2">
+  <h2>10b · Squads and tags, kept separate <span>(compare with 10)</span></h2>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮▮ ◔</span></div>
+    <div class="appbar">
+      <a class="icon go" data-go="s-people">←</a>
+      <div class="title"><b>Squads &amp; tags</b><small>Only you see these</small></div>
+      <span class="icon" title="New">＋</span>
+    </div>
+    <div class="content tight">
+      <div class="seg" id="seg-tags2"><a class="on" data-pane="pane-squads">Squads · 3</a><a data-pane="pane-tags">Tags · 4</a></div>
+      <div id="pane-squads">
+        <p class="note-inline" style="margin:0 0 6px"><b>Squads</b> are groups you make plans with. They show up as quick starts on People.</p>
+        <a class="row" data-sheet="sheet-squad2"><span class="avatar sm" style="background:var(--accent-soft)">🌮</span><span class="grow"><b>Taco crew</b><small>Maya, Jo, Priya</small></span><span class="note-inline">3 ›</span></a>
+        <a class="row" data-sheet="sheet-squad2"><span class="avatar sm" style="background:var(--accent-soft)">🥗</span><span class="grow"><b>Salad friends</b><small>Lena, Sam</small></span><span class="note-inline">2 ›</span></a>
+        <a class="row" data-sheet="sheet-squad2"><span class="avatar sm" style="background:var(--accent-soft)">🏢</span><span class="grow"><b>Work lunch</b><small>Marcus, Dee, Jo, Alex</small></span><span class="note-inline">4 ›</span></a>
+      </div>
+      <div id="pane-tags" style="display:none">
+        <p class="note-inline" style="margin:0 0 6px"><b>Tags</b> describe people. Use them to search and filter. They never start a plan by themselves.</p>
+        <a class="row"><span class="avatar sm">🏷</span><span class="grow"><b>work</b><small>Jo, Marcus, Dee, Alex</small></span><span class="note-inline">4 ›</span></a>
+        <a class="row"><span class="avatar sm">🏷</span><span class="grow"><b>gym</b><small>Lena</small></span><span class="note-inline">1 ›</span></a>
+        <a class="row"><span class="avatar sm">🏷</span><span class="grow"><b>neighbors</b><small>Sam, Alex</small></span><span class="note-inline">2 ›</span></a>
+        <a class="row"><span class="avatar sm">🏷</span><span class="grow"><b>book club</b><small>Priya, Lena</small></span><span class="note-inline">2 ›</span></a>
+      </div>
+    </div>
+    <div class="scrim" data-scrim></div>
+    <div class="sheet" id="sheet-squad2">
+      <div class="grab"></div>
+      <h3>🌮 Taco crew</h3>
+      <div class="selected" style="border:0;min-height:0">
+        <div class="chip-person"><span class="avatar">MA</span>Maya<span class="x">×</span></div>
+        <div class="chip-person"><span class="avatar">JO</span>Jo<span class="x">×</span></div>
+        <div class="chip-person"><span class="avatar">PR</span>Priya<span class="x">×</span></div>
+        <div class="chip-person"><span class="avatar" style="background:var(--accent-soft);color:var(--accent)">＋</span>Add</div>
+      </div>
+      <a class="btn primary go" data-go="s-group" style="margin-top:6px">✨ Plan with Taco crew</a>
+      <div class="set-row" style="margin-top:8px"><span class="grow">Rename</span><span>›</span></div>
+      <div class="set-row"><span class="grow" style="color:#c0392b">Delete squad <small>Nobody is unfriended.</small></span></div>
+    </div>
+  </div>
+  <div class="notes">
+    <p><b>Two ideas, two tabs.</b> A <b>squad</b> is a group you plan with (has a name and emoji, starts a plan). A <b>tag</b> is a word that describes someone (work, gym, neighbors).</p>
+    <p><b>For:</b> each list stays short, and the words mean what people expect: WhatsApp has groups, Google Contacts has labels.</p>
+    <p><b>Against:</b> two things to learn and build. "Taco crew" could fit either, so people may not know which to make.</p>
+    <p>Tap the <b>Tags</b> tab, or a squad.</p>
   </div>
 </section>
 
@@ -732,7 +831,7 @@
       <div class="set-row"><i>💬</i><span class="grow">Plan chats</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
 
       <div class="label">Privacy &amp; safety</div>
-      <div class="set-row"><i>📡</i><span class="grow">Nearby: "I use Plans Guru"<small>Off. Both people must turn it on.</small></span><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+      <div class="set-row"><i>📡</i><span class="grow">Nearby: "I use PlansGuru"<small>Off. Both people must turn it on.</small></span><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
       <div class="set-row"><i>👥</i><span class="grow">Circle for new friends<small>Friend (sees "All friends" only)</small></span><span>›</span></div>
       <div class="set-row"><i>🚫</i><span class="grow">Removed people</span><span>›</span></div>
 
@@ -745,13 +844,95 @@
       <div class="set-row"><i>🌓</i><span class="grow">Theme<small>Dark</small></span><span>›</span></div>
       <div class="set-row"><i>❓</i><span class="grow">Help and feedback</span><span>›</span></div>
       <div class="set-row"><i>ℹ</i><span class="grow">About<small>Version, privacy policy, licenses</small></span><span>›</span></div>
+      <a class="set-row go" data-go="s-dev" style="text-decoration:none;color:inherit"><i>🛠</i><span class="grow">Developer<small>Debug builds only</small></span><span>›</span></a>
     </div>
   </div>
   <div class="notes">
     <p><b>What people expect in Settings,</b> grouped the usual Android way: account on top, then app-specific, then data, then help/about at the bottom.</p>
     <p><b>The old "Privacy center"</b> is folded in here (Your data). That keeps the avatar for things <i>about you</i>, and ⋮ for things that <i>organize the app</i>.</p>
     <p><b>Chat vs. tap-only</b> is a setting, and should also be a visible link on the Guru Chat screen itself.</p>
-    <p class="ask">Q: Where should Guru Chat itself open from now that it isn't a tab? Suggestion: the avatar → "Tell your Guru".</p>
+    <p><b>Guru Chat</b> gets its own tab: <a class="go" data-go="s-guru" style="color:var(--accent);font-weight:600">see 12 →</a></p>
+  </div>
+</section>
+
+<!-- 11b. DEVELOPER VIEW -->
+<section class="frame" id="s-dev">
+  <h2>11b · Developer view <span>(Settings → Developer, debug builds only)</span></h2>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮▮ ◔</span></div>
+    <div class="devbar">DEBUG BUILD · NOT IN RELEASE</div>
+    <div class="appbar">
+      <a class="icon go" data-go="s-settings">←</a>
+      <div class="title"><b>Local graph</b><small>Encrypted DB · 2 people · 9 assertions</small></div>
+      <span class="icon" title="Copy as JSON">⧉</span>
+    </div>
+    <div class="content tight dev">
+      <div class="who">● You (local user)</div>
+      <table>
+        <tr><th>predicate</th><th>value</th><th>vis.</th><th>src</th></tr>
+        <tr class="warn"><td>likes_cuisine</td><td>Italian</td><td>all</td><td>chat ⚠ dup</td></tr>
+        <tr class="warn"><td>likes_cuisine</td><td>Italian</td><td>all</td><td>chat ⚠ dup</td></tr>
+        <tr><td>accessibility</td><td>wheelchair</td><td>me</td><td>chat</td></tr>
+        <tr><td>noise_pref</td><td>avoid_loud</td><td>c1</td><td>chat</td></tr>
+        <tr class="warn"><td>likes_cuisine</td><td>Chinese</td><td>all</td><td>tap ⚠ conflict</td></tr>
+        <tr class="warn"><td>dislikes_cuisine</td><td>Chinese</td><td>all</td><td>chat ⚠ conflict</td></tr>
+      </table>
+      <div class="who">● Sam (friend · Circle 2) · my notes</div>
+      <table>
+        <tr><th>predicate</th><th>value</th><th>vis.</th><th>src</th></tr>
+        <tr><td>dislikes_cuisine</td><td>Chinese</td><td>me</td><td>note</td></tr>
+        <tr><td>noise_pref</td><td>avoid_loud</td><td>me</td><td>note</td></tr>
+        <tr><td>raw_note</td><td>"doesn't like Chinese or loud…"</td><td>me</td><td>note</td></tr>
+      </table>
+      <div class="who">● Sync</div>
+      <table>
+        <tr><td>last shared</td><td>Oct 27 18:02</td></tr>
+        <tr><td>drafts</td><td>1 circle change</td></tr>
+        <tr><td>Guru model</td><td>gemma-4-E2B · 2.0 GB · loaded</td></tr>
+      </table>
+      <div class="btn-row" style="margin-top:12px"><a class="btn secondary" style="font-size:12px">Copy as JSON</a><a class="btn secondary" style="font-size:12px;color:#b3261e">Wipe local DB</a></div>
+    </div>
+  </div>
+  <div class="notes">
+    <p><b>Shawn's "People Graph", as a tool for the two of you.</b> Raw names like <code>likes_cuisine</code> are fine here because only developers see it. A red bar makes it obvious it's not the real app.</p>
+    <p><b>Columns:</b> what it is, the value, who can see it (<code>me</code> / <code>c1</code> / <code>c2</code> / <code>all</code>), and where it came from (chat, tap or note).</p>
+    <p><b>Flags problems</b> seen in Shawn's screenshot: the same fact saved twice, likes <i>and</i> dislikes Chinese, and whole sentences saved as a value instead of being split into facts.</p>
+    <p class="ask">Q: What does the Guru do with a conflict: ask the user, or keep the newest?</p>
+  </div>
+</section>
+
+<!-- 12. GURU TAB -->
+<section class="frame" id="s-guru">
+  <h2>12 · Guru <span>(4th tab: chat to set your tastes)</span></h2>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮▮ ◔</span></div>
+    <div class="appbar">
+      <div class="guru round" data-crop="912,268,118,150" data-scale=".3"></div>
+      <div class="title"><b>Guru</b><small>🔒 Runs on your phone</small></div>
+      <a class="chip" title="Switch to tap-only">Prefer tapping?</a>
+    </div>
+    <div class="content fab-pad">
+      <div class="msg"><div class="guru round" data-crop="912,268,118,150" data-scale=".2"></div><div class="bubble">Hi Maya! Tell me what you like to eat, or what you'd rather skip. I'll remember it for your plans.</div></div>
+      <div class="msg me"><div class="bubble">I'm vegetarian and I hate loud places</div></div>
+      <div class="msg"><div class="guru round" data-crop="912,268,118,150" data-scale=".2"></div><div class="bubble">Got it: 🌱 vegetarian, 🔇 quieter places. Who can see these?</div></div>
+      <div class="quickreplies">
+        <span class="chip">🔒 Only me</span><span class="chip">Circle 1</span><span class="chip">Circle 2</span><span class="chip on">All friends</span>
+      </div>
+      <div class="sys">Saved to About me → All friends · <a class="go" data-go="s-aboutme" style="color:var(--accent)">View</a></div>
+    </div>
+    <div class="composer" style="position:absolute;left:0;right:0;bottom:68px;background:#fff"><div class="search">Tell your Guru…</div><span class="send">➤</span></div>
+    <nav class="navbar">
+      <a class="go" data-go="s-people"><i>👥</i>People</a>
+      <a><i>📍</i>Places</a>
+      <a class="go" data-go="s-howwas"><i>🗓</i>Plans<span class="dot">2</span></a>
+      <a class="on"><i><span class="guru" data-crop="912,268,118,150" data-scale=".15" style="display:inline-block;vertical-align:middle"></span></i>Guru</a>
+    </nav>
+  </div>
+  <div class="notes">
+    <p><b>"People · Places · Plans · Guru"</b> in the bottom bar. On the nose, but it reads like the pitch, and it puts the main feature one tap away.</p>
+    <p><b>Every fact the Guru learns gets a privacy level</b> before friends can see it. Here Maya tapped "All friends". The fact lands in About me (7), where she can move it later.</p>
+    <p><b>Prefer tapping?</b> (top right) switches to the tap-only form. The same choice is in Settings.</p>
+    <p class="ask">Q: Should the Guru ask "who can see this?" every time, or default to Only me and let you change it in About me?</p>
   </div>
 </section>
 
@@ -862,6 +1043,7 @@
     const members = friends.filter(f => picked.has(f.id));
     [...ticked].forEach(id => { if (!picked.has(id)) ticked.delete(id); });
     document.getElementById('group-count').textContent = members.length;
+    document.getElementById('group-count2').textContent = members.length;
     document.getElementById('group-list').innerHTML = members.map(f => `
       <div class="row ${ticked.has(f.id) ? 'on' : ''}" data-tick="${f.id}">
         <span class="box-check"></span>
@@ -876,7 +1058,7 @@
     document.getElementById('bulk-circle').disabled = n === 0;
     document.getElementById('bulk-undo').disabled = history.length === 0;
     document.getElementById('bulk-all').textContent = n && n === members.length ? '☐ None' : '☑ All';
-    document.getElementById('bulk-hint').textContent = n ? `${n} ticked` : 'Tick people below, then tag them or set their circle.';
+    document.getElementById('bulk-hint').textContent = n ? `Editing the ${n} ticked. Everyone below is still in the plan.` : 'Ticks are only for editing. Everyone below is in the plan either way.';
     const p = document.getElementById('pending');
     p.classList.toggle('show', pendingCircleChanges > 0);
     document.getElementById('pending-n').textContent = pendingCircleChanges;
@@ -995,6 +1177,14 @@
     const chk = e.target.closest('[data-check]');
     if (chk) chk.classList.toggle('on');
   });
+
+  // ---- 10b segmented control ----
+  document.querySelectorAll('.seg a').forEach(a => a.addEventListener('click', () => {
+    a.parentElement.querySelectorAll('a').forEach(b => {
+      b.classList.toggle('on', b === a);
+      document.getElementById(b.dataset.pane).style.display = b === a ? '' : 'none';
+    });
+  }));
 </script>
 </body>
 </html>
