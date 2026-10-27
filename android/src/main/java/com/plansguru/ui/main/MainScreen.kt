@@ -15,11 +15,10 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.plansguru.ui.people.GroupSetupScreen
 import com.plansguru.ui.people.PeopleScreen
+import com.plansguru.ui.places.PlacesScreen
 import com.plansguru.ui.planning.GuruPlanningScreen
 import com.plansguru.ui.planning.PlanningViewModel
 import com.plansguru.ui.planning.RecommendationsScreen
-import com.plansguru.ui.preferences.PreferencesScreen
-import com.plansguru.ui.preferences.PreferencesViewModel
 
 sealed class BottomTab(val route: String, val title: String, val icon: androidx.compose.ui.graphics.vector.ImageVector) {
     object People : BottomTab("people", "People", Icons.Default.Person)
@@ -109,11 +108,7 @@ fun MainScreen() {
                 )
             }
             composable(BottomTab.Places.route) {
-                val prefVM: PreferencesViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
-                PreferencesScreen(
-                    viewModel = prefVM,
-                    onBack = {}
-                )
+                PlacesScreen()
             }
             composable(BottomTab.Plans.route) {
                 val members = listOf("Maya", "Jo", "Priya")
