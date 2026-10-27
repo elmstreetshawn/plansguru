@@ -137,17 +137,16 @@ fun PeopleScreen(
                 )
             )
 
-            // Add a friend button (clickable to open dialog)
+            // Add a friend button (Explicit clickable row inside Card)
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { showAddDialog = true },
+                modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .clickable { showAddDialog = true }
                         .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
