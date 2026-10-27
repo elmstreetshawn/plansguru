@@ -47,9 +47,9 @@ fun PeopleScreen(
     val repository = remember { GraphRepository(context) }
 
     val defaultFriends = listOf(
-        FriendItem("1", "Maya", "MA", listOf("Circle 1", "taco crew"), true),
-        FriendItem("2", "Jo", "JO", listOf("Circle 1", "taco crew", "work"), true),
-        FriendItem("3", "Priya", "PR", listOf("Circle 2", "taco crew"), true),
+        FriendItem("1", "Maya", "MA", listOf("Circle 1", "taco crew"), false),
+        FriendItem("2", "Jo", "JO", listOf("Circle 1", "taco crew", "work"), false),
+        FriendItem("3", "Priya", "PR", listOf("Circle 2", "taco crew"), false),
         FriendItem("4", "Lena", "LE", listOf("Friend", "salad crew"), false),
         FriendItem("5", "Sam", "SA", listOf("Circle 2", "salad crew"), false)
     )
@@ -74,7 +74,7 @@ fun PeopleScreen(
                             name = name,
                             initials = initials,
                             tags = listOf("Added via Agent", "Encrypted Graph"),
-                            isSelected = true
+                            isSelected = false
                         )
                     )
                 }
@@ -371,7 +371,7 @@ fun PeopleScreen(
                                             name = name,
                                             initials = initials,
                                             tags = listOf("Manual", "Encrypted Graph"),
-                                            isSelected = true
+                                            isSelected = false
                                         )
                                     )
                                     val repository = GraphRepository(context)
@@ -406,7 +406,7 @@ fun PeopleScreen(
                                             name = demo,
                                             initials = initials,
                                             tags = listOf("Demo Contact"),
-                                            isSelected = true
+                                            isSelected = false
                                         )
                                     )
                                     repository.savePerson(
@@ -470,7 +470,7 @@ fun importPhoneContacts(context: android.content.Context, friendsList: MutableLi
                         name = name,
                         initials = initials.ifEmpty { "P" },
                         tags = listOf("Phone Contact"),
-                        isSelected = true
+                        isSelected = false
                     )
                 )
                 repository.savePerson(
