@@ -11,7 +11,7 @@ class GuruChatEngine(context: Context) {
         try {
             // Attempt to initialize MediaPipe LLM Inference with on-device model from assets
             val options = LlmInference.LlmInferenceOptions.builder()
-                .setModelPath("gemma-2b-it-cpu-int4.bin")
+                .setModelPath("gemma-4-E2B-it-web.task")
                 .setMaxTokens(256)
                 .setTemperature(0.7f)
                 .build()
