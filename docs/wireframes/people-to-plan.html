@@ -1,0 +1,1190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PlansGuru — Wireframe: People to Plan</title>
+<style>
+  :root {
+    --bg: #ececf1;
+    --phone: #ffffff;
+    --line: #d4d4dc;
+    --box: #e4e4ea;
+    --ink: #1f1f24;
+    --muted: #6d6d78;
+    --accent: #6e4be8;
+    --accent-soft: #ece6ff;
+    --ok: #2f8f5b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+  }
+  header.page { max-width: 1200px; margin: 0 auto; padding: 32px 24px 8px; }
+  header.page h1 { margin: 0 0 4px; font-size: 26px; }
+  header.page p { margin: 4px 0; color: var(--muted); max-width: 820px; }
+  .board {
+    max-width: 1200px; margin: 0 auto; padding: 16px 24px 64px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 40px 32px;
+  }
+  .frame { scroll-margin-top: 16px; }
+  .frame h2 { font-size: 15px; margin: 0 0 8px; }
+  .frame h2 span { color: var(--muted); font-weight: 400; }
+  .frame.flash .phone { outline: 4px solid var(--accent); outline-offset: 4px; }
+
+  /* Phone */
+  .phone {
+    position: relative; width: 360px; height: 740px; background: var(--phone);
+    border: 10px solid #222; border-radius: 36px; overflow: hidden;
+    display: flex; flex-direction: column; transition: outline .2s;
+  }
+  .status { height: 24px; flex: none; font-size: 11px; color: var(--muted); display: flex; justify-content: space-between; padding: 4px 16px 0; }
+  .appbar { flex: none; display: flex; align-items: center; gap: 10px; padding: 8px 14px; min-height: 52px; }
+  .appbar .title { flex: 1; }
+  .appbar .title b { display: block; font-size: 18px; }
+  .appbar .title small { color: var(--muted); }
+  .icon { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; color: var(--muted); font-size: 18px; text-decoration: none; flex: none; }
+  .content { flex: 1; overflow-y: auto; padding: 0 14px 90px; }
+  .content.tight { padding-bottom: 16px; }
+
+  .search { display: flex; align-items: center; gap: 8px; background: var(--box); border-radius: 24px; padding: 10px 14px; color: var(--muted); margin-bottom: 10px; }
+  .label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin: 14px 0 6px; }
+  .note-inline { font-size: 12px; color: var(--muted); }
+
+  .avatar { width: 40px; height: 40px; border-radius: 50%; background: #c9c9d3; display: grid; place-items: center; font-weight: 600; color: #4a4a55; flex: none; font-size: 13px; text-decoration: none; }
+  .avatar.sm { width: 28px; height: 28px; font-size: 11px; }
+  .stack { display: flex; }
+  .stack .avatar { border: 2px solid #fff; margin-left: -8px; }
+  .stack .avatar:first-child { margin-left: 0; }
+
+  .selected { display: flex; gap: 12px; overflow-x: auto; padding: 4px 0 10px; border-bottom: 1px solid var(--line); min-height: 76px; }
+  .selected .chip-person { position: relative; text-align: center; font-size: 11px; width: 46px; flex: none; }
+  .selected .chip-person .avatar { margin: 0 auto 2px; }
+  .selected .x { position: absolute; top: -2px; right: 0; width: 16px; height: 16px; border-radius: 50%; background: #8b8b96; color: #fff; font-size: 10px; display: grid; place-items: center; cursor: pointer; }
+  .selected .empty { color: var(--muted); font-size: 13px; align-self: center; }
+
+  .row { display: flex; align-items: center; gap: 12px; padding: 9px 0; cursor: pointer; }
+  .row .grow { flex: 1; min-width: 0; }
+  .row .grow b { display: block; font-weight: 600; }
+  .row .grow small { color: var(--muted); }
+  .check { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #b5b5c0; flex: none; display: grid; place-items: center; color: #fff; font-size: 12px; }
+  .row.on .check { background: var(--accent); border-color: var(--accent); }
+  .row.on .check::after { content: "✓"; }
+  .box-check { width: 20px; height: 20px; border-radius: 4px; border: 2px solid #b5b5c0; flex: none; display: grid; place-items: center; color: #fff; font-size: 12px; }
+  .row.on .box-check { background: var(--accent); border-color: var(--accent); }
+  .row.on .box-check::after { content: "✓"; }
+
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chips.scroll { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+  .chip { border: 1px solid var(--line); border-radius: 18px; padding: 6px 12px; white-space: nowrap; font-size: 13px; background: #fff; cursor: pointer; }
+  .chip.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .tag { display: inline-block; border-radius: 10px; padding: 1px 8px; font-size: 11px; background: var(--box); color: #50505a; margin: 2px 4px 0 0; }
+  .tag.circle { background: var(--accent-soft); color: var(--accent); }
+
+  .fab { position: absolute; right: 18px; bottom: 84px; width: 58px; height: 58px; border-radius: 18px; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: 24px; text-decoration: none; box-shadow: 0 4px 12px rgba(0,0,0,.2); }
+  .fab.off { background: #c4c4cc; pointer-events: none; box-shadow: none; }
+  .fab .badge { position: absolute; top: -6px; right: -6px; background: #222; color: #fff; font-size: 11px; border-radius: 10px; padding: 1px 6px; }
+
+  .navbar { position: absolute; left: 0; right: 0; bottom: 0; height: 68px; border-top: 1px solid var(--line); background: #fafafc; display: flex; }
+  .navbar a { flex: 1; text-align: center; padding-top: 10px; font-size: 12px; color: var(--muted); text-decoration: none; position: relative; }
+  .navbar a i { display: block; font-style: normal; font-size: 18px; margin: 0 auto 2px; width: 56px; border-radius: 14px; padding: 2px 0; }
+  .navbar a.on { color: var(--ink); font-weight: 600; }
+  .navbar a.on i { background: var(--accent-soft); }
+  .navbar .dot { position: absolute; top: 6px; left: 58%; background: #222; color: #fff; border-radius: 9px; font-size: 10px; padding: 0 5px; }
+
+  .btn { display: block; text-align: center; padding: 13px; border-radius: 26px; font-weight: 600; text-decoration: none; cursor: pointer; border: 0; font: inherit; font-weight: 600; width: 100%; }
+  .btn.primary { background: var(--accent); color: #fff; }
+  .btn.secondary { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+  .btn.disabled { background: var(--box); color: #9a9aa5; pointer-events: none; }
+  .btn-row { display: flex; gap: 10px; }
+  .bottom-actions { flex: none; padding: 12px 14px 18px; border-top: 1px solid var(--line); background: #fff; }
+
+  .card { border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: #fff; }
+  .photo { background: repeating-linear-gradient(45deg, #dedee5, #dedee5 10px, #e8e8ee 10px, #e8e8ee 20px); height: 130px; display: grid; place-items: center; color: var(--muted); font-size: 12px; }
+  .map { background: #e3e7e3; height: 84px; border-radius: 12px; display: grid; place-items: center; color: var(--muted); font-size: 12px; position: relative; }
+  .map::after { content: "📍"; position: absolute; font-size: 20px; }
+  .card .body { padding: 12px 14px; }
+  .kv { display: flex; gap: 10px; padding: 7px 0; border-top: 1px solid #eee; }
+  .kv:first-of-type { border-top: 0; }
+  .kv .k { width: 54px; color: var(--muted); font-size: 12px; padding-top: 2px; flex: none; }
+  .why { background: #f6f6f9; border-radius: 10px; padding: 8px 10px; font-size: 12px; color: #50505a; margin-top: 8px; }
+  .sponsored { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+  .tracker { display: flex; align-items: flex-start; margin: 10px 0 4px; }
+  .tracker .step { flex: 1; text-align: center; font-size: 11px; color: var(--muted); position: relative; }
+  .tracker .step i { display: block; width: 14px; height: 14px; border-radius: 50%; margin: 0 auto 4px; background: #d0d0d8; font-style: normal; position: relative; z-index: 1; }
+  .tracker .step::before { content: ""; position: absolute; top: 6px; left: -50%; width: 100%; height: 2px; background: #d0d0d8; }
+  .tracker .step:first-child::before { display: none; }
+  .tracker .step.done i, .tracker .step.done::before, .tracker .step.now::before { background: var(--accent); }
+  .tracker .step.now i { background: #fff; border: 3px solid var(--accent); }
+  .tracker .step.now { color: var(--ink); font-weight: 600; }
+  .status-pill { font-size: 11px; border-radius: 10px; padding: 2px 8px; background: var(--box); color: #50505a; }
+  .status-pill.in { background: #dff3e7; color: var(--ok); }
+
+  .toggle { width: 38px; height: 22px; border-radius: 11px; background: #c4c4cc; position: relative; flex: none; cursor: pointer; }
+  .toggle::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left .15s; }
+  .toggle.on { background: var(--accent); }
+  .toggle.on::after { left: 19px; }
+
+  .bulkbar { display: flex; gap: 6px; align-items: center; background: #f6f6f9; border-radius: 12px; padding: 6px; margin: 4px 0 6px; }
+  .bulkbar button { flex: 1; border: 0; background: #fff; border-radius: 8px; padding: 8px 4px; font: inherit; font-size: 12px; cursor: pointer; border: 1px solid var(--line); }
+  .bulkbar button:disabled { opacity: .45; cursor: default; }
+  .pending { display: none; align-items: center; gap: 8px; background: #fff7e0; border: 1px solid #f0d998; border-radius: 12px; padding: 8px 10px; font-size: 12px; margin: 8px 0; }
+  .pending.show { display: flex; }
+  .pending a { color: var(--accent); font-weight: 600; cursor: pointer; white-space: nowrap; }
+
+  .level { border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; margin-bottom: 10px; }
+  .level header { display: flex; align-items: center; gap: 8px; }
+  .level header b { flex: 1; }
+  .level .who { font-size: 11px; color: var(--muted); }
+  .level .text { margin-top: 8px; background: #f6f6f9; border-radius: 8px; padding: 8px; min-height: 40px; font-size: 13px; color: #50505a; }
+
+  /* Overflow menu (⋮) */
+  .menu { position: absolute; top: 70px; right: 12px; background: #fff; border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.18); z-index: 7; min-width: 190px; padding: 6px 0; display: none; }
+  .menu.show { display: block; }
+  .menu a { display: block; padding: 11px 16px; color: var(--ink); text-decoration: none; cursor: pointer; }
+  .menu a:hover { background: #f6f6f9; }
+  .menu small { display: block; color: var(--muted); }
+
+  /* Plan chat */
+  .pinned { display: flex; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 14px; padding: 8px 10px; margin: 2px 0 10px; text-decoration: none; color: var(--ink); }
+  .pinned .grow { flex: 1; }
+  .pinned small { color: var(--muted); display: block; }
+  .sys { text-align: center; font-size: 11px; color: var(--muted); margin: 10px 0; }
+  .msg { display: flex; gap: 8px; align-items: flex-end; margin: 8px 0; }
+  .msg .bubble { background: #f1f1f5; border-radius: 16px 16px 16px 4px; padding: 7px 11px; max-width: 75%; }
+  .msg .bubble .from { display: block; font-size: 11px; font-weight: 600; color: var(--accent); margin-bottom: 1px; }
+  .msg .bubble .from.tap { cursor: pointer; text-decoration: underline dotted; }
+  .msg .bubble .from small { color: var(--muted); font-weight: 400; }
+  .msg.me { justify-content: flex-end; }
+  .msg.me .bubble { background: var(--accent-soft); border-radius: 16px 16px 4px 16px; }
+  .composer { flex: none; display: flex; gap: 8px; align-items: center; padding: 10px 12px 16px; border-top: 1px solid var(--line); }
+  .composer .search { flex: 1; margin: 0; }
+  .composer .send { width: 40px; height: 40px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; flex: none; }
+
+  /* Settings list */
+  .set-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid #eee; }
+  .set-row:first-of-type { border-top: 0; }
+  .set-row > i { font-style: normal; width: 22px; text-align: center; flex: none; }
+  .set-row .grow { flex: 1; min-width: 0; }
+  .set-row small { display: block; color: var(--muted); }
+
+  /* People list scrolls clear of the arrow button */
+  .content.fab-pad { padding-bottom: 160px; }
+  /* Plan chat: non-friend markers */
+  .avatar.new { position: relative; overflow: visible; }
+  .avatar.new::after { content: "＋"; position: absolute; right: -4px; bottom: -4px; width: 14px; height: 14px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 10px; line-height: 14px; text-align: center; border: 2px solid #fff; }
+  .addpill { display: inline-block; margin-left: 6px; border: 1px solid var(--accent); color: var(--accent); background: #fff; border-radius: 10px; padding: 0 7px; font-size: 10px; font-weight: 600; cursor: pointer; vertical-align: 1px; }
+  .steps { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .sheet-head { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+  .sheet-head h3 { flex: 1; margin: 0; }
+  .sheet-head .icon { width: 28px; height: 28px; cursor: pointer; }
+  /* Segmented control */
+  .seg { display: flex; background: var(--box); border-radius: 12px; padding: 3px; margin: 4px 0 8px; }
+  .seg a { flex: 1; text-align: center; padding: 7px; border-radius: 9px; font-size: 13px; cursor: pointer; color: var(--muted); }
+  .seg a.on { background: #fff; color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+  /* Developer view */
+  .devbar { background: #b3261e; color: #fff; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-align: center; padding: 4px; flex: none; }
+  .dev { font: 11px/1.35 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; }
+  .dev .who { font-weight: 700; margin: 12px 0 4px; font-size: 12px; }
+  .dev table { width: 100%; border-collapse: collapse; }
+  .dev td, .dev th { border-top: 1px solid #eee; padding: 4px 3px; vertical-align: top; text-align: left; }
+  .dev th { color: var(--muted); font-weight: 400; }
+  .dev .warn { background: #fff4e5; }
+  .dev .warn td:last-child { color: #b25e00; }
+  /* Guru tab */
+  .quickreplies { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 0 36px; }
+
+  /* Sheets & dialogs */
+  .scrim { position: absolute; inset: 0; background: rgba(0,0,0,.35); display: none; z-index: 5; }
+  .scrim.show { display: block; }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: #fff; border-radius: 22px 22px 0 0; padding: 10px 16px 20px; z-index: 6; display: none; }
+  .sheet.show { display: block; }
+  .sheet .grab { width: 36px; height: 4px; border-radius: 2px; background: #cfcfd8; margin: 0 auto 10px; }
+  .sheet h3 { margin: 0 0 4px; font-size: 17px; }
+  .radio { display: flex; gap: 10px; padding: 9px 0; cursor: pointer; border-top: 1px solid #eee; }
+  .radio:first-of-type { border-top: 0; }
+  .radio .dot { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #b5b5c0; flex: none; margin-top: 2px; }
+  .radio.on .dot { border: 6px solid var(--accent); }
+  .radio small { display: block; color: var(--muted); }
+  .dialog { position: absolute; left: 22px; right: 22px; top: 150px; background: #fff; border-radius: 24px; padding: 18px; z-index: 6; text-align: center; }
+  .dialog h3 { margin: 6px 0 12px; font-size: 18px; }
+  .dialog .stack-btns { display: grid; gap: 8px; }
+  .dialog .skip { display: block; margin-top: 10px; font-size: 12px; color: var(--muted); cursor: pointer; }
+
+  .guru { background-image: url("../brand/guru-mascot-sheet-v1.webp"); background-repeat: no-repeat; flex: none; }
+  .guru.round { border-radius: 50%; }
+
+  /* Annotations under each phone */
+  .notes { width: 360px; margin-top: 12px; font-size: 13px; }
+  .notes p { margin: 0 0 6px; }
+  .notes .ask { background: #fff; border-left: 3px solid var(--accent); padding: 6px 10px; border-radius: 0 8px 8px 0; margin-top: 8px; }
+  .notes b { font-weight: 600; }
+
+  .refs { max-width: 1200px; margin: 0 auto; padding: 0 24px 64px; }
+  .refs table { border-collapse: collapse; width: 100%; background: #fff; border-radius: 12px; overflow: hidden; }
+  .refs td, .refs th { text-align: left; padding: 10px 12px; border-top: 1px solid var(--line); vertical-align: top; font-size: 13px; }
+  .refs th { background: #f6f6f9; border-top: 0; }
+  a.go { cursor: pointer; }
+</style>
+</head>
+<body>
+
+<header class="page">
+  <h1>PlansGuru — People → Plan</h1>
+  <p>Gray-box wireframe: layout and flow only, no final colors or fonts. Purple marks the main action on each screen.
+     <b>Everything is clickable:</b> buttons jump to the next screen (it flashes), friend rows toggle, sheets open.</p>
+  <p>Screens follow <code>docs/screen-map.md</code>. Names and places are made up.</p>
+</header>
+
+<main class="board">
+
+<!-- 1. PEOPLE -->
+<section class="frame" id="s-people">
+  <h2>1 · People <span>(default tab, picks who)</span></h2>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮▮ ◔</span></div>
+    <div class="appbar">
+      <a class="avatar sm go" data-go="s-aboutme" title="You hub">ME</a>
+      <div class="title"><b>People</b><small id="pick-count">Tap who you want to see</small></div>
+      <a class="icon" data-menu="people-menu" title="More">⋮</a>
+    </div>
+    <div class="menu" id="people-menu">
+      <a class="go" data-go="s-tags">🏷 Tags &amp; squads<small>Group your friends</small></a>
+      <a class="go" data-go="s-settings">⚙ Settings</a>
+    </div>
+    <div class="content fab-pad">
+      <div class="search">🔍 <span>Search friends</span></div>
+      <div class="selected" id="selected-strip"></div>
+
+      <div class="row" style="cursor:default">
+        <div class="avatar" style="background:var(--accent-soft);color:var(--accent)">＋</div>
+        <div class="grow"><b>Add a friend</b><small>Invite link · QR · code</small></div>
+        <span class="icon">▦</span>
+      </div>
+
+      <div class="label">Squads · quick start</div>
+      <div class="chips scroll" id="squad-chips">
+        <span class="chip" data-squad="maya,jo,priya">🌮 Taco crew · 3</span>
+        <span class="chip" data-squad="lena,sam">🥗 Salad friends · 2</span>
+        <span class="chip" data-squad="marcus,dee,jo,alex">🏢 Work lunch · 4</span>
+      </div>
+
+      <div class="label">Friends on PlansGuru · 8</div>
+      <div id="friend-list"></div>
+    </div>
+    <a class="fab go off" id="people-fab" data-go="s-group">→<span class="badge" id="fab-badge">0</span></a>
+    <nav class="navbar">
+      <a class="on"><i>👥</i>People</a>
+      <a><i>📍</i>Places</a>
+      <a class="go" data-go="s-howwas"><i>🗓</i>Plans<span class="dot">2</span></a>
+      <a class="go" data-go="s-guru"><i><span class="guru" data-crop="912,268,118,150" data-scale=".15" style="display:inline-block;vertical-align:middle"></span></i>Guru</a>
+    </nav>
+  </div>
+  <div class="notes">
+    <p><b>Borrowed from:</b> WhatsApp → New group. Search on top, picked people as a row of avatars with ×, arrow button bottom-right.</p>
+    <p><b>Tap a row</b> to select. <b>Tap the photo</b> to open that friend (WhatsApp does the same in chat lists).</p>
+    <p><b>Squad chips</b> select a saved group in one tap. Try one.</p>
+    <p><b>Arrow button:</b> the list has extra space at the bottom, so the last friend scrolls up above the button and its checkbox is never hidden. Scroll down to see it.</p>
+    <p><b>⋮ menu</b> (top right): <b>Tags &amp; squads</b> and <b>Settings</b>. Preferences is not a bottom tab. Try it.</p>
+    <p class="ask">Q: Should squads be a row of chips (shown) or their own section at the top of the list, like WhatsApp's "Groups in common"?</p>
+  </div>
+</section>
+
+<!-- 2. YOUR GROUP -->
+<section class="frame" id="s-group">
+  <h2>2 · Your group <span>(bulk edit, save as squad)</span></h2>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮▮ ◔</span></div>
+    <div class="appbar">
+      <a class="icon go" data-go="s-people">←</a>
+      <div class="title"><b>Your group</b><small><span id="group-count">3</span> people · not saved</small></div>
+    </div>
+    <div class="content tight">
+      <div class="row" style="cursor:default">
+        <div class="avatar" style="border-radius:14px">📷</div>
+        <div class="grow" style="border-bottom:2px solid var(--accent);padding-bottom:4px;color:var(--muted)">Name this group (optional)</div>
+      </div>
+      <div class="row" style="cursor:default">
+        <div class="grow"><b>Save as a squad</b><small>Start with this group in one tap next time</small></div>
+        <div class="toggle" onclick="this.classList.toggle('on')"></div>
+      </div>
+
+      <div class="label">Edit tags &amp; circles</div>
+      <div class="bulkbar">
+        <button id="bulk-all">☑ All</button>
+        <button id="bulk-tag">🏷 Tag</button>
+        <button id="bulk-circle">◎ Circle</button>
+        <button id="bulk-undo" disabled>↶ Undo</button>
+      </div>
+      <div class="note-inline" id="bulk-hint">Ticks are only for editing. Everyone below is in the plan either way.</div>
+
+      <div class="pending" id="pending">
+        <span style="flex:1"><b id="pending-n">1</b> circle change not shared yet. Only you can see it.</span>
+        <a id="pending-discard">Discard</a>
+        <a id="pending-share">Share changes</a>
+      </div>
+
+      <div class="label">In this plan · <span id="group-count2">3</span></div>
+      <div id="group-list"></div>
+      <p class="note-inline">Tags are private and save instantly. Circle changes affect what friends see, so they wait for <b>Share changes</b>.</p>
+    </div>
+    <div class="bottom-actions">
+      <a class="btn primary go" data-go="s-thinking">✨ Guru, Plan it</a>
+    </div>
+
+    <div class="scrim" id="group-scrim"></div>
+    <div class="sheet" id="sheet-circle">
+      <div class="grab"></div>
+      <h3>Set circle for the <span class="sel-n">0</span> ticked</h3>
+      <p class="note-inline" style="margin:0 0 6px">Decides which of your "About me" boxes they can see.</p>
+      <div class="radio on" data-circle="Circle 1"><span class="dot"></span><div><b>Circle 1 · Inner circle</b><small>Sees Circle 1, Circle 2 and All-friends boxes</small></div></div>
+      <div class="radio" data-circle="Circle 2"><span class="dot"></span><div><b>Circle 2 · Close friends</b><small>Sees Circle 2 and All-friends boxes</small></div></div>
+      <div class="radio" data-circle="Friend"><span class="dot"></span><div><b>Friend</b><small>Sees only your All-friends box</small></div></div>
+      <button class="btn primary" id="apply-circle" style="margin-top:12px">Apply</button>
+    </div>
+    <div class="sheet" id="sheet-tag">
+      <div class="grab"></div>
+      <h3>Tag the <span class="sel-n">0</span> ticked</h3>
+      <p class="note-inline" style="margin:0 0 10px">Tags are just for you: grouping and quick starts. They never change what anyone can see.</p>
+      <div class="chips" id="tag-chips">
+        <span class="chip">taco crew</span><span class="chip on">salad crew</span><span class="chip">work</span>
+        <span class="chip">neighbors</span><span class="chip">book club</span><span class="chip">＋ New tag</span>
+      </div>
+      <button class="btn primary" id="apply-tag" style="margin-top:16px">Apply</button>
+    </div>
+  </div>
+  <div class="notes">
+    <p><b>Borrowed from:</b> WhatsApp's second New group screen (name + photo, then members), plus Gmail-style bulk select.</p>
+    <p><b>Bulk vs. one person:</b> tick several people and use the bar, or tap one person's row to edit just them.</p>
+    <p><b>Undo</b> steps back through unshared changes. <b>Discard</b> goes back to the last shared version. Try: tick two people → Circle → Apply → Undo.</p>
+    <p><b>Ticks never change who's invited.</b> The hint and button labels say "Editing the 2 ticked" so nobody thinks unticking removes someone. To remove someone, go back and tap × on People.</p>
+    <p><b>Tools start open</b> (decided). The usual path is still one tap: <b>✨ Guru, Plan it</b>.</p>
+  </div>
+</section>
+
+<!-- 3. GURU THINKING -->
+<section class="frame" id="s-thinking">
+  <h2>3 · Guru is planning <span>(1–3 seconds)</span></h2>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮▮ ◔</span></div>
+    <div class="appbar"><a class="icon go" data-go="s-group">✕</a><div class="title"></div></div>
+    <div class="content tight" style="display:flex;flex-direction:column;align-items:center;text-align:center;padding-top:40px">
+      <div class="guru" data-crop="1032,268,118,150" data-scale="1.35"></div>
+      <h3 style="margin:18px 0 6px;font-size:20px">Your Guru is planning…</h3>
+      <p class="note-inline" style="margin:0 0 22px">For you, Maya, Jo and Priya</p>
+      <div style="text-align:left;width:240px;display:grid;gap:10px">
+        <div>✅ Everyone's free times</div>
+        <div>✅ Tastes and diets</div>
+        <div>◌ &nbsp;Places within everyone's travel time</div>
+      </div>
+      <p class="note-inline" style="margin-top:auto">🔒 Your notes stay on your phone.</p>
+      <a class="btn secondary go" data-go="s-proposal" style="margin-top:12px">(wireframe) next →</a>
+    </div>
+  </div>
+  <div class="notes">
+    <p><b>Signature moment #1.</b> In the real app the Guru animates (the "Thinking" pose from the mascot sheet) and the checklist ticks off for real.</p>
+    <p>The status lines must be <b>honest</b>, and never mention anyone's notes ("checking Sam's sobriety" ❌).</p>
+  </div>
+</section>
+
+<!-- 4. GURU'S PICK -->
+<section class="frame" id="s-proposal">
+  <h2>4 · Guru's pick <span>(one plan, yes or no)</span></h2>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮▮ ◔</span></div>
+    <div class="appbar">
+      <a class="icon go" data-go="s-group">✕</a>
+      <div class="title"><b>Here's the plan</b></div>
+      <div class="guru round" data-crop="912,268,118,150" data-scale=".3"></div>
+    </div>
+    <div class="content tight">
+      <div class="card">
+        <div class="photo">restaurant photo</div>
+        <div class="body">
+          <div style="font-size:19px;font-weight:700">Dinner at Casa Luz</div>
+          <div class="note-inline">Tacos · $$ · big patio</div>
+          <div style="margin-top:8px">
+            <div class="kv"><span class="k">When</span><span><b>Thu, Oct 29 · 7:00 pm</b><br><small class="note-inline">Free for all 4 of you</small></span></div>
+            <div class="kv"><span class="k">Where</span><span>East Austin<br><small class="note-inline">14 min from you</small></span></div>
+            <div class="kv"><span class="k">Who</span><span style="display:flex;align-items:center;gap:8px"><span class="stack"><span class="avatar sm">ME</span><span class="avatar sm">MA</span><span class="avatar sm">JO</span><span class="avatar sm">PR</span></span><small>You, Maya, Jo, Priya</small></span></div>
+          </div>
+          <div class="why">💡 Fits everyone's schedule and tastes.</div>
+          <div class="sponsored">Not sponsored</div>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-actions">
+      <div class="btn-row">
+        <a class="btn secondary" id="not-this">Not this one</a>
+        <a class="btn primary go" data-go="s-detail">Yes, send it</a>
+      </div>
+    </div>
+    <div class="scrim" id="prop-scrim"></div>
+    <div class="sheet" id="sheet-notthis">
+      <div class="grab"></div>
+      <h3>What's off?</h3>
+      <p class="note-inline" style="margin:0 0 10px">Optional. Helps your Guru pick better next time. Nobody else sees this.</p>
+      <div class="chips" id="reason-chips">
+        <span class="chip">Different day</span><span class="chip">Too pricey</span><span class="chip">Too far</span>
+        <span class="chip">Different food</span><span class="chip">Just not feeling it</span>
+      </div>
+      <a class="btn primary go" data-go="s-thinking" style="margin-top:16px">Show me another</a>
+    </div>
+  </div>
+  <div class="notes">
+    <p><b>One option, yes or no</b>, as your teammate wants. The card answers who, what, when, where at a glance.</p>
+    <p><b>Why line:</b> always high-level. If a place is sponsored, the line under it reads e.g. "Sponsored · +4.5 of 100 pts · would rank #2 without it".</p>
+    <p><b>Not this one</b> asks for an optional reason, then the Guru tries again. Try it.</p>
+    <p class="ask">Q: Is there a limit on "Not this one"? After 3 tries, should it offer "Pick a day yourself"?</p>
+  </div>
+</section>
+
+<!-- 5. PLAN DETAIL -->
+<section class="frame" id="s-detail">
+  <h2>5 · Plan detail <span>(organizer's view)</span></h2>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮▮ ◔</span></div>
+    <div class="appbar">
+      <a class="icon go" data-go="s-howwas">←</a>
+      <div class="title"><b>Dinner at Casa Luz</b><small>Thu, Oct 29 · 7:00 pm</small></div>
+      <span class="icon" title="Cancel plan, edit">⋮</span>
+    </div>
+    <div class="content tight">
+      <div class="tracker">
+        <div class="step done"><i></i>Proposed</div>
+        <div class="step now"><i></i>Gathering</div>
+        <div class="step"><i></i>Booking</div>
+        <div class="step"><i></i>Happening</div>
+      </div>
+      <p style="text-align:center;margin:6px 0 12px"><b>2 of 4 in</b> · needs 3 by Wed, Oct 28, 6 pm</p>
+
+      <div class="label">Who's coming</div>
+      <div class="row" style="cursor:default"><span class="avatar sm">ME</span><span class="grow">You <small>· organizer</small></span><span class="status-pill in">In</span></div>
+      <div class="row" style="cursor:default"><span class="avatar sm">MA</span><span class="grow">Maya</span><span class="status-pill in">In</span></div>
+      <div class="row" style="cursor:default"><span class="avatar sm">JO</span><span class="grow">Jo</span><span class="status-pill">Maybe</span></div>
+      <div class="row" style="cursor:default"><span class="avatar sm">PR</span><span class="grow">Priya</span><span class="status-pill">Waiting</span></div>
+      <a class="row go" data-go="s-chat" style="text-decoration:none;color:inherit"><span class="avatar sm" style="background:var(--accent-soft);color:var(--accent)">💬</span><span class="grow"><b>Plan chat</b><small>Priya: Works for me! First time meeting…</small></span><span class="status-pill">3 new</span></a>
+
+      <div class="label">Where</div>
+      <div class="map">map</div>
+      <div class="row" style="cursor:default"><span class="grow"><b>Casa Luz</b><small>East Austin · 14 min</small></span><span class="chip">Directions</span></div>
+
+      <div class="btn-row" style="margin:6px 0 10px">
+        <a class="btn secondary">📅 Add to calendar</a>
+        <a class="btn secondary">🛡 Share with trusted contact</a>
+      </div>
+      <a class="btn disabled">Yes, book it · unlocks at 3 yeses</a>
+      <p class="note-inline" style="text-align:center">You're in · <a style="color:var(--accent)">Change my answer</a></p>
+    </div>
+  </div>
+  <div class="notes">
+    <p><b>Borrowed from:</b> food-delivery trackers (Uber Eats, Domino's) for the 4-step bar; Partiful / Luma for "who's coming".</p>
+    <p><b>Top to bottom = most to least urgent:</b> where it stands → who → where → actions.</p>
+    <p><b>Share with trusted contact</b> copies a plain summary (what, where, when, who) for your normal texting app.</p>
+  </div>
+</section>
+
+<!-- 6. INVITE (friend's phone) -->
+<section class="frame" id="s-invite">
+  <h2>6 · Invite <span>(on Maya's phone, same card)</span></h2>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮▮ ◔</span></div>
+    <div class="appbar">
+      <span class="icon">←</span>
+      <div class="title"><b>Dee invited you</b><small>Answer by Wed, Oct 28, 6 pm</small></div>
+    </div>
+    <div class="content tight">
+      <div class="card">
+        <div class="photo">restaurant photo</div>
+        <div class="body">
+          <div style="font-size:19px;font-weight:700">Dinner at Casa Luz</div>
+          <div class="note-inline">Tacos · $$ · big patio</div>
+          <div style="margin-top:8px">
+            <div class="kv"><span class="k">When</span><span><b>Thu, Oct 29 · 7:00 pm</b><br><small class="note-inline">You're free then</small></span></div>
+            <div class="kv"><span class="k">Where</span><span>East Austin<br><small class="note-inline">22 min from you</small></span></div>
+            <div class="kv"><span class="k">Who</span>
+              <span>
+                <span style="display:flex;align-items:center;gap:6px"><span class="avatar sm">DE</span> Dee <small class="note-inline">· host</small></span>
+                <span style="display:flex;align-items:center;gap:6px;margin-top:4px"><span class="avatar sm">JO</span> Jo</span>
+                <span style="display:flex;align-items:center;gap:6px;margin-top:4px"><span class="avatar sm" style="background:#e3e3ea;color:#a0a0aa">👤</span> Priya <small class="note-inline">· Dee's friend</small></span>
+              </span>
+            </div>
+          </div>
+          <div class="why">💡 Fits everyone's schedule and tastes.</div>
+        </div>
+      </div>
+      <a class="btn secondary go" data-go="s-chat" style="margin-top:10px">💬 Chat with the group · 3 new</a>
+      <p class="note-inline" style="text-align:center;margin:6px 0 0">Ask questions before you answer. You don't have to say yes first.</p>
+    </div>
+    <div class="bottom-actions">
+      <div class="btn-row">
+        <a class="btn secondary">Can't make it</a>
+        <a class="btn secondary">Maybe</a>
+        <a class="btn primary">I'm in</a>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <p><b>Same card component</b> as Guru's pick, with different buttons. You design it once and it looks the same everywhere.</p>
+    <p><b>Guest list (decided):</b> everyone invited is listed. Your friends show with their photo. Anyone who isn't your friend (Priya) shows as <b>first name + whose friend she is</b> ("Dee's friend"): no photo, no profile to open.</p>
+    <p><b>Chat before committing:</b> the plan chat opens from here, so Maya can ask questions (or meet Priya) before answering.</p>
+  </div>
+</section>
+
+<!-- 7. ABOUT ME BY CIRCLE -->
+<section class="frame" id="s-aboutme">
+  <h2>7 · About me, by circle <span>(You hub)</span></h2>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮▮ ◔</span></div>
+    <div class="appbar">
+      <a class="icon go" data-go="s-people">←</a>
+      <div class="title"><b>About me</b><small>Who can see what</small></div>
+      <a class="chip" id="viewas-btn">👁 View as…</a>
+    </div>
+    <div class="content tight">
+      <div class="level">
+        <header><span>🔒</span><b>Only me</b></header>
+        <div class="who">Nobody sees this. It still shapes suggestions.</div>
+        <div class="text">Trying to spend less on weekends</div>
+      </div>
+      <div class="level">
+        <header><span class="tag circle">1</span><b>Circle 1 · Inner circle</b></header>
+        <div class="who">Seen by 2 people: Maya, Jo</div>
+        <div class="text">Allergic to shellfish <span class="tag">diet</span></div>
+      </div>
+      <div class="level">
+        <header><span class="tag circle">2</span><b>Circle 2 · Close friends</b></header>
+        <div class="who">Seen by 3 people + your inner circle</div>
+        <div class="text">Early nights on weekdays</div>
+      </div>
+      <div class="level">
+        <header><span class="tag">All</span><b>All friends</b></header>
+        <div class="who">Seen by all 8 friends on PlansGuru</div>
+        <div class="text">Vegetarian · love patios · free most Sundays</div>
+      </div>
+      <div class="pending show">
+        <span style="flex:1">1 edit not shared yet</span><a>Undo</a><a>Share changes</a>
+      </div>
+    </div>
+    <div class="scrim" id="viewas-scrim"></div>
+    <div class="sheet" id="sheet-viewas">
+      <div class="grab"></div>
+      <h3>Jo sees this about you</h3>
+      <p class="note-inline" style="margin:0 0 8px">Jo is in Circle 1</p>
+      <div class="level"><b>From Circle 1</b><div class="text">Allergic to shellfish</div></div>
+      <div class="level"><b>From Circle 2</b><div class="text">Early nights on weekdays</div></div>
+      <div class="level"><b>From All friends</b><div class="text">Vegetarian · love patios · free most Sundays</div></div>
+      <p class="note-inline">🔒 "Only me" is never shown.</p>
+      <a class="chip">Switch person ▾</a>
+    </div>
+  </div>
+  <div class="notes">
+    <p><b>One box per privacy level</b>, each labeled with <i>who</i> actually sees it, using real names and counts, not just "Circle 1".</p>
+    <p><b>View as…</b> works like LinkedIn's "view your profile as". Try it.</p>
+    <p>Real boxes hold <b>tap-to-add tags</b> first and free text second (less typing).</p>
+  </div>
+</section>
+
+<!-- 8. HOW WAS IT -->
+<section class="frame" id="s-howwas">
+  <h2>8 · Plans tab + "Did you go?" <span>(after the plan)</span></h2>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮▮ ◔</span></div>
+    <div class="appbar">
+      <span class="avatar sm">ME</span>
+      <div class="title"><b>Plans</b></div>
+      <span class="chip">☰ List · 🗓 Calendar</span>
+    </div>
+    <div class="content">
+      <div class="label">Needs your answer · 2</div>
+      <a class="row go" data-go="s-invite"><span class="avatar sm">DE</span><span class="grow"><b>Dinner at Casa Luz</b><small>From Dee · Thu 7 pm</small></span><span>›</span></a>
+      <div class="row"><span class="avatar sm">LE</span><span class="grow"><b>Lunch at Green Fork</b><small>From Lena · Sat noon</small></span><span>›</span></div>
+      <div class="label">In motion</div>
+      <a class="row go" data-go="s-detail"><span class="avatar sm">ME</span><span class="grow"><b>Dinner at Casa Luz</b><small>2 of 4 in · needs 3 by Wed</small></span><span>›</span></a>
+      <div class="label">Past</div>
+      <div class="row"><span class="avatar sm">ME</span><span class="grow"><b>Brunch at Juniper</b><small>Sun, Oct 25 · How was it? ●</small></span><span>›</span></div>
+    </div>
+    <nav class="navbar">
+      <a class="go" data-go="s-people"><i>👥</i>People</a>
+      <a><i>📍</i>Places</a>
+      <a class="on"><i>🗓</i>Plans<span class="dot">2</span></a>
+      <a class="go" data-go="s-guru"><i><span class="guru" data-crop="912,268,118,150" data-scale=".15" style="display:inline-block;vertical-align:middle"></span></i>Guru</a>
+    </nav>
+    <div class="scrim show" id="how-scrim"></div>
+    <div class="dialog" id="how-dialog">
+      <div class="guru" data-crop="605,475,190,200" data-scale=".5" style="margin:0 auto"></div>
+      <div id="how-1">
+        <h3>Did you make it to Juniper on Sunday?</h3>
+        <div class="btn-row"><a class="btn secondary" id="how-no">No, skipped</a><a class="btn primary" id="how-yes">Yes!</a></div>
+      </div>
+      <div id="how-2" style="display:none">
+        <h3>How was it?</h3>
+        <div class="stack-btns">
+          <a class="btn primary" data-close>Do it again</a>
+          <a class="btn secondary" data-close>Once was enough</a>
+          <a class="btn secondary" data-close>Not for me</a>
+        </div>
+        <p class="note-inline" style="margin:8px 0 0">About the place, never the people.</p>
+      </div>
+      <a class="skip" data-close>Skip for now · find it later in Past</a>
+    </div>
+  </div>
+  <div class="notes">
+    <p><b>Pops up once</b>, based on when the plan was scheduled. Skippable, and it stays reachable from Past (the ● dot).</p>
+    <p><b>Plans tab layout</b>, most urgent first: needs your answer → in motion → upcoming → past. Calendar is a toggle at the top right.</p>
+    <p>Close the popup to see the list. Rows jump to screens 5 and 6.</p>
+  </div>
+</section>
+
+<!-- 9. PLAN CHAT -->
+<section class="frame" id="s-chat">
+  <h2>9 · Plan chat <span>(on Maya's phone)</span></h2>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮▮ ◔</span></div>
+    <div class="appbar">
+      <a class="icon go" data-go="s-invite">←</a>
+      <div class="title"><b>Dinner at Casa Luz</b><small>🔒 Only the 4 people invited can read this</small></div>
+      <a class="icon" data-menu="chat-menu" title="More">⋮</a>
+    </div>
+    <div class="menu" id="chat-menu">
+      <a>🔕 Mute chat</a>
+      <a>🚪 Leave chat</a>
+    </div>
+    <div class="content tight">
+      <a class="pinned go" data-go="s-invite"><span>🌮</span><span class="grow"><b>Thu, Oct 29 · 7:00 pm</b><small>Casa Luz · 2 of 4 in · you haven't answered</small></span><span>›</span></a>
+      <div class="sys">Dee started the plan. Everyone invited can chat here.</div>
+      <div class="msg"><span class="avatar sm">DE</span><div class="bubble"><span class="from">Dee</span>Patio if the weather's nice? 🌤</div></div>
+      <div class="msg"><span class="avatar sm">JO</span><div class="bubble"><span class="from">Jo</span>Yes please</div></div>
+      <div class="msg"><span class="avatar sm new" style="background:#e3e3ea;color:#a0a0aa;cursor:pointer" data-sheet="sheet-request">👤</span><div class="bubble"><span class="from">Priya <small>· Dee's friend</small><span class="addpill" data-sheet="sheet-request">＋ Add friend</span></span>Works for me! First time meeting most of you 👋</div></div>
+      <div class="msg me"><div class="bubble">Hi Priya! Is it OK if I come a bit late?</div></div>
+    </div>
+    <div class="composer"><div class="search">Message the plan…</div><span class="send">➤</span></div>
+
+    <div class="scrim" data-scrim></div>
+    <div class="sheet" id="sheet-request">
+      <div class="grab"></div>
+      <div class="steps">Step 1 of 2 · Maya's phone</div>
+      <h3>What you share with Priya</h3>
+      <p class="note-inline" style="margin:0 0 6px">Priya gets this only if she accepts. She picks what she shares back with you next.</p>
+      <div class="row" style="cursor:default"><span class="box-check" style="background:var(--accent);border-color:var(--accent)">✓</span><span class="grow">First name <small>always included</small></span></div>
+      <div class="row on" data-check><span class="box-check"></span><span class="grow">Photo</span></div>
+      <div class="row" data-check><span class="box-check"></span><span class="grow">Phone number</span></div>
+      <div class="row" data-check><span class="box-check"></span><span class="grow">About me <small>your "All friends" box</small></span></div>
+      <div class="btn-row" style="margin-top:10px"><a class="btn secondary" data-close>Cancel</a><a class="btn primary" data-sheet="sheet-review">Next</a></div>
+    </div>
+    <div class="sheet" id="sheet-review">
+      <div class="grab"></div>
+      <div class="steps">Step 2 of 2 · Maya's phone</div>
+      <div class="sheet-head"><a class="icon" data-sheet="sheet-request" title="Back">←</a><h3>Send to Priya?</h3></div>
+      <div class="level" style="margin-top:8px">
+        <header><b>You share</b><a class="note-inline" data-sheet="sheet-request" style="color:var(--accent);cursor:pointer">Change</a></header>
+        <div class="who">First name, photo</div>
+      </div>
+      <div class="level">
+        <header><b>Priya shares back</b></header>
+        <div class="who">Her choice. You'll see what she picks when she accepts.</div>
+      </div>
+      <p class="note-inline" style="margin:0">She gets it privately, not in the group chat.</p>
+      <div class="btn-row" style="margin-top:10px"><a class="btn secondary" data-sheet="sheet-request">← Back</a><a class="btn primary" data-sheet="sheet-approve">Send request</a></div>
+    </div>
+    <div class="sheet" id="sheet-approve">
+      <div class="grab"></div>
+      <div class="steps">Priya's phone (wireframe preview)</div>
+      <h3>Maya wants to be friends</h3>
+      <p class="note-inline" style="margin:0 0 6px">You met in <b>Dinner at Casa Luz</b>.</p>
+      <div class="level"><header><b>Maya shares with you</b></header><div class="who">First name, photo</div></div>
+      <div class="label">What you share with Maya</div>
+      <div class="row" style="cursor:default"><span class="box-check" style="background:var(--accent);border-color:var(--accent)">✓</span><span class="grow">First name <small>always included</small></span></div>
+      <div class="row on" data-check><span class="box-check"></span><span class="grow">Photo</span></div>
+      <div class="row" data-check><span class="box-check"></span><span class="grow">Phone number</span></div>
+      <div class="btn-row" style="margin-top:10px"><a class="btn secondary" data-close>Not now</a><a class="btn primary" data-close>Accept</a></div>
+      <a class="note-inline" data-sheet="sheet-review" style="display:block;text-align:center;margin-top:8px;cursor:pointer">← back to Maya's side</a>
+    </div>
+  </div>
+  <div class="notes">
+    <p><b>Who's in it:</b> everyone invited, from the moment the invite arrives, before anyone says yes. Opens from the Invite (6) and Plan detail (5).</p>
+    <p><b>Friend-of-friend:</b> Priya shows as "Priya · Dee's friend", with no photo. A <b>＋ badge</b> on her avatar and an <b>＋ Add friend</b> button next to her name show you can add her. Tap either.</p>
+    <p><b>Friend request in 2 steps:</b> pick what <i>you</i> share → review and send, with <b>← Back</b> to change your picks. Every heading says whose info it is ("What you share with Priya", "Priya shares back"), so first-timers don't mix up the two sides.</p>
+    <p><b>Safety:</b> ⋮ → Mute or Leave. You can also remove a friend later, or never add them.</p>
+    <p><b>Leaving:</b> you keep what was said up to the moment you left, and see nothing new after that. The message box is replaced with "You left this chat". <b>"Can't make it" works the same way</b>, so the Invite should warn: "You'll leave the plan chat."</p>
+    <p><b>After the plan:</b> the chat stays open until everyone has left. Then it becomes read-only history under Past, and you can still send a friend request from it.</p>
+    <p><b>Not in the chat:</b> no Guru recommendations or scores. The plan card is pinned at the top instead.</p>
+    <p class="ask">Q: Can someone who left (or said "Can't make it") be re-invited later?</p>
+  </div>
+</section>
+
+<!-- 10. TAGS & SQUADS -->
+<section class="frame" id="s-tags">
+  <h2>10 · Tags &amp; squads <span>(People → ⋮)</span></h2>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮▮ ◔</span></div>
+    <div class="appbar">
+      <a class="icon go" data-go="s-people">←</a>
+      <div class="title"><b>Tags &amp; squads</b><small>Only you see these</small></div>
+      <span class="icon" title="New tag">＋</span>
+    </div>
+    <div class="content tight">
+      <div class="label">Squads · shown as quick starts on People</div>
+      <a class="row" data-sheet="sheet-tagdetail"><span class="avatar sm" style="background:var(--accent-soft)">🌮</span><span class="grow"><b>Taco crew</b><small>Maya, Jo, Priya</small></span><span class="note-inline">3 ›</span></a>
+      <a class="row" data-sheet="sheet-tagdetail"><span class="avatar sm" style="background:var(--accent-soft)">🥗</span><span class="grow"><b>Salad friends</b><small>Lena, Sam</small></span><span class="note-inline">2 ›</span></a>
+      <a class="row" data-sheet="sheet-tagdetail"><span class="avatar sm" style="background:var(--accent-soft)">🏢</span><span class="grow"><b>Work lunch</b><small>Marcus, Dee, Jo, Alex</small></span><span class="note-inline">4 ›</span></a>
+      <div class="label">Other tags</div>
+      <a class="row" data-sheet="sheet-tagdetail"><span class="avatar sm">🏷</span><span class="grow"><b>work</b><small>Jo, Marcus, Dee, Alex</small></span><span class="note-inline">4 ›</span></a>
+      <a class="row" data-sheet="sheet-tagdetail"><span class="avatar sm">🏷</span><span class="grow"><b>gym</b><small>Lena</small></span><span class="note-inline">1 ›</span></a>
+      <p class="note-inline" style="margin-top:14px">Circles (who sees what about you) aren't here. They live in About me and on the Your group screen.</p>
+    </div>
+    <div class="scrim" data-scrim></div>
+    <div class="sheet" id="sheet-tagdetail">
+      <div class="grab"></div>
+      <h3>🌮 Taco crew</h3>
+      <div class="selected" style="border:0;min-height:0">
+        <div class="chip-person"><span class="avatar">MA</span>Maya<span class="x">×</span></div>
+        <div class="chip-person"><span class="avatar">JO</span>Jo<span class="x">×</span></div>
+        <div class="chip-person"><span class="avatar">PR</span>Priya<span class="x">×</span></div>
+        <div class="chip-person"><span class="avatar" style="background:var(--accent-soft);color:var(--accent)">＋</span>Add</div>
+      </div>
+      <div class="set-row"><span class="grow">Show as a quick start (squad)</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+      <div class="set-row"><span class="grow">Rename</span><span>›</span></div>
+      <div class="set-row"><span class="grow" style="color:#c0392b">Delete tag <small>Removes the label. Nobody is unfriended.</small></span></div>
+    </div>
+  </div>
+  <div class="notes">
+    <p><b>Replaces Shawn's Preferences tab.</b> His three sub-tabs map like this:</p>
+    <p>• <b>Squads &amp; Groups</b> + <b>Tags &amp; Taxonomy</b> → this one screen. <b>A squad is just a tag with "Show as a quick start" on</b>, so there's one idea to learn, not two.<br>
+       • <b>People Graph</b> → each friend's own page (tap their photo on People), and About me (7) for you. The raw view, with labels like <code>likes_cuisine</code>, becomes a <a class="go" data-go="s-dev" style="color:var(--accent);font-weight:600">developer screen in debug builds (11b) →</a></p>
+    <p><b>"+ Add"</b> opens the People picker. Members are never typed in by name.</p>
+    <p class="ask">Q: Merge squads and tags into one idea (shown), or keep them separate (<a class="go" data-go="s-tags2" style="color:var(--accent);font-weight:600">10b →</a>)?</p>
+  </div>
+</section>
+
+<!-- 10b. TAGS & SQUADS, SEPARATE -->
+<section class="frame" id="s-tags2">
+  <h2>10b · Squads and tags, kept separate <span>(compare with 10)</span></h2>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮▮ ◔</span></div>
+    <div class="appbar">
+      <a class="icon go" data-go="s-people">←</a>
+      <div class="title"><b>Squads &amp; tags</b><small>Only you see these</small></div>
+      <span class="icon" title="New">＋</span>
+    </div>
+    <div class="content tight">
+      <div class="seg" id="seg-tags2"><a class="on" data-pane="pane-squads">Squads · 3</a><a data-pane="pane-tags">Tags · 4</a></div>
+      <div id="pane-squads">
+        <p class="note-inline" style="margin:0 0 6px"><b>Squads</b> are groups you make plans with. They show up as quick starts on People.</p>
+        <a class="row" data-sheet="sheet-squad2"><span class="avatar sm" style="background:var(--accent-soft)">🌮</span><span class="grow"><b>Taco crew</b><small>Maya, Jo, Priya</small></span><span class="note-inline">3 ›</span></a>
+        <a class="row" data-sheet="sheet-squad2"><span class="avatar sm" style="background:var(--accent-soft)">🥗</span><span class="grow"><b>Salad friends</b><small>Lena, Sam</small></span><span class="note-inline">2 ›</span></a>
+        <a class="row" data-sheet="sheet-squad2"><span class="avatar sm" style="background:var(--accent-soft)">🏢</span><span class="grow"><b>Work lunch</b><small>Marcus, Dee, Jo, Alex</small></span><span class="note-inline">4 ›</span></a>
+      </div>
+      <div id="pane-tags" style="display:none">
+        <p class="note-inline" style="margin:0 0 6px"><b>Tags</b> describe people. Use them to search and filter. They never start a plan by themselves.</p>
+        <a class="row"><span class="avatar sm">🏷</span><span class="grow"><b>work</b><small>Jo, Marcus, Dee, Alex</small></span><span class="note-inline">4 ›</span></a>
+        <a class="row"><span class="avatar sm">🏷</span><span class="grow"><b>gym</b><small>Lena</small></span><span class="note-inline">1 ›</span></a>
+        <a class="row"><span class="avatar sm">🏷</span><span class="grow"><b>neighbors</b><small>Sam, Alex</small></span><span class="note-inline">2 ›</span></a>
+        <a class="row"><span class="avatar sm">🏷</span><span class="grow"><b>book club</b><small>Priya, Lena</small></span><span class="note-inline">2 ›</span></a>
+      </div>
+    </div>
+    <div class="scrim" data-scrim></div>
+    <div class="sheet" id="sheet-squad2">
+      <div class="grab"></div>
+      <h3>🌮 Taco crew</h3>
+      <div class="selected" style="border:0;min-height:0">
+        <div class="chip-person"><span class="avatar">MA</span>Maya<span class="x">×</span></div>
+        <div class="chip-person"><span class="avatar">JO</span>Jo<span class="x">×</span></div>
+        <div class="chip-person"><span class="avatar">PR</span>Priya<span class="x">×</span></div>
+        <div class="chip-person"><span class="avatar" style="background:var(--accent-soft);color:var(--accent)">＋</span>Add</div>
+      </div>
+      <a class="btn primary go" data-go="s-group" style="margin-top:6px">✨ Plan with Taco crew</a>
+      <div class="set-row" style="margin-top:8px"><span class="grow">Rename</span><span>›</span></div>
+      <div class="set-row"><span class="grow" style="color:#c0392b">Delete squad <small>Nobody is unfriended.</small></span></div>
+    </div>
+  </div>
+  <div class="notes">
+    <p><b>Two ideas, two tabs.</b> A <b>squad</b> is a group you plan with (has a name and emoji, starts a plan). A <b>tag</b> is a word that describes someone (work, gym, neighbors).</p>
+    <p><b>For:</b> each list stays short, and the words mean what people expect: WhatsApp has groups, Google Contacts has labels.</p>
+    <p><b>Against:</b> two things to learn and build. "Taco crew" could fit either, so people may not know which to make.</p>
+    <p>Tap the <b>Tags</b> tab, or a squad.</p>
+  </div>
+</section>
+
+<!-- 11. SETTINGS -->
+<section class="frame" id="s-settings">
+  <h2>11 · Settings <span>(People → ⋮)</span></h2>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮▮ ◔</span></div>
+    <div class="appbar">
+      <a class="icon go" data-go="s-people">←</a>
+      <div class="title"><b>Settings</b></div>
+    </div>
+    <div class="content tight">
+      <a class="row go" data-go="s-aboutme" style="text-decoration:none;color:inherit"><span class="avatar">ME</span><span class="grow"><b>Maya R.</b><small>Name, photo, phone · About me</small></span><span>›</span></a>
+
+      <div class="label">Your Guru</div>
+      <div class="set-row"><i>💬</i><span class="grow">How you tell your Guru your tastes<small>Chat (default) · or tap-only</small></span><span class="chip">Chat</span></div>
+      <div class="set-row"><i>🧠</i><span class="grow">On-device Guru model<small>2.0 GB · stays on this phone</small></span><span>›</span></div>
+
+      <div class="label">Notifications</div>
+      <div class="set-row"><i>🔔</i><span class="grow">Invites and plan updates<small>Lock screen only says "You've been invited to an event."</small></span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+      <div class="set-row"><i>💬</i><span class="grow">Plan chats</span><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+
+      <div class="label">Privacy &amp; safety</div>
+      <div class="set-row"><i>📡</i><span class="grow">Nearby: "I use PlansGuru"<small>Off. Both people must turn it on.</small></span><div class="toggle" onclick="this.classList.toggle('on')"></div></div>
+      <div class="set-row"><i>👥</i><span class="grow">Circle for new friends<small>Friend (sees "All friends" only)</small></span><span>›</span></div>
+      <div class="set-row"><i>🚫</i><span class="grow">Removed people</span><span>›</span></div>
+
+      <div class="label">Your data</div>
+      <div class="set-row"><i>⬇</i><span class="grow">Export my data</span><span>›</span></div>
+      <div class="set-row"><i>☁</i><span class="grow">Back up or restore</span><span>›</span></div>
+      <div class="set-row"><i>🗑</i><span class="grow" style="color:#c0392b">Delete everything</span></div>
+
+      <div class="label">App</div>
+      <div class="set-row"><i>🌓</i><span class="grow">Theme<small>Dark</small></span><span>›</span></div>
+      <div class="set-row"><i>❓</i><span class="grow">Help and feedback</span><span>›</span></div>
+      <div class="set-row"><i>ℹ</i><span class="grow">About<small>Version, privacy policy, licenses</small></span><span>›</span></div>
+      <a class="set-row go" data-go="s-dev" style="text-decoration:none;color:inherit"><i>🛠</i><span class="grow">Developer<small>Debug builds only</small></span><span>›</span></a>
+    </div>
+  </div>
+  <div class="notes">
+    <p><b>What people expect in Settings,</b> grouped the usual Android way: account on top, then app-specific, then data, then help/about at the bottom.</p>
+    <p><b>The old "Privacy center"</b> is folded in here (Your data). That keeps the avatar for things <i>about you</i>, and ⋮ for things that <i>organize the app</i>.</p>
+    <p><b>Chat vs. tap-only</b> is a setting, and should also be a visible link on the Guru Chat screen itself.</p>
+    <p><b>Guru Chat</b> gets its own tab: <a class="go" data-go="s-guru" style="color:var(--accent);font-weight:600">see 12 →</a></p>
+  </div>
+</section>
+
+<!-- 11b. DEVELOPER VIEW -->
+<section class="frame" id="s-dev">
+  <h2>11b · Developer view <span>(Settings → Developer, debug builds only)</span></h2>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮▮ ◔</span></div>
+    <div class="devbar">DEBUG BUILD · NOT IN RELEASE</div>
+    <div class="appbar">
+      <a class="icon go" data-go="s-settings">←</a>
+      <div class="title"><b>Local graph</b><small>Encrypted DB · 2 people · 9 assertions</small></div>
+      <span class="icon" title="Copy as JSON">⧉</span>
+    </div>
+    <div class="content tight dev">
+      <div class="who">● You (local user)</div>
+      <table>
+        <tr><th>predicate</th><th>value</th><th>vis.</th><th>src</th></tr>
+        <tr class="warn"><td>likes_cuisine</td><td>Italian</td><td>all</td><td>chat ⚠ dup</td></tr>
+        <tr class="warn"><td>likes_cuisine</td><td>Italian</td><td>all</td><td>chat ⚠ dup</td></tr>
+        <tr><td>accessibility</td><td>wheelchair</td><td>me</td><td>chat</td></tr>
+        <tr><td>noise_pref</td><td>avoid_loud</td><td>c1</td><td>chat</td></tr>
+        <tr class="warn"><td>likes_cuisine</td><td>Chinese</td><td>all</td><td>tap ⚠ conflict</td></tr>
+        <tr class="warn"><td>dislikes_cuisine</td><td>Chinese</td><td>all</td><td>chat ⚠ conflict</td></tr>
+      </table>
+      <div class="who">● Sam (friend · Circle 2) · my notes</div>
+      <table>
+        <tr><th>predicate</th><th>value</th><th>vis.</th><th>src</th></tr>
+        <tr><td>dislikes_cuisine</td><td>Chinese</td><td>me</td><td>note</td></tr>
+        <tr><td>noise_pref</td><td>avoid_loud</td><td>me</td><td>note</td></tr>
+        <tr><td>raw_note</td><td>"doesn't like Chinese or loud…"</td><td>me</td><td>note</td></tr>
+      </table>
+      <div class="who">● Sync</div>
+      <table>
+        <tr><td>last shared</td><td>Oct 27 18:02</td></tr>
+        <tr><td>drafts</td><td>1 circle change</td></tr>
+        <tr><td>Guru model</td><td>gemma-4-E2B · 2.0 GB · loaded</td></tr>
+      </table>
+      <div class="btn-row" style="margin-top:12px"><a class="btn secondary" style="font-size:12px">Copy as JSON</a><a class="btn secondary" style="font-size:12px;color:#b3261e">Wipe local DB</a></div>
+    </div>
+  </div>
+  <div class="notes">
+    <p><b>Shawn's "People Graph", as a tool for the two of you.</b> Raw names like <code>likes_cuisine</code> are fine here because only developers see it. A red bar makes it obvious it's not the real app.</p>
+    <p><b>Columns:</b> what it is, the value, who can see it (<code>me</code> / <code>c1</code> / <code>c2</code> / <code>all</code>), and where it came from (chat, tap or note).</p>
+    <p><b>Flags problems</b> seen in Shawn's screenshot: the same fact saved twice, likes <i>and</i> dislikes Chinese, and whole sentences saved as a value instead of being split into facts.</p>
+    <p class="ask">Q: What does the Guru do with a conflict: ask the user, or keep the newest?</p>
+  </div>
+</section>
+
+<!-- 12. GURU TAB -->
+<section class="frame" id="s-guru">
+  <h2>12 · Guru <span>(4th tab: chat to set your tastes)</span></h2>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮▮ ◔</span></div>
+    <div class="appbar">
+      <div class="guru round" data-crop="912,268,118,150" data-scale=".3"></div>
+      <div class="title"><b>Guru</b><small>🔒 Runs on your phone</small></div>
+      <a class="chip" title="Switch to tap-only">Prefer tapping?</a>
+    </div>
+    <div class="content fab-pad">
+      <div class="msg"><div class="guru round" data-crop="912,268,118,150" data-scale=".2"></div><div class="bubble">Hi Maya! Tell me what you like to eat, or what you'd rather skip. I'll remember it for your plans.</div></div>
+      <div class="msg me"><div class="bubble">I'm vegetarian and I hate loud places</div></div>
+      <div class="msg"><div class="guru round" data-crop="912,268,118,150" data-scale=".2"></div><div class="bubble">Got it: 🌱 vegetarian, 🔇 quieter places. Who can see these?</div></div>
+      <div class="quickreplies">
+        <span class="chip">🔒 Only me</span><span class="chip">Circle 1</span><span class="chip">Circle 2</span><span class="chip on">All friends</span>
+      </div>
+      <div class="sys">Saved to About me → All friends · <a class="go" data-go="s-aboutme" style="color:var(--accent)">View</a></div>
+    </div>
+    <div class="composer" style="position:absolute;left:0;right:0;bottom:68px;background:#fff"><div class="search">Tell your Guru…</div><span class="send">➤</span></div>
+    <nav class="navbar">
+      <a class="go" data-go="s-people"><i>👥</i>People</a>
+      <a><i>📍</i>Places</a>
+      <a class="go" data-go="s-howwas"><i>🗓</i>Plans<span class="dot">2</span></a>
+      <a class="on"><i><span class="guru" data-crop="912,268,118,150" data-scale=".15" style="display:inline-block;vertical-align:middle"></span></i>Guru</a>
+    </nav>
+  </div>
+  <div class="notes">
+    <p><b>"People · Places · Plans · Guru"</b> in the bottom bar. On the nose, but it reads like the pitch, and it puts the main feature one tap away.</p>
+    <p><b>Every fact the Guru learns gets a privacy level</b> before friends can see it. Here Maya tapped "All friends". The fact lands in About me (7), where she can move it later.</p>
+    <p><b>Prefer tapping?</b> (top right) switches to the tap-only form. The same choice is in Settings.</p>
+    <p class="ask">Q: Should the Guru ask "who can see this?" every time, or default to Only me and let you change it in About me?</p>
+  </div>
+</section>
+
+</main>
+
+<section class="refs">
+  <h2>Real apps to look at</h2>
+  <table>
+    <tr><th>For</th><th>Look at</th><th>What to notice</th></tr>
+    <tr><td>People, Your group</td><td>WhatsApp → New chat → New group (on your phone)</td><td>Where the search, picked-avatars row and arrow button sit. How the second screen puts the name first, members second.</td></tr>
+    <tr><td>Any screen from any app</td><td><a href="https://mobbin.com">mobbin.com</a> (free tier)</td><td>Library of real app screenshots by flow. Search "WhatsApp new group", "Partiful", "CRED".</td></tr>
+    <tr><td>Invite card, guest list</td><td><a href="https://partiful.com">Partiful</a>, <a href="https://lu.ma">Luma</a></td><td>Event invites popular with women in their 20s–30s. How the guest list is shown and what hosts can hide.</td></tr>
+    <tr><td>Plan detail tracker</td><td>Uber Eats / DoorDash order tracking</td><td>Status in one line at the top, a progress bar, details below.</td></tr>
+    <tr><td>Premium dark look</td><td>CRED app; CRED's open-source design system <a href="https://github.com/CRED-CLUB">NeoPOP</a></td><td>Deep dark surfaces, bold type, tactile buttons. Good for the three signature moments.</td></tr>
+    <tr><td>Building blocks</td><td><a href="https://m3.material.io/components">Material 3 components</a></td><td>Navigation bar, bottom sheets, chips, FAB. Everything here exists ready-made in Jetpack Compose.</td></tr>
+  </table>
+</section>
+
+<script>
+  // Mascot crops: show one region of the sheet image (sheet is 1536×1024).
+  document.querySelectorAll('.guru[data-crop]').forEach(el => {
+    const [x, y, w, h] = el.dataset.crop.split(',').map(Number);
+    const s = Number(el.dataset.scale || 1);
+    Object.assign(el.style, {
+      width: w * s + 'px', height: h * s + 'px',
+      backgroundSize: 1536 * s + 'px ' + 1024 * s + 'px',
+      backgroundPosition: -x * s + 'px ' + -y * s + 'px'
+    });
+  });
+
+  // Jump between screens.
+  function go(id) {
+    const f = document.getElementById(id);
+    if (!f) return;
+    f.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    f.classList.add('flash');
+    setTimeout(() => f.classList.remove('flash'), 1200);
+  }
+  document.addEventListener('click', e => {
+    const a = e.target.closest('.go');
+    if (a && a.dataset.go) { e.preventDefault(); go(a.dataset.go); }
+  });
+
+  // ---- People ----
+  const friends = [
+    { id: 'maya', name: 'Maya', circle: 'Circle 1', tags: ['taco crew'] },
+    { id: 'jo', name: 'Jo', circle: 'Circle 1', tags: ['taco crew', 'work'] },
+    { id: 'priya', name: 'Priya', circle: 'Circle 2', tags: ['taco crew'] },
+    { id: 'lena', name: 'Lena', circle: 'Friend', tags: ['salad crew'] },
+    { id: 'sam', name: 'Sam', circle: 'Circle 2', tags: ['salad crew'] },
+    { id: 'marcus', name: 'Marcus', circle: 'Friend', tags: ['work'] },
+    { id: 'dee', name: 'Dee', circle: 'Circle 2', tags: ['work'] },
+    { id: 'alex', name: 'Alex', circle: 'Friend', tags: ['work'] },
+  ];
+  const picked = new Set(['maya', 'jo', 'priya']);
+  const initials = n => n.slice(0, 2).toUpperCase();
+
+  function renderPeople() {
+    document.getElementById('friend-list').innerHTML = friends.map(f => `
+      <div class="row ${picked.has(f.id) ? 'on' : ''}" data-pick="${f.id}">
+        <a class="avatar go" data-go="s-aboutme" title="Open ${f.name}">${initials(f.name)}</a>
+        <div class="grow"><b>${f.name}</b><small>${f.circle} · ${f.tags.join(', ')}</small></div>
+        <span class="check"></span>
+      </div>`).join('');
+    const strip = document.getElementById('selected-strip');
+    strip.innerHTML = picked.size
+      ? [...picked].map(id => {
+          const f = friends.find(x => x.id === id);
+          return `<div class="chip-person"><span class="avatar">${initials(f.name)}</span>${f.name}<span class="x" data-unpick="${id}">✕</span></div>`;
+        }).join('')
+      : '<span class="empty">Nobody picked yet</span>';
+    const n = picked.size;
+    document.getElementById('pick-count').textContent = n ? `${n} picked` : 'Tap who you want to see';
+    document.getElementById('fab-badge').textContent = n;
+    document.getElementById('people-fab').classList.toggle('off', n === 0);
+    document.querySelectorAll('#squad-chips .chip').forEach(c => {
+      const ids = c.dataset.squad.split(',');
+      c.classList.toggle('on', ids.length === n && ids.every(i => picked.has(i)));
+    });
+    renderGroup();
+  }
+  document.getElementById('friend-list').addEventListener('click', e => {
+    if (e.target.closest('.avatar')) return; // photo opens the friend instead
+    const row = e.target.closest('[data-pick]');
+    if (!row) return;
+    const id = row.dataset.pick;
+    picked.has(id) ? picked.delete(id) : picked.add(id);
+    renderPeople();
+  });
+  document.getElementById('selected-strip').addEventListener('click', e => {
+    const x = e.target.closest('[data-unpick]');
+    if (x) { picked.delete(x.dataset.unpick); renderPeople(); }
+  });
+  document.getElementById('squad-chips').addEventListener('click', e => {
+    const c = e.target.closest('[data-squad]');
+    if (!c) return;
+    picked.clear();
+    c.dataset.squad.split(',').forEach(id => picked.add(id));
+    renderPeople();
+  });
+
+  // ---- Your group: bulk edit with undo and draft/share ----
+  const ticked = new Set();
+  const history = []; // snapshots for undo
+  let pendingCircleChanges = 0;
+
+  function renderGroup() {
+    const members = friends.filter(f => picked.has(f.id));
+    [...ticked].forEach(id => { if (!picked.has(id)) ticked.delete(id); });
+    document.getElementById('group-count').textContent = members.length;
+    document.getElementById('group-count2').textContent = members.length;
+    document.getElementById('group-list').innerHTML = members.map(f => `
+      <div class="row ${ticked.has(f.id) ? 'on' : ''}" data-tick="${f.id}">
+        <span class="box-check"></span>
+        <span class="avatar sm">${initials(f.name)}</span>
+        <div class="grow"><b>${f.name}</b>
+          <span class="tag circle">${f.circle}</span>${f.tags.map(t => `<span class="tag">${t}</span>`).join('')}
+        </div>
+      </div>`).join('');
+    const n = ticked.size;
+    document.querySelectorAll('.sel-n').forEach(s => s.textContent = n);
+    document.getElementById('bulk-tag').disabled = n === 0;
+    document.getElementById('bulk-circle').disabled = n === 0;
+    document.getElementById('bulk-undo').disabled = history.length === 0;
+    document.getElementById('bulk-all').textContent = n && n === members.length ? '☐ None' : '☑ All';
+    document.getElementById('bulk-hint').textContent = n ? `Editing the ${n} ticked. Everyone below is still in the plan.` : 'Ticks are only for editing. Everyone below is in the plan either way.';
+    const p = document.getElementById('pending');
+    p.classList.toggle('show', pendingCircleChanges > 0);
+    document.getElementById('pending-n').textContent = pendingCircleChanges;
+  }
+  function snapshot() {
+    history.push({ data: JSON.stringify(friends), pending: pendingCircleChanges });
+  }
+  document.getElementById('group-list').addEventListener('click', e => {
+    const row = e.target.closest('[data-tick]');
+    if (!row) return;
+    const id = row.dataset.tick;
+    ticked.has(id) ? ticked.delete(id) : ticked.add(id);
+    renderGroup();
+  });
+  document.getElementById('bulk-all').onclick = () => {
+    const members = friends.filter(f => picked.has(f.id));
+    if (ticked.size === members.length) ticked.clear();
+    else members.forEach(f => ticked.add(f.id));
+    renderGroup();
+  };
+  const scrim = document.getElementById('group-scrim');
+  const sheetCircle = document.getElementById('sheet-circle');
+  const sheetTag = document.getElementById('sheet-tag');
+  function closeGroupSheets() { [scrim, sheetCircle, sheetTag].forEach(el => el.classList.remove('show')); }
+  scrim.onclick = closeGroupSheets;
+  document.getElementById('bulk-circle').onclick = () => { scrim.classList.add('show'); sheetCircle.classList.add('show'); };
+  document.getElementById('bulk-tag').onclick = () => { scrim.classList.add('show'); sheetTag.classList.add('show'); };
+  sheetCircle.addEventListener('click', e => {
+    const r = e.target.closest('.radio');
+    if (!r) return;
+    sheetCircle.querySelectorAll('.radio').forEach(x => x.classList.toggle('on', x === r));
+  });
+  document.getElementById('tag-chips').addEventListener('click', e => {
+    const c = e.target.closest('.chip');
+    if (c) c.classList.toggle('on');
+  });
+  document.getElementById('apply-circle').onclick = () => {
+    const circle = sheetCircle.querySelector('.radio.on').dataset.circle;
+    snapshot();
+    friends.forEach(f => {
+      if (ticked.has(f.id) && f.circle !== circle) { f.circle = circle; pendingCircleChanges++; }
+    });
+    closeGroupSheets(); renderPeople();
+  };
+  document.getElementById('apply-tag').onclick = () => {
+    const tags = [...document.querySelectorAll('#tag-chips .chip.on')].map(c => c.textContent).filter(t => !t.startsWith('＋'));
+    snapshot();
+    friends.forEach(f => { if (ticked.has(f.id)) tags.forEach(t => { if (!f.tags.includes(t)) f.tags.push(t); }); });
+    closeGroupSheets(); renderPeople();
+  };
+  document.getElementById('bulk-undo').onclick = () => {
+    const last = history.pop();
+    if (!last) return;
+    JSON.parse(last.data).forEach((saved, i) => Object.assign(friends[i], saved));
+    pendingCircleChanges = last.pending;
+    renderPeople();
+  };
+  let sharedState = JSON.stringify(friends);
+  document.getElementById('pending-share').onclick = () => {
+    pendingCircleChanges = 0; history.length = 0; sharedState = JSON.stringify(friends); renderPeople();
+  };
+  document.getElementById('pending-discard').onclick = () => {
+    const shared = JSON.parse(sharedState);
+    // Discard reverts circles to the shared version; tags are private and stay.
+    friends.forEach((f, i) => { f.circle = shared[i].circle; });
+    pendingCircleChanges = 0; history.length = 0; renderPeople();
+  };
+
+  // ---- Guru's pick: Not this one ----
+  const propScrim = document.getElementById('prop-scrim');
+  const sheetNot = document.getElementById('sheet-notthis');
+  document.getElementById('not-this').onclick = () => { propScrim.classList.add('show'); sheetNot.classList.add('show'); };
+  propScrim.onclick = () => { propScrim.classList.remove('show'); sheetNot.classList.remove('show'); };
+  sheetNot.querySelector('.go').addEventListener('click', () => propScrim.onclick());
+  document.getElementById('reason-chips').addEventListener('click', e => {
+    const c = e.target.closest('.chip');
+    if (c) c.classList.toggle('on');
+  });
+
+  // ---- About me: View as ----
+  const vaScrim = document.getElementById('viewas-scrim');
+  const vaSheet = document.getElementById('sheet-viewas');
+  document.getElementById('viewas-btn').onclick = () => { vaScrim.classList.add('show'); vaSheet.classList.add('show'); };
+  vaScrim.onclick = () => { vaScrim.classList.remove('show'); vaSheet.classList.remove('show'); };
+
+  // ---- How was it ----
+  const howScrim = document.getElementById('how-scrim');
+  const howDialog = document.getElementById('how-dialog');
+  function closeHow() { howScrim.classList.remove('show'); howDialog.style.display = 'none'; }
+  document.getElementById('how-yes').onclick = () => {
+    document.getElementById('how-1').style.display = 'none';
+    document.getElementById('how-2').style.display = 'block';
+  };
+  document.getElementById('how-no').onclick = closeHow;
+  howScrim.onclick = closeHow;
+  howDialog.querySelectorAll('[data-close]').forEach(b => b.onclick = closeHow);
+
+  renderPeople();
+
+
+  // ---- Generic: ⋮ menus, bottom sheets, checkbox rows ----
+  document.addEventListener('click', e => {
+    const m = e.target.closest('[data-menu]');
+    document.querySelectorAll('.menu.show').forEach(el => { if (!m || el.id !== m.dataset.menu) el.classList.remove('show'); });
+    if (m) { document.getElementById(m.dataset.menu).classList.toggle('show'); return; }
+    const phone = e.target.closest('.phone');
+    const closeSheets = () => phone.querySelectorAll('[data-scrim], .sheet').forEach(el => el.classList.remove('show'));
+    const opener = e.target.closest('[data-sheet]');
+    if (opener) {
+      closeSheets();
+      phone.querySelector('[data-scrim]').classList.add('show');
+      document.getElementById(opener.dataset.sheet).classList.add('show');
+      return;
+    }
+    if (e.target.closest('[data-scrim], [data-close]')) { closeSheets(); return; }
+    const chk = e.target.closest('[data-check]');
+    if (chk) chk.classList.toggle('on');
+  });
+
+  // ---- 10b segmented control ----
+  document.querySelectorAll('.seg a').forEach(a => a.addEventListener('click', () => {
+    a.parentElement.querySelectorAll('a').forEach(b => {
+      b.classList.toggle('on', b === a);
+      document.getElementById(b.dataset.pane).style.display = b === a ? '' : 'none';
+    });
+  }));
+</script>
+</body>
+</html>
