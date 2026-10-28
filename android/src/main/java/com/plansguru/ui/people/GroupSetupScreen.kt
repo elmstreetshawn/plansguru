@@ -170,9 +170,36 @@ fun GroupSetupScreen(
                 }
             }
 
+            OutlinedButton(
+                onClick = {
+                    val gName = groupName.ifBlank { "Dinner Group" }
+                    val deepLink = "https://plansguru.app/join?inviter=local_user&group=${java.net.URLEncoder.encode(gName, "UTF-8")}"
+                    val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(android.content.Intent.EXTRA_SUBJECT, "Join my PlansGuru Dinner Plan")
+                        putExtra(android.content.Intent.EXTRA_TEXT, "Hey! Join my PlansGuru dinner plan '$gName'! Tap here: $deepLink")
+                    }
+                    val chooser = android.content.Intent.createChooser(shareIntent, "Share Plan Link via Messenger / SMS")
+                    try {
+                        context.startActivity(chooser)
+                    } catch (_: Exception) {}
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = CircleShape
+            ) {
+                Text("💬 Share Plan Link via Messenger / SMS")
+            }
+
             Button(
                 enabled = selectedMembers.isNotEmpty(),
-                onClick = { onAskGuru(groupName.ifBlank { "Dinner Group" }, selectedMembers.toList()) },
+                onClick = {
+                    val syncClient = com.plansguru.data.sync.EncryptedSyncClient(context)
+                    val gName = groupName.ifBlank { "Dinner Group" }
+                    syncClient.broadcastPlanRequest(gName, selectedMembers.toList())
+                    onAskGuru(gName, selectedMembers.toList())
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),

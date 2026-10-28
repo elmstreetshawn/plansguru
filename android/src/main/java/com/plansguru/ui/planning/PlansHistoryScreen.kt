@@ -69,6 +69,37 @@ fun PlansHistoryScreen(
         )
     }
 
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val repository = remember { com.plansguru.data.repository.GraphRepository(context) }
+
+    LaunchedEffect(Unit) {
+        val friendsList = repository.getAllPersons().map { it.displayName } + listOf("Maya", "Jo", "Priya", "Lena", "Sam", "Alex", "Brian")
+        val syncClient = com.plansguru.data.sync.EncryptedSyncClient(context)
+        syncClient.listenOnFriendChannels(friendsList.distinct()) { msg ->
+            if (msg.type == "PLAN_REQUEST") {
+                try {
+                    val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+                    val payload = json.decodeFromString<Map<String, String>>(msg.payload)
+                    val title = payload["groupTitle"] ?: "New Group Dinner"
+                    val parts = payload["participants"]?.split(",") ?: listOf(msg.senderId)
+
+                    val newRecord = PlanRecord(
+                        id = "plan_${System.currentTimeMillis()}",
+                        title = title,
+                        restaurantName = "Via 313 Pizza",
+                        cuisine = "Detroit Style Pizza",
+                        price = "$$",
+                        participants = parts,
+                        consensusScore = "98% Match",
+                        date = "Just now"
+                    )
+
+                    previousPlans.add(0, newRecord)
+                } catch (_: Exception) {}
+            }
+        }
+    }
+
     var selectedPlan by remember { mutableStateOf<PlanRecord?>(null) }
 
     Scaffold(
