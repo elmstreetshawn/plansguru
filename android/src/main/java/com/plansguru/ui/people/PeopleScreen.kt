@@ -43,6 +43,8 @@ fun PeopleScreen(
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var showAddDialog by remember { mutableStateOf(false) }
+    var showQrScannerDialog by remember { mutableStateOf(false) }
+    var showMyQrDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val repository = remember { GraphRepository(context) }
 
@@ -431,7 +433,28 @@ fun PeopleScreen(
             title = { Text("Add a Friend") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Connect with friends to securely coordinate plans and share preferences.")
+                    Button(
+                        onClick = {
+                            showAddDialog = false
+                            showQrScannerDialog = true
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text("📷 Scan Friend's QR Code")
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            showAddDialog = false
+                            showMyQrDialog = true
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("📱 Show My Personal QR Code")
+                    }
+
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
                     OutlinedTextField(
                         value = manualName,
@@ -525,6 +548,69 @@ fun PeopleScreen(
             },
             confirmButton = {
                 TextButton(onClick = { showAddDialog = false }) {
+                    Text("Done")
+                }
+            }
+        )
+    }
+
+    if (showQrScannerDialog) {
+        com.plansguru.ui.common.QrCodeScannerDialog(
+            onDismissRequest = { showQrScannerDialog = false },
+            onQrCodeScanned = { scannedUri ->
+                val uri = android.net.Uri.parse(scannedUri)
+                val inviter = uri.getQueryParameter("inviter") ?: uri.getQueryParameter("coordinator") ?: "Scanned Friend"
+                val initials = inviter.take(2).uppercase()
+                if (friends.none { f -> f.name.equals(inviter, ignoreCase = true) }) {
+                    friends.add(
+                        FriendItem(
+                            id = "qr_${System.currentTimeMillis()}",
+                            name = inviter,
+                            initials = initials,
+                            tags = listOf("QR Scan", "Encrypted Graph"),
+                            isSelected = false
+                        )
+                    )
+                    repository.savePerson(
+                        com.plansguru.data.model.Person(
+                            localPersonId = inviter,
+                            displayName = inviter,
+                            publicIdentityKey = "pub_key_$inviter",
+                            creationTimestamp = System.currentTimeMillis()
+                        )
+                    )
+                    android.widget.Toast.makeText(context, "✨ Connected with $inviter via QR Scan!", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+        )
+    }
+
+    if (showMyQrDialog) {
+        val inviteLink = "https://plansguru.app/join?inviter=Me&pubkey=pub_key_local_user"
+        val qrBitmap = remember(inviteLink) { com.plansguru.ui.common.QrCodeHelper.generateQrCodeBitmap(inviteLink) }
+
+        AlertDialog(
+            onDismissRequest = { showMyQrDialog = false },
+            title = { Text("My Personal QR Code") },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Have your friend scan this QR code to connect profiles!", style = MaterialTheme.typography.bodySmall)
+                    if (qrBitmap != null) {
+                        androidx.compose.foundation.Image(
+                            bitmap = qrBitmap,
+                            contentDescription = "Personal QR Code",
+                            modifier = Modifier.size(220.dp)
+                        )
+                    }
+                    Text(inviteLink, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            },
+            confirmButton = {
+                Button(onClick = { showMyQrDialog = false }) {
                     Text("Done")
                 }
             }
