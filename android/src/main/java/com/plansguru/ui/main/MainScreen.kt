@@ -49,6 +49,21 @@ fun MainScreen(
 
     var currentGroupTitle by remember { mutableStateOf("Dinner Group") }
     var showGlobalChatSheet by remember { mutableStateOf(initialShowChat) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    LaunchedEffect(Unit) {
+        val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
+        if (prefs.getBoolean("pending_navigate_to_plans", false)) {
+            prefs.edit().remove("pending_navigate_to_plans").apply()
+            navController.navigate(BottomTab.Plans.route) {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -136,14 +151,21 @@ fun MainScreen(
                     onCreateNewPlan = {
                         navController.navigate("group_setup?members=")
                     },
+                    onOpenPlanChat = { planId, title ->
+                        navController.navigate("recommendations?planId=$planId&title=$title")
+                    },
                     onOpenGuruChat = { showGlobalChatSheet = true }
                 )
             }
-            composable("recommendations") {
+            composable("recommendations?planId={planId}&title={title}") { backStackEntry ->
+                val pId = backStackEntry.arguments?.getString("planId") ?: "group_discussion_session"
+                val t = backStackEntry.arguments?.getString("title") ?: "Dinner Plan"
                 RecommendationsScreen(
                     viewModel = sharedPlanningViewModel,
+                    planId = pId,
+                    groupTitle = t,
                     onFinish = {
-                        navController.navigate(BottomTab.People.route) {
+                        navController.navigate(BottomTab.Plans.route) {
                             popUpTo(BottomTab.People.route) { inclusive = true }
                         }
                     }

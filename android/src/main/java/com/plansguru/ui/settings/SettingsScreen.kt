@@ -25,8 +25,8 @@ fun SettingsScreen(
 ) {
     val circles = remember {
         mutableStateListOf(
-            CirclePolicy("1", "Circle 1 (Taco Crew)", "Authorized Peers", "Cuisines, Dietary Restrictions, General Vibe"),
-            CirclePolicy("2", "Circle 2 (Salad Friends)", "Selected Peers Only", "Dietary Restrictions Only"),
+            CirclePolicy("1", "Circle 1", "Authorized Peers", "Cuisines, Dietary Restrictions, General Vibe"),
+            CirclePolicy("2", "Circle 2", "Selected Peers Only", "Dietary Restrictions Only"),
             CirclePolicy("3", "Work Circle", "Private / Strict", "None (Isolated)")
         )
     }

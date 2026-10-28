@@ -15,6 +15,29 @@ object KeyManager {
     private const val PREFS_FILE = "plansguru_secure_prefs"
     private const val IDENTITY_KEYSTORE_ALIAS = "PlansGuruIdentityKey"
 
+    fun getSqlCipherPassphrase(context: Context): String {
+        val masterKey = MasterKey.Builder(context, KEYSTORE_ALIAS)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+
+        val sharedPreferences = EncryptedSharedPreferences.create(
+            context,
+            PREFS_FILE,
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+
+        var passphraseHex = sharedPreferences.getString("sqlcipher_passphrase", null)
+        if (passphraseHex == null) {
+            val randomBytes = ByteArray(32)
+            java.security.SecureRandom().nextBytes(randomBytes)
+            passphraseHex = randomBytes.joinToString("") { "%02x".format(it) }
+            sharedPreferences.edit().putString("sqlcipher_passphrase", passphraseHex).apply()
+        }
+        return passphraseHex
+    }
+
     fun getOrCreateDatabasePassphrase(context: Context): ByteArray {
         val masterKey = MasterKey.Builder(context, KEYSTORE_ALIAS)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
@@ -71,6 +94,14 @@ object KeyManager {
     fun getPublicKeyHex(context: Context): String {
         val keyPair = getOrCreateIdentityKeyPair(context)
         return keyPair.public.encoded.joinToString("") { "%02x".format(it) }
+    }
+
+    fun sign(context: Context, payload: String): String {
+        val keyPair = getOrCreateIdentityKeyPair(context)
+        val signature = java.security.Signature.getInstance("SHA256withECDSA")
+        signature.initSign(keyPair.private)
+        signature.update(payload.toByteArray(Charsets.UTF_8))
+        return android.util.Base64.encodeToString(signature.sign(), android.util.Base64.NO_WRAP)
     }
 }
 

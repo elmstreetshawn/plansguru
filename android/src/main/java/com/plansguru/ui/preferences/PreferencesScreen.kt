@@ -637,7 +637,7 @@ fun PreferencesScreen(
                                                 Text("• ${assertion.value}", style = MaterialTheme.typography.bodyMedium)
                                                 TextButton(onClick = {
                                                     val dbHelper = com.plansguru.data.db.EncryptedGraphDatabase(context)
-                                                    val writable = dbHelper.writableDatabase
+                                                    val writable = dbHelper.getWritableEncryptedDatabase()
                                                     writable.delete("assertions", "assertionId = ?", arrayOf(assertion.assertionId))
 
                                                     // Refresh assertions

@@ -25,6 +25,7 @@ class EncryptedSyncClient(
 
         val request = Request.Builder()
             .url(wsUrl)
+            .addHeader("Bypass-Tunnel-Reminder", "true")
             .addHeader("Bypass-Tunnel-Remainder", "true")
             .addHeader("ngrok-skip-browser-warning", "true")
             .addHeader("User-Agent", "PlansGuruApp/1.0")
@@ -57,6 +58,7 @@ class EncryptedSyncClient(
 
             val request = Request.Builder()
                 .url(wsUrl)
+                .addHeader("Bypass-Tunnel-Reminder", "true")
                 .addHeader("Bypass-Tunnel-Remainder", "true")
                 .addHeader("ngrok-skip-browser-warning", "true")
                 .addHeader("User-Agent", "PlansGuruApp/1.0")
@@ -67,7 +69,9 @@ class EncryptedSyncClient(
                     try {
                         val msg = json.decodeFromString<ProtocolMessage>(text)
                         if (msg.senderId != userId) {
-                            onProtocolMessageReceived(msg)
+                            val decryptedPayload = ChannelCryptoHelper.decrypt(msg.payload, userId, friend)
+                            val decryptedMsg = msg.copy(payload = decryptedPayload)
+                            onProtocolMessageReceived(decryptedMsg)
                         }
                     } catch (e: Exception) {
                         Log.w("EncryptedSyncClient", "Error parsing channel message: ${e.message}")
@@ -87,17 +91,22 @@ class EncryptedSyncClient(
             val channelTopic = ChannelCryptoHelper.computeChannelTopic(userId, p)
             val wsUrl = httpUrl.replace("https://", "wss://").replace("http://", "ws://") + "/ws/session/$channelTopic"
 
+            val rawPayload = json.encodeToString(mapOf("groupTitle" to groupTitle, "participants" to participants.joinToString(",")))
+            val encryptedPayload = ChannelCryptoHelper.encrypt(rawPayload, userId, p)
+            val signature = com.plansguru.data.crypto.KeyManager.sign(context, encryptedPayload)
+
             val message = ProtocolMessage(
                 type = "PLAN_REQUEST",
                 senderId = userId,
                 sessionId = channelTopic,
-                payload = json.encodeToString(mapOf("groupTitle" to groupTitle, "participants" to participants.joinToString(","))),
-                signature = "sig_$userId",
+                payload = encryptedPayload,
+                signature = signature,
                 timestamp = System.currentTimeMillis()
             )
 
             val request = Request.Builder()
                 .url(wsUrl)
+                .addHeader("Bypass-Tunnel-Reminder", "true")
                 .addHeader("Bypass-Tunnel-Remainder", "true")
                 .addHeader("ngrok-skip-browser-warning", "true")
                 .addHeader("User-Agent", "PlansGuruApp/1.0")

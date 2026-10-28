@@ -181,38 +181,7 @@ fun GroupSetupScreen(
                 }
             }
 
-            OutlinedButton(
-                onClick = {
-                    val gName = groupName.ifBlank { "Dinner Group" }
-                    val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
-                    val serverUrl = prefs.getString("server_url", "https://few-jars-wear.loca.lt")?.trimEnd('/') ?: "https://few-jars-wear.loca.lt"
 
-                    val userId = prefs.getString("user_id", null)
-                    val publicKey = prefs.getString("public_key", null)
-
-                    val deepLink = if (!userId.isNullOrBlank() && !publicKey.isNullOrBlank()) {
-                        "$serverUrl/join?inviter=${java.net.URLEncoder.encode(userId, "UTF-8")}&pubkey=${java.net.URLEncoder.encode(publicKey, "UTF-8")}&name=${java.net.URLEncoder.encode(userDisplayName, "UTF-8")}&group=${java.net.URLEncoder.encode(gName, "UTF-8")}"
-                    } else {
-                        "$serverUrl/join?inviter=${java.net.URLEncoder.encode(userDisplayName, "UTF-8")}&group=${java.net.URLEncoder.encode(gName, "UTF-8")}"
-                    }
-
-                    val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(android.content.Intent.EXTRA_SUBJECT, "Join my PlansGuru Dinner Plan")
-                        putExtra(android.content.Intent.EXTRA_TEXT, "Hey! Join my PlansGuru dinner plan '$gName'! Tap here: $deepLink")
-                    }
-                    val chooser = android.content.Intent.createChooser(shareIntent, "Share Plan Link via Messenger / SMS")
-                    try {
-                        context.startActivity(chooser)
-                    } catch (_: Exception) {}
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                shape = CircleShape
-            ) {
-                Text("💬 Share Plan Link via Messenger / SMS")
-            }
 
             Button(
                 enabled = selectedMembers.isNotEmpty(),
