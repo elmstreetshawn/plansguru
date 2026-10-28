@@ -31,15 +31,40 @@ fun calculateZipDistanceMiles(fromZip: String, toZip: String): Double {
     val cleanFrom = fromZip.trim()
     val cleanTo = toZip.trim()
     if (cleanFrom == cleanTo) return 0.8
-    val fromNum = cleanFrom.toIntOrNull() ?: 90210
-    val toNum = cleanTo.toIntOrNull() ?: 90210
-    val diff = abs(fromNum - toNum)
-    return when {
-        diff == 0 -> 0.8
-        diff <= 5 -> 1.8 + (diff * 0.4)
-        diff <= 20 -> 4.5 + (diff * 0.2)
-        else -> 10.0 + (diff * 0.1)
-    }
+
+    val zipCoords = mapOf(
+        "78626" to Pair(30.6332, -97.6772), // Georgetown
+        "78681" to Pair(30.5083, -97.6789), // Round Rock
+        "78664" to Pair(30.5086, -97.6534), // Round Rock
+        "78758" to Pair(30.3892, -97.7121), // Domain / North Austin
+        "78753" to Pair(30.3802, -97.6785), // North Austin
+        "78751" to Pair(30.3092, -97.7210), // Hyde Park
+        "78705" to Pair(30.2915, -97.7400), // UT / Central
+        "78701" to Pair(30.2672, -97.7431), // Downtown Austin
+        "78702" to Pair(30.2638, -97.7171), // East Austin
+        "78704" to Pair(30.2458, -97.7600), // South Congress / SoLam
+        "78748" to Pair(30.1652, -97.8285), // Manchaca / South Austin
+        "78652" to Pair(30.1328, -97.8386), // Manchaca
+        "90210" to Pair(30.2672, -97.7431)  // Default to Downtown Austin
+    )
+
+    val p1 = zipCoords[cleanFrom] ?: zipCoords["90210"]!!
+    val p2 = zipCoords[cleanTo] ?: Pair(30.2672, -97.7431)
+
+    val lat1 = Math.toRadians(p1.first)
+    val lon1 = Math.toRadians(p1.second)
+    val lat2 = Math.toRadians(p2.first)
+    val lon2 = Math.toRadians(p2.second)
+
+    val dlat = lat2 - lat1
+    val dlon = lon2 - lon1
+
+    val a = Math.sin(dlat / 2) * Math.sin(dlat / 2) +
+            Math.cos(lat1) * Math.cos(lat2) * Math.sin(dlon / 2) * Math.sin(dlon / 2)
+    val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+
+    val miles = 3958.8 * c
+    return miles.coerceAtLeast(0.8)
 }
 
 class PlacesViewModel(application: Application) : AndroidViewModel(application) {
