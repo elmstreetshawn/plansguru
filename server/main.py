@@ -1,26 +1,80 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pydantic import BaseModel
 from typing import Dict, Set, List, Optional
 import time
 import uuid
 import os
 
-app = FastAPI(title="PlansGuru Relay Server", version="1.0.0")
+app = FastAPI(title="PlansGuru Relay & Distribution Server", version="1.0.0")
 
 # In-memory storage with ephemeral expiration (No persistent DB)
-# session_id -> set of active WebSocket connections
 active_sessions: Dict[str, Set[WebSocket]] = {}
-# invite_code -> invite metadata (expires after 15 mins)
 active_invitations: Dict[str, dict] = {}
 
 class InvitationCreate(BaseModel):
     inviter_name: str
     inviter_pub_key: str
 
+@app.get("/", response_class=HTMLResponse)
+def landing_page():
+    html_content = """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>PlansGuru • On-Device AI Distribution Server</title>
+        <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #121016; color: #E6E1E5; margin: 0; padding: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 90vh; }
+            .card { background: #1D1B20; border-radius: 24px; padding: 32px; max-width: 480px; width: 100%; box-shadow: 0 8px 24px rgba(0,0,0,0.4); border: 1px solid #49454F; text-align: center; }
+            h1 { color: #D0BCFF; margin-top: 0; font-size: 28px; }
+            p { color: #CAC4D0; font-size: 15px; line-height: 1.5; margin-bottom: 24px; }
+            .btn { display: inline-block; background: #D0BCFF; color: #381E72; font-weight: bold; padding: 16px 28px; border-radius: 100px; text-decoration: none; font-size: 16px; margin: 8px 0; transition: transform 0.2s; width: 80%; }
+            .btn:active { transform: scale(0.98); }
+            .badge { display: inline-block; background: #2B2930; color: #E8DEF8; padding: 8px 16px; border-radius: 100px; font-size: 13px; margin-top: 16px; border: 1px solid #49454F; }
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h1>🌮 PlansGuru</h1>
+            <p>Privacy-First On-Device AI Dinner Coordination & Encrypted Social Graph for Greater Austin, TX.</p>
+
+            <a href="/api/apk/download" class="btn">📲 Download PlansGuru APK</a>
+            <a href="/api/model/gemma" class="btn" style="background: #E8DEF8; color: #1D192B;">🤖 Download Gemma 3 Model (584 MB)</a>
+
+            <div class="badge">
+                ⚡ Server Online • Local Network Distribution
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
+
 @app.get("/health")
 def health_check():
     return {"status": "healthy", "service": "plansguru-relay"}
+
+@app.get("/api/apk/download")
+@app.get("/download")
+def download_apk():
+    apk_paths = [
+        os.path.join(os.path.dirname(__file__), "..", "android", "build", "outputs", "apk", "debug", "android-debug.apk"),
+        os.path.join(os.path.dirname(__file__), "android-debug.apk"),
+        "android-debug.apk"
+    ]
+
+    found_apk = None
+    for p in apk_paths:
+        if os.path.exists(p):
+            found_apk = p
+            break
+
+    if not found_apk:
+        raise HTTPException(status_code=404, detail="APK file not found on server. Please build 'android:assembleDebug' first.")
+
+    return FileResponse(found_apk, media_type="application/vnd.android.package-archive", filename="PlansGuru.apk")
 
 @app.post("/api/invitations")
 def create_invitation(payload: InvitationCreate):
@@ -52,8 +106,6 @@ async def websocket_relay(websocket: WebSocket, session_id: str):
     try:
         while True:
             data = await websocket.receive_text()
-            # Relay raw encrypted message payload to all other peers in the session
-            # Server never decrypts or persists message history.
             if session_id in active_sessions:
                 for client in active_sessions[session_id]:
                     if client != websocket:
