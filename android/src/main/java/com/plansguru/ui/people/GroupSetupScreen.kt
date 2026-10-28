@@ -46,8 +46,6 @@ fun GroupSetupScreen(
         mutableStateListOf<String>().apply {
             if (initialMembers.isNotEmpty()) {
                 addAll(initialMembers)
-            } else {
-                addAll(listOf("Maya", "Jo", "Priya"))
             }
         }
     }
