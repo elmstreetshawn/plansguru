@@ -81,7 +81,7 @@ fun PreferencesScreen(
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text("Preferences Hub", style = MaterialTheme.typography.titleLarge)
                             Surface(shape = CircleShape, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f)) {
-                                Text("v1.0.4 (Build 5)", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                Text("v1.0.5 (Build 6)", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.onPrimaryContainer)
                             }
                         }
                     },
@@ -90,11 +90,10 @@ fun PreferencesScreen(
                         titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 )
-                ScrollableTabRow(
+                TabRow(
                     selectedTabIndex = selectedTab,
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    edgePadding = 16.dp
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ) {
                     Tab(
                         selected = selectedTab == 0,
