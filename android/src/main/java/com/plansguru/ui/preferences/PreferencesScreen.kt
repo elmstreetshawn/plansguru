@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
@@ -127,6 +128,7 @@ fun PreferencesScreen(
                     var targetSubjectForNewAssertion by remember { mutableStateOf<String?>(null) }
                     var selectedPredicate by remember { mutableStateOf("likes_cuisine") }
                     var customValueInput by remember { mutableStateOf("") }
+                    var showEditMyNameDialog by remember { mutableStateOf(false) }
 
                     val refreshGraphData = {
                         try {
@@ -141,6 +143,9 @@ fun PreferencesScreen(
                         } catch (_: Exception) {}
                     }
 
+                    val myPerson = repository.getPerson("local_user")
+                    val myDisplayName = myPerson?.displayName?.takeIf { it.isNotBlank() && it != "local_user" } ?: "You (Local User)"
+
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text("Encrypted Social Graph • People & Preference Assertions", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
                         Text("Manage connected profiles and their individual preference variables directly.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -152,7 +157,7 @@ fun PreferencesScreen(
                             val subjects = listOf("local_user") + allPersons.map { it.localPersonId }
                             items(subjects.distinct()) { subj ->
                                 val assertions = allAssertions.filter { it.subjectId.equals(subj, true) }
-                                val personName = if (subj == "local_user") "You (Local User)" else allPersons.find { it.localPersonId == subj }?.displayName ?: subj
+                                val personName = if (subj == "local_user") myDisplayName else allPersons.find { it.localPersonId == subj }?.displayName ?: subj
 
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
@@ -173,6 +178,12 @@ fun PreferencesScreen(
                                                     }
                                                 }
                                                 Text(personName, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+
+                                                if (subj == "local_user") {
+                                                    IconButton(onClick = { showEditMyNameDialog = true }, modifier = Modifier.size(24.dp)) {
+                                                        Icon(Icons.Default.Edit, contentDescription = "Edit My Name", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                                                    }
+                                                }
                                             }
 
                                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -312,6 +323,51 @@ fun PreferencesScreen(
                             },
                             dismissButton = {
                                 TextButton(onClick = { targetSubjectForNewAssertion = null }) {
+                                    Text("Cancel")
+                                }
+                            }
+                        )
+                    }
+
+                    if (showEditMyNameDialog) {
+                        var newNameInput by remember { mutableStateOf(myPerson?.displayName?.takeIf { it != "local_user" } ?: "") }
+                        AlertDialog(
+                            onDismissRequest = { showEditMyNameDialog = false },
+                            title = { Text("Set Profile Display Name") },
+                            text = {
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text("Your display name is shown to friends when you coordinate group dinner plans.", style = MaterialTheme.typography.bodySmall)
+                                    OutlinedTextField(
+                                        value = newNameInput,
+                                        onValueChange = { newNameInput = it },
+                                        label = { Text("Your Name (e.g. Shawn)") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = MaterialTheme.shapes.medium,
+                                        singleLine = true
+                                    )
+                                }
+                            },
+                            confirmButton = {
+                                Button(
+                                    enabled = newNameInput.isNotBlank(),
+                                    onClick = {
+                                        val updated = (myPerson ?: Person(
+                                            localPersonId = "local_user",
+                                            displayName = newNameInput.trim(),
+                                            publicIdentityKey = "pub_key_local_user",
+                                            creationTimestamp = System.currentTimeMillis()
+                                        )).copy(displayName = newNameInput.trim())
+
+                                        repository.savePerson(updated)
+                                        refreshGraphData()
+                                        showEditMyNameDialog = false
+                                    }
+                                ) {
+                                    Text("Save Name")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showEditMyNameDialog = false }) {
                                     Text("Cancel")
                                 }
                             }

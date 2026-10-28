@@ -30,13 +30,14 @@ fun GroupSetupScreen(
     var groupName by remember { mutableStateOf("") }
     val context = LocalContext.current
     val repository = remember { GraphRepository(context) }
+    val userDisplayName = remember { repository.getPerson("local_user")?.displayName?.takeIf { it.isNotBlank() && it != "local_user" } ?: "Me" }
 
     val allFriendsList = remember {
         mutableStateListOf("Maya", "Jo", "Priya", "Lena", "Sam").apply {
             try {
                 val dbPersons = repository.getAllPersons().map { it.displayName }
                 for (pName in dbPersons) {
-                    if (!contains(pName) && pName != "Me" && pName != "local_user") add(pName)
+                    if (!contains(pName) && pName != "Me" && pName != "local_user" && pName != userDisplayName) add(pName)
                 }
             } catch (_: Exception) {}
         }
@@ -45,7 +46,7 @@ fun GroupSetupScreen(
     val selectedMembers = remember {
         mutableStateListOf<String>().apply {
             if (initialMembers.isNotEmpty()) {
-                addAll(initialMembers)
+                addAll(initialMembers.filter { it != "Me" && it != "local_user" && it != userDisplayName })
             }
         }
     }
@@ -56,7 +57,7 @@ fun GroupSetupScreen(
                 title = {
                     Column {
                         Text("Select Group Members", style = MaterialTheme.typography.titleLarge)
-                        Text("${selectedMembers.size} selected", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("${selectedMembers.size + 1} people ($userDisplayName + ${selectedMembers.size} friends)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
                 navigationIcon = {
@@ -197,8 +198,9 @@ fun GroupSetupScreen(
                 onClick = {
                     val syncClient = com.plansguru.data.sync.EncryptedSyncClient(context)
                     val gName = groupName.ifBlank { "Dinner Group" }
-                    syncClient.broadcastPlanRequest(gName, selectedMembers.toList())
-                    onAskGuru(gName, selectedMembers.toList())
+                    val fullParticipants = (listOf(userDisplayName) + selectedMembers.toList()).distinct()
+                    syncClient.broadcastPlanRequest(gName, fullParticipants)
+                    onAskGuru(gName, fullParticipants)
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -206,7 +208,7 @@ fun GroupSetupScreen(
                 shape = CircleShape,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                Text("✨ Ask the Guru (${selectedMembers.size} members)", style = MaterialTheme.typography.titleMedium)
+                Text("✨ Ask the Guru (${selectedMembers.size + 1} people)", style = MaterialTheme.typography.titleMedium)
             }
         }
     }
