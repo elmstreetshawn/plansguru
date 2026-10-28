@@ -94,8 +94,11 @@ class GuruChatEngine(private val context: Context) {
                 }
 
                 if (!assetOpened && (!modelFile.exists() || modelFile.length() < 500L * 1024L * 1024L)) {
-                    statusCallback("Connecting to laptop ($SERVER_BASE_URL)...")
-                    Log.d("GuruChatEngine", "Downloading Gemma model from laptop ($SERVER_BASE_URL/api/model/gemma)...")
+                    val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
+                    val serverUrl = prefs.getString("server_url", SERVER_BASE_URL)?.trimEnd('/') ?: SERVER_BASE_URL
+
+                    statusCallback("Connecting to server ($serverUrl)...")
+                    Log.d("GuruChatEngine", "Downloading Gemma model from ($serverUrl/api/model/gemma)...")
 
                     val client = OkHttpClient.Builder()
                         .connectTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
@@ -113,7 +116,9 @@ class GuruChatEngine(private val context: Context) {
                         try {
                             if (modelFile.exists()) modelFile.delete()
                             val request = Request.Builder()
-                                .url("$SERVER_BASE_URL/api/model/gemma")
+                                .url("$serverUrl/api/model/gemma")
+                                .addHeader("ngrok-skip-browser-warning", "true")
+                                .addHeader("User-Agent", "PlansGuruApp/1.0")
                                 .build()
 
                             client.newCall(request).execute().use { response ->

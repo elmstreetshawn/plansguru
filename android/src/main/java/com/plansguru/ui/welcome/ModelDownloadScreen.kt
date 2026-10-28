@@ -112,29 +112,95 @@ fun ModelDownloadScreen(
                 textAlign = TextAlign.Center
             )
 
+            var showServerUrlDialog by remember { mutableStateOf(false) }
+
             if (errorMessage != null) {
                 Spacer(modifier = Modifier.height(24.dp))
-                Button(
-                    onClick = {
-                        errorMessage = null
-                        isDownloading = true
-                        scope.launch {
-                            val engine = GuruChatEngine(context)
-                            val success = engine.initializeModel { text ->
-                                statusText = text
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Button(
+                        onClick = {
+                            errorMessage = null
+                            isDownloading = true
+                            scope.launch {
+                                val engine = GuruChatEngine(context)
+                                val success = engine.initializeModel { text ->
+                                    statusText = text
+                                }
+                                isDownloading = false
+                                if (success) {
+                                    onModelReady()
+                                } else {
+                                    errorMessage = engine.initializationError ?: "Failed to initialize model."
+                                }
                             }
-                            isDownloading = false
-                            if (success) {
-                                onModelReady()
-                            } else {
-                                errorMessage = engine.initializationError ?: "Failed to initialize model."
-                            }
+                        },
+                        shape = CircleShape
+                    ) {
+                        Text("Retry")
+                    }
+
+                    OutlinedButton(
+                        onClick = { showServerUrlDialog = true },
+                        shape = CircleShape
+                    ) {
+                        Text("Server URL / Ngrok")
+                    }
+                }
+            } else if (isDownloading) {
+                TextButton(onClick = { showServerUrlDialog = true }) {
+                    Text("Change Server URL / Ngrok")
+                }
+            }
+
+            if (showServerUrlDialog) {
+                val prefs = remember { context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE) }
+                var urlInput by remember { mutableStateOf(prefs.getString("server_url", "http://192.168.2.37:8000") ?: "") }
+
+                AlertDialog(
+                    onDismissRequest = { showServerUrlDialog = false },
+                    title = { Text("Configure Server / Ngrok URL") },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Enter your laptop IP or public Ngrok HTTPS URL:", style = MaterialTheme.typography.bodySmall)
+                            OutlinedTextField(
+                                value = urlInput,
+                                onValueChange = { urlInput = it },
+                                label = { Text("Server URL (e.g. https://xxxx.ngrok-free.app)") },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = MaterialTheme.shapes.medium
+                            )
                         }
                     },
-                    shape = CircleShape
-                ) {
-                    Text("Retry Download Progress")
-                }
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                prefs.edit().putString("server_url", urlInput.trim()).apply()
+                                showServerUrlDialog = false
+                                errorMessage = null
+                                isDownloading = true
+                                scope.launch {
+                                    val engine = GuruChatEngine(context)
+                                    val success = engine.initializeModel { text ->
+                                        statusText = text
+                                    }
+                                    isDownloading = false
+                                    if (success) {
+                                        onModelReady()
+                                    } else {
+                                        errorMessage = engine.initializationError ?: "Failed to initialize model."
+                                    }
+                                }
+                            }
+                        ) {
+                            Text("Save & Download")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showServerUrlDialog = false }) {
+                            Text("Cancel")
+                        }
+                    }
+                )
             }
         }
     }
