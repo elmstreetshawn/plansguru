@@ -87,13 +87,9 @@ dependencies {
     // On-Device GenAI (Google LiteRT-LM Android Engine)
     implementation("com.google.ai.edge.litertlm:litertlm-android:0.18.1")
 
-    // QR Generation & Scanning (ZXing, ML Kit & CameraX)
+    // QR Generation & Scanning (100% Pure Java/Kotlin ZXing - 0 C++ .so Libraries)
     implementation("com.google.zxing:core:3.5.4")
-    implementation("com.google.mlkit:barcode-scanning:17.3.0")
-    implementation("androidx.camera:camera-core:1.3.4")
-    implementation("androidx.camera:camera-camera2:1.3.4")
-    implementation("androidx.camera:camera-lifecycle:1.3.4")
-    implementation("androidx.camera:camera-view:1.3.4")
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
 
     // Testing
     testImplementation("junit:junit:4.13.2")
