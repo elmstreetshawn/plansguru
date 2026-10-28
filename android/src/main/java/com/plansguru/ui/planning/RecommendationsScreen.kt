@@ -15,6 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.plansguru.agent.NegotiationEngine
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 data class PlanChatMessage(
     val id: String,
@@ -31,14 +33,36 @@ fun RecommendationsScreen(
 ) {
     val recommendations by viewModel.recommendations.collectAsState()
     val context = LocalContext.current
+    val repository = remember { com.plansguru.data.repository.GraphRepository(context) }
+    val myName = remember { repository.getPerson("local_user")?.displayName?.takeIf { it.isNotBlank() && it != "local_user" } ?: "Me" }
+    val syncClient = remember { com.plansguru.data.sync.EncryptedSyncClient(context, "group_discussion_session") }
 
-    val chatMessages = remember {
-        mutableStateListOf(
-            PlanChatMessage("1", "Mike", "Trattoria Bella looks amazing! Italian works for me.", System.currentTimeMillis() - 3600000),
-            PlanChatMessage("2", "Sarah", "Agreed! And they have great vegan options.", System.currentTimeMillis() - 1800000)
-        )
-    }
+    val chatMessages = remember { mutableStateListOf<PlanChatMessage>() }
     var inputMessage by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        syncClient.connect { text ->
+            try {
+                val jsonParser = Json { ignoreUnknownKeys = true }
+                val msg = jsonParser.decodeFromString<com.plansguru.data.model.ProtocolMessage>(text)
+                if (msg.type == "CHAT_MESSAGE") {
+                    val payload = jsonParser.decodeFromString<Map<String, String>>(msg.payload)
+                    val senderName = payload["sender"] ?: msg.senderId
+                    val content = payload["text"] ?: ""
+                    if (content.isNotBlank() && senderName != myName) {
+                        chatMessages.add(
+                            PlanChatMessage(
+                                id = msg.signature,
+                                sender = senderName,
+                                text = content,
+                                timestamp = msg.timestamp
+                            )
+                        )
+                    }
+                }
+            } catch (_: Exception) {}
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -135,13 +159,13 @@ fun RecommendationsScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(100.dp),
+                    .height(110.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 items(chatMessages) { msg ->
                     Surface(
                         shape = MaterialTheme.shapes.medium,
-                        color = if (msg.sender == "You") MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
+                        color = if (msg.sender == myName) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
                     ) {
                         Column(modifier = Modifier.padding(10.dp)) {
                             Text("${msg.sender}: ${msg.text}", style = MaterialTheme.typography.bodySmall)
@@ -165,7 +189,19 @@ fun RecommendationsScreen(
                 Button(
                     onClick = {
                         if (inputMessage.isNotBlank()) {
-                            chatMessages.add(PlanChatMessage(System.currentTimeMillis().toString(), "You", inputMessage.trim(), System.currentTimeMillis()))
+                            val txt = inputMessage.trim()
+                            chatMessages.add(PlanChatMessage(System.currentTimeMillis().toString(), myName, txt, System.currentTimeMillis()))
+
+                            val jsonParser = Json { ignoreUnknownKeys = true }
+                            val protoMsg = com.plansguru.data.model.ProtocolMessage(
+                                type = "CHAT_MESSAGE",
+                                senderId = myName,
+                                sessionId = "group_discussion_session",
+                                payload = jsonParser.encodeToString(mapOf("sender" to myName, "text" to txt)),
+                                signature = "msg_${System.currentTimeMillis()}",
+                                timestamp = System.currentTimeMillis()
+                            )
+                            syncClient.sendEncryptedPayload(jsonParser.encodeToString(protoMsg))
                             inputMessage = ""
                         }
                     },
