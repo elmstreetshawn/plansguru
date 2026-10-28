@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
@@ -30,7 +32,7 @@ import com.plansguru.data.repository.GraphRepository
 
 data class FriendItem(
     val id: String,
-    val name: String,
+    var name: String,
     val initials: String,
     val tags: List<String>,
     var isSelected: Boolean = false
@@ -49,6 +51,11 @@ fun PeopleScreen(
     val context = LocalContext.current
     val repository = remember { GraphRepository(context) }
 
+    var myPersonState by remember { mutableStateOf(repository.getPerson("local_user")) }
+    val myName = myPersonState?.displayName?.takeIf { it.isNotBlank() && it != "local_user" } ?: "Shawn (You)"
+    val myZip = myPersonState?.locationZip ?: "78626"
+    var showEditMyProfileDialog by remember { mutableStateOf(false) }
+
     val defaultFriends = listOf(
         FriendItem("1", "Maya", "MA", listOf("Circle 1", "taco crew"), false),
         FriendItem("2", "Jo", "JO", listOf("Circle 1", "taco crew", "work"), false),
@@ -62,11 +69,6 @@ fun PeopleScreen(
             addAll(defaultFriends)
         }
     }
-
-    var myPersonState by remember { mutableStateOf(repository.getPerson("local_user")) }
-    val myName = myPersonState?.displayName?.takeIf { it.isNotBlank() && it != "local_user" } ?: "Shawn (You)"
-    val myZip = myPersonState?.locationZip ?: "78626"
-    var showEditMyNameInPeople by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         try {
@@ -199,8 +201,8 @@ fun PeopleScreen(
                         }
                     }
 
-                    IconButton(onClick = { showEditMyNameInPeople = true }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Edit My Name", tint = MaterialTheme.colorScheme.primary)
+                    IconButton(onClick = { showEditMyProfileDialog = true }) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit Profile & Preferences", tint = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
@@ -219,7 +221,7 @@ fun PeopleScreen(
                 )
             )
 
-            // Add a friend button (Explicit clickable row inside Card)
+            // Add a friend button
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.large,
@@ -249,23 +251,6 @@ fun PeopleScreen(
                 }
             }
 
-            // Squads Quick Start
-            Text("SQUADS · QUICK START", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                AssistChip(
-                    onClick = { },
-                    label = { Text("🌮 Taco crew · 3") },
-                    colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-                )
-                AssistChip(
-                    onClick = { },
-                    label = { Text("🥗 Salad friends · 2") },
-                    colors = AssistChipDefaults.assistChipColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-                )
-            }
-
             // Friends list
             val filteredFriends = friends.filter { it.name.contains(searchQuery, ignoreCase = true) }
             Text("FRIENDS ON PLANS GURU · ${filteredFriends.size}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -278,9 +263,6 @@ fun PeopleScreen(
             ) {
                 items(filteredFriends) { friend ->
                     var showPreferencesDialog by remember { mutableStateOf(false) }
-                    var friendAssertions by remember { mutableStateOf<List<com.plansguru.data.model.Assertion>>(emptyList()) }
-                    var newPrefPredicate by remember { mutableStateOf("likes_cuisine") }
-                    var newPrefValue by remember { mutableStateOf("") }
 
                     Card(
                         modifier = Modifier
@@ -313,12 +295,11 @@ fun PeopleScreen(
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(friend.tags.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
-                            TextButton(onClick = {
-                                friendAssertions = repository.getAssertionsForSubject(friend.name)
-                                showPreferencesDialog = true
-                            }) {
-                                Text("Prefs")
+
+                            IconButton(onClick = { showPreferencesDialog = true }) {
+                                Icon(Icons.Default.Edit, contentDescription = "Edit Profile & Preferences", tint = MaterialTheme.colorScheme.primary)
                             }
+
                             Checkbox(
                                 checked = friend.isSelected,
                                 onCheckedChange = { checked ->
@@ -330,144 +311,17 @@ fun PeopleScreen(
                     }
 
                     if (showPreferencesDialog) {
-                        var selectedPredicate by remember { mutableStateOf("likes_cuisine") }
-                        var customValueInput by remember { mutableStateOf("") }
-
-                        val taxonomyVariables = listOf(
-                            "likes_cuisine" to "🍕 Likes Cuisine",
-                            "dislikes_cuisine" to "🚫 Dislikes Cuisine",
-                            "dietary_restriction" to "🥗 Dietary / Allergy",
-                            "max_travel_time" to "🚗 Travel Distance / Drive",
-                            "noise_preference" to "🤫 Noise / Crowd Level",
-                            "locationZip" to "📍 Zip Code"
-                        )
-
-                        val quickSuggestions = when (selectedPredicate) {
-                            "likes_cuisine" -> listOf("Italian", "Mexican", "Sushi", "Thai", "Pizza", "BBQ", "Japanese", "Chinese")
-                            "dislikes_cuisine" -> listOf("Spicy", "Fast Food", "Seafood", "Indian", "BBQ")
-                            "dietary_restriction" -> listOf("Vegan", "Gluten-Free", "Vegetarian", "Dairy-Free", "Halal", "Kosher", "Peanut Allergy")
-                            "max_travel_time" -> listOf("10 min", "15 min", "20 min", "30 min")
-                            "noise_preference" -> listOf("Quiet / Low Crowds", "Moderate", "Vibrant / Loud")
-                            "locationZip" -> listOf("78626", "78681", "78701", "78704", "78652", "78748")
-                            else -> listOf("Italian", "Vegan", "15 min")
-                        }
-
-                        AlertDialog(
+                        PersonProfileAndPreferencesDialog(
+                            personId = friend.name,
+                            currentDisplayName = friend.name,
+                            isLocalUser = false,
+                            repository = repository,
                             onDismissRequest = { showPreferencesDialog = false },
-                            title = { Text("Preferences for ${friend.name}") },
-                            text = {
-                                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                                    Text("Current Encrypted Preferences:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                                    if (friendAssertions.isEmpty()) {
-                                        Text("No preferences recorded yet. Set one below!", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    } else {
-                                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                                            friendAssertions.forEach { assertion ->
-                                                Row(
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                                    verticalAlignment = Alignment.CenterVertically
-                                                ) {
-                                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                                        AssistChip(onClick = {}, label = { Text(assertion.predicate.replace('_', ' '), style = MaterialTheme.typography.labelSmall) })
-                                                        Text(assertion.value, style = MaterialTheme.typography.bodyMedium)
-                                                    }
-                                                    IconButton(
-                                                        onClick = {
-                                                            repository.deleteAssertion(assertion.assertionId)
-                                                            friendAssertions = repository.getAssertionsForSubject(friend.name)
-                                                        },
-                                                        modifier = Modifier.size(24.dp)
-                                                    ) {
-                                                        Text("×", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
-                                    Text("Add New Preference:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                                    Text("1. Select Preference Category:", style = MaterialTheme.typography.labelSmall)
-
-                                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                                        taxonomyVariables.forEach { (varKey, varName) ->
-                                            Row(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .clickable { selectedPredicate = varKey }
-                                                    .padding(vertical = 2.dp),
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                RadioButton(selected = selectedPredicate == varKey, onClick = { selectedPredicate = varKey })
-                                                Spacer(modifier = Modifier.width(6.dp))
-                                                Text(varName, style = MaterialTheme.typography.bodyMedium)
-                                            }
-                                        }
-                                    }
-
-                                    Text("2. Quick Tap Suggestions:", style = MaterialTheme.typography.labelSmall)
-                                    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                        items(quickSuggestions) { sug ->
-                                            FilterChip(
-                                                selected = customValueInput == sug,
-                                                onClick = { customValueInput = sug },
-                                                label = { Text(sug, style = MaterialTheme.typography.labelSmall) }
-                                            )
-                                        }
-                                    }
-
-                                    OutlinedTextField(
-                                        value = customValueInput,
-                                        onValueChange = { customValueInput = it },
-                                        label = { Text("Value / Custom Preference") },
-                                        modifier = Modifier.fillMaxWidth(),
-                                        shape = MaterialTheme.shapes.medium,
-                                        singleLine = true
-                                    )
-                                }
-                            },
-                            confirmButton = {
-                                Button(
-                                    enabled = customValueInput.isNotBlank(),
-                                    onClick = {
-                                        val valText = customValueInput.trim()
-                                        if (selectedPredicate == "locationZip") {
-                                            val currentPerson = repository.getPerson(friend.name) ?: com.plansguru.data.model.Person(
-                                                localPersonId = friend.name,
-                                                displayName = friend.name,
-                                                publicIdentityKey = "pub_key_${friend.name}",
-                                                creationTimestamp = System.currentTimeMillis(),
-                                                locationZip = valText
-                                            )
-                                            repository.savePerson(currentPerson.copy(locationZip = valText))
-                                        }
-
-                                        repository.saveAssertion(
-                                            com.plansguru.data.model.Assertion(
-                                                assertionId = java.util.UUID.randomUUID().toString(),
-                                                observerId = "local_user",
-                                                subjectId = friend.name,
-                                                predicate = selectedPredicate,
-                                                value = valText,
-                                                source = "PEOPLE_SCREEN_UI",
-                                                confidence = 1.0f,
-                                                validityTimestampStart = System.currentTimeMillis(),
-                                                validityTimestampEnd = null,
-                                                visibilityPolicy = "PRIVATE"
-                                            )
-                                        )
-                                        friendAssertions = repository.getAssertionsForSubject(friend.name)
-                                        customValueInput = ""
-                                    }
-                                ) {
-                                    Text("Save Preference")
-                                }
-                            },
-                            dismissButton = {
-                                TextButton(onClick = { showPreferencesDialog = false }) {
-                                    Text("Done")
+                            onPersonUpdated = { updatedName ->
+                                val index = friends.indexOfFirst { it.id == friend.id }
+                                if (index != -1) {
+                                    val newInitials = updatedName.take(2).uppercase()
+                                    friends[index] = friends[index].copy(name = updatedName, initials = newInitials)
                                 }
                             }
                         )
@@ -477,7 +331,21 @@ fun PeopleScreen(
         }
     }
 
-    // Add Friend Dialog / Bottom Sheet
+    // Modal for YOU Card (Pencil Icon)
+    if (showEditMyProfileDialog) {
+        PersonProfileAndPreferencesDialog(
+            personId = "local_user",
+            currentDisplayName = myName,
+            isLocalUser = true,
+            repository = repository,
+            onDismissRequest = { showEditMyProfileDialog = false },
+            onPersonUpdated = { updatedName ->
+                myPersonState = repository.getPerson("local_user")
+            }
+        )
+    }
+
+    // Add Friend Dialog
     if (showAddDialog) {
         var manualName by remember { mutableStateOf("") }
         AlertDialog(
@@ -668,51 +536,198 @@ fun PeopleScreen(
             }
         )
     }
+}
 
-    if (showEditMyNameInPeople) {
-        var nameInput by remember { mutableStateOf(myPersonState?.displayName?.takeIf { it != "local_user" } ?: "") }
-        AlertDialog(
-            onDismissRequest = { showEditMyNameInPeople = false },
-            title = { Text("Set Your Profile Display Name") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Your display name will be shown to friends when coordinating group dinner plans.", style = MaterialTheme.typography.bodySmall)
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PersonProfileAndPreferencesDialog(
+    personId: String,
+    currentDisplayName: String,
+    isLocalUser: Boolean,
+    repository: GraphRepository,
+    onDismissRequest: () -> Unit,
+    onPersonUpdated: (String) -> Unit
+) {
+    var nameInput by remember { mutableStateOf(currentDisplayName) }
+    var friendAssertions by remember { mutableStateOf(repository.getAssertionsForSubject(personId)) }
+    var selectedPredicate by remember { mutableStateOf("likes_cuisine") }
+    var customValueInput by remember { mutableStateOf("") }
+
+    val taxonomyVariables = listOf(
+        "likes_cuisine" to "🍕 Likes Cuisine",
+        "dislikes_cuisine" to "🚫 Dislikes Cuisine",
+        "dietary_restriction" to "🥗 Dietary / Allergy",
+        "max_travel_time" to "🚗 Travel Distance / Drive",
+        "noise_preference" to "🤫 Noise / Crowd Level",
+        "locationZip" to "📍 Zip Code"
+    )
+
+    val quickSuggestions = when (selectedPredicate) {
+        "likes_cuisine" -> listOf("Italian", "Mexican", "Sushi", "Thai", "Pizza", "BBQ", "Japanese", "Chinese")
+        "dislikes_cuisine" -> listOf("Spicy", "Fast Food", "Seafood", "Indian", "BBQ")
+        "dietary_restriction" -> listOf("Vegan", "Gluten-Free", "Vegetarian", "Dairy-Free", "Halal", "Kosher", "Peanut Allergy")
+        "max_travel_time" -> listOf("10 min", "15 min", "20 min", "30 min")
+        "noise_preference" -> listOf("Quiet / Low Crowds", "Moderate", "Vibrant / Loud")
+        "locationZip" -> listOf("78626", "78681", "78701", "78704", "78652", "78748")
+        else -> listOf("Italian", "Vegan", "15 min")
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text(if (isLocalUser) "Your Profile & Preferences" else "Edit $currentDisplayName's Profile") },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.verticalScroll(rememberScrollState())
+            ) {
+                Text("Edit Display Name:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     OutlinedTextField(
                         value = nameInput,
                         onValueChange = { nameInput = it },
-                        label = { Text("Your Name (e.g. Shawn)") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.medium,
-                        singleLine = true
+                        label = { Text("Display Name") },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        shape = MaterialTheme.shapes.medium
                     )
-                }
-            },
-            confirmButton = {
-                Button(
-                    enabled = nameInput.isNotBlank(),
-                    onClick = {
-                        val updated = (myPersonState ?: com.plansguru.data.model.Person(
-                            localPersonId = "local_user",
-                            displayName = nameInput.trim(),
-                            publicIdentityKey = "pub_key_local_user",
-                            creationTimestamp = System.currentTimeMillis()
-                        )).copy(displayName = nameInput.trim())
-
-                        repository.savePerson(updated)
-                        myPersonState = updated
-                        showEditMyNameInPeople = false
+                    Button(
+                        enabled = nameInput.isNotBlank() && nameInput.trim() != currentDisplayName,
+                        onClick = {
+                            val newName = nameInput.trim()
+                            val p = repository.getPerson(personId) ?: com.plansguru.data.model.Person(
+                                localPersonId = personId,
+                                displayName = newName,
+                                publicIdentityKey = "pub_key_$personId",
+                                creationTimestamp = System.currentTimeMillis()
+                            )
+                            repository.savePerson(p.copy(displayName = newName))
+                            onPersonUpdated(newName)
+                        }
+                    ) {
+                        Text("Save")
                     }
-                ) {
-                    Text("Save Name")
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { showEditMyNameInPeople = false }) {
-                    Text("Cancel")
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                Text("Current Encrypted Preferences:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                if (friendAssertions.isEmpty()) {
+                    Text("No preferences recorded yet. Add one below!", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        friendAssertions.forEach { assertion ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    AssistChip(onClick = {}, label = { Text(assertion.predicate.replace('_', ' '), style = MaterialTheme.typography.labelSmall) })
+                                    Text(assertion.value, style = MaterialTheme.typography.bodyMedium)
+                                }
+                                IconButton(
+                                    onClick = {
+                                        repository.deleteAssertion(assertion.assertionId)
+                                        friendAssertions = repository.getAssertionsForSubject(personId)
+                                    },
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Text("×", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                Text("Add New Preference:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                Text("1. Select Preference Category:", style = MaterialTheme.typography.labelSmall)
+
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    taxonomyVariables.forEach { (varKey, varName) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedPredicate = varKey }
+                                .padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(selected = selectedPredicate == varKey, onClick = { selectedPredicate = varKey })
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(varName, style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                }
+
+                Text("2. Quick Tap Suggestions:", style = MaterialTheme.typography.labelSmall)
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    items(quickSuggestions) { sug ->
+                        FilterChip(
+                            selected = customValueInput == sug,
+                            onClick = { customValueInput = sug },
+                            label = { Text(sug, style = MaterialTheme.typography.labelSmall) }
+                        )
+                    }
+                }
+
+                OutlinedTextField(
+                    value = customValueInput,
+                    onValueChange = { customValueInput = it },
+                    label = { Text("Value / Custom Preference") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                    singleLine = true
+                )
+
+                Button(
+                    enabled = customValueInput.isNotBlank(),
+                    onClick = {
+                        val valText = customValueInput.trim()
+                        if (selectedPredicate == "locationZip") {
+                            val currentPerson = repository.getPerson(personId) ?: com.plansguru.data.model.Person(
+                                localPersonId = personId,
+                                displayName = nameInput.trim().ifEmpty { currentDisplayName },
+                                publicIdentityKey = "pub_key_$personId",
+                                creationTimestamp = System.currentTimeMillis(),
+                                locationZip = valText
+                            )
+                            repository.savePerson(currentPerson.copy(locationZip = valText))
+                        }
+
+                        repository.saveAssertion(
+                            com.plansguru.data.model.Assertion(
+                                assertionId = java.util.UUID.randomUUID().toString(),
+                                observerId = "local_user",
+                                subjectId = personId,
+                                predicate = selectedPredicate,
+                                value = valText,
+                                source = "PEOPLE_SCREEN_UI",
+                                confidence = 1.0f,
+                                validityTimestampStart = System.currentTimeMillis(),
+                                validityTimestampEnd = null,
+                                visibilityPolicy = "PRIVATE"
+                            )
+                        )
+                        friendAssertions = repository.getAssertionsForSubject(personId)
+                        customValueInput = ""
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Save Preference")
                 }
             }
-        )
-    }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text("Done")
+            }
+        }
+    )
 }
 
 fun importPhoneContacts(context: android.content.Context, friendsList: MutableList<FriendItem>) {
@@ -726,26 +741,28 @@ fun importPhoneContacts(context: android.content.Context, friendsList: MutableLi
     cursor?.use {
         val nameIdx = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
         while (it.moveToNext()) {
-            val name = if (nameIdx != -1) it.getString(nameIdx) else "Unknown"
-            val initials = name.split(" ").mapNotNull { part -> part.firstOrNull()?.toString() }.take(2).joinToString("").uppercase()
-            if (friendsList.none { f -> f.name.equals(name, ignoreCase = true) }) {
-                friendsList.add(
-                    FriendItem(
-                        id = "contact_${System.currentTimeMillis()}_${friendsList.size}",
-                        name = name,
-                        initials = initials.ifEmpty { "P" },
-                        tags = listOf("Phone Contact"),
-                        isSelected = false
+            if (nameIdx != -1) {
+                val name = it.getString(nameIdx)
+                if (!name.isNullOrBlank() && friendsList.none { f -> f.name.equals(name, ignoreCase = true) }) {
+                    val initials = name.split(" ").mapNotNull { part -> part.firstOrNull()?.toString() }.take(2).joinToString("").uppercase()
+                    friendsList.add(
+                        FriendItem(
+                            id = "contact_${System.currentTimeMillis()}_${friendsList.size}",
+                            name = name,
+                            initials = initials,
+                            tags = listOf("Phone Contact"),
+                            isSelected = false
+                        )
                     )
-                )
-                repository.savePerson(
-                    com.plansguru.data.model.Person(
-                        localPersonId = name,
-                        displayName = name,
-                        publicIdentityKey = "pub_key_$name",
-                        creationTimestamp = System.currentTimeMillis()
+                    repository.savePerson(
+                        com.plansguru.data.model.Person(
+                            localPersonId = name,
+                            displayName = name,
+                            publicIdentityKey = "pub_key_$name",
+                            creationTimestamp = System.currentTimeMillis()
+                        )
                     )
-                )
+                }
             }
         }
     }
