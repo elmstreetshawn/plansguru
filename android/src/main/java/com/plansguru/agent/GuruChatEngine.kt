@@ -295,17 +295,20 @@ class GuruChatEngine(private val context: Context) {
         val results = mutableListOf<StructuredAssertion>()
         val globalSubject = extractSubjectFromText(userMessage)
 
-        val clauses = userMessage.split(Regex("[.!?;\\n]|\\b(but|however|except)\\b", RegexOption.IGNORE_CASE))
+        val clauses = userMessage.split(Regex("[,.!?;\\n]|\\b(but|however|except|and|or)\\b", RegexOption.IGNORE_CASE))
 
         val cuisineMap = mapOf(
             "italian" to "Italian", "mexican" to "Mexican", "japanese" to "Japanese",
             "sushi" to "Sushi", "ramen" to "Ramen", "thai" to "Thai", "tai" to "Thai",
             "chinese" to "Chinese", "indian" to "Indian", "american" to "American",
-            "pizza" to "Pizza", "burger" to "Burger", "bbq" to "BBQ", "barbecue" to "BBQ",
-            "tex-mex" to "Tex-Mex", "seafood" to "Seafood", "steak" to "Steakhouse",
-            "mediterranean" to "Mediterranean", "greek" to "Greek", "french" to "French",
-            "cuban" to "Cuban", "vietnamese" to "Vietnamese", "pho" to "Vietnamese",
-            "korean" to "Korean", "dim sum" to "Chinese", "taco" to "Mexican", "spicy" to "Spicy"
+            "pizza" to "Pizza", "burger" to "Burger", "burgers" to "Burger",
+            "bbq" to "BBQ", "barbecue" to "BBQ", "hotdog" to "American (Hotdogs)",
+            "hotdogs" to "American (Hotdogs)", "hot dog" to "American (Hotdogs)",
+            "hot dogs" to "American (Hotdogs)", "tex-mex" to "Tex-Mex", "seafood" to "Seafood",
+            "steak" to "Steakhouse", "mediterranean" to "Mediterranean", "greek" to "Greek",
+            "french" to "French", "cuban" to "Cuban", "vietnamese" to "Vietnamese",
+            "pho" to "Vietnamese", "korean" to "Korean", "dim sum" to "Chinese", "taco" to "Mexican",
+            "tacos" to "Mexican", "spicy" to "Spicy"
         )
 
         val dietaryMap = mapOf(
@@ -314,6 +317,8 @@ class GuruChatEngine(private val context: Context) {
             "pescatarian" to "Pescatarian"
         )
 
+        var currentSentimentIsNegative = false
+
         for (clause in clauses) {
             val clauseTrimmed = clause.trim()
             if (clauseTrimmed.isBlank()) continue
@@ -321,16 +326,29 @@ class GuruChatEngine(private val context: Context) {
 
             val clauseSubject = extractSubjectFromText(clauseTrimmed).ifEmpty { globalSubject }
 
-            val isClauseNegative = clauseLower.contains("don't") || clauseLower.contains("doesn't") ||
+            val hasNegativeIndicator = clauseLower.contains("don't") || clauseLower.contains("doesn't") ||
                     clauseLower.contains("dont") || clauseLower.contains("doesnt") ||
                     clauseLower.contains("dislike") || clauseLower.contains("hate") ||
                     clauseLower.contains("avoid") || clauseLower.contains("no ") ||
                     clauseLower.contains("not ") || clauseLower.contains("can't") ||
                     clauseLower.contains("cant")
 
+            val hasPositiveIndicator = clauseLower.contains("like") || clauseLower.contains("love") ||
+                    clauseLower.contains("prefer") || clauseLower.contains("enjoy") ||
+                    clauseLower.contains("craving") || clauseLower.contains("want")
+
+            if (hasNegativeIndicator) {
+                currentSentimentIsNegative = true
+            } else if (hasPositiveIndicator) {
+                currentSentimentIsNegative = false
+            }
+
+            val isClauseNegative = currentSentimentIsNegative
+
             // 1. Cuisines
             for ((key, value) in cuisineMap) {
-                if (clauseLower.contains(key)) {
+                val keyRegex = Regex("\\b${key}s?\\b", RegexOption.IGNORE_CASE)
+                if (keyRegex.containsMatchIn(clauseLower)) {
                     val predicate = if (isClauseNegative) "dislikes_cuisine" else "likes_cuisine"
                     val exists = results.any { it.subject == clauseSubject && it.predicate == predicate && it.value == value }
                     if (!exists) {
@@ -341,7 +359,8 @@ class GuruChatEngine(private val context: Context) {
 
             // 2. Dietary Restrictions
             for ((key, value) in dietaryMap) {
-                if (clauseLower.contains(key)) {
+                val keyRegex = Regex("\\b${key}\\b", RegexOption.IGNORE_CASE)
+                if (keyRegex.containsMatchIn(clauseLower)) {
                     val predicate = if (isClauseNegative) "dislikes_dietary" else "dietary_restriction"
                     val exists = results.any { it.subject == clauseSubject && it.predicate == predicate && it.value == value }
                     if (!exists) {
@@ -350,14 +369,12 @@ class GuruChatEngine(private val context: Context) {
                 }
             }
 
-            // Special Nut & Peanut Discrimination (STRICT EXPLICIT ALLERGY CHECK)
-            val mentionsNut = clauseLower.contains("nut") || clauseLower.contains("peanut")
+            // Special Nut & Peanut Discrimination (STRICT WORD BOUNDARIES)
+            val mentionsNut = Regex("\\b(nuts?|peanuts?)\\b", RegexOption.IGNORE_CASE).containsMatchIn(clauseLower)
             val explicitAllergyTerms = clauseLower.contains("allerg") || clauseLower.contains("nut-free") ||
                     clauseLower.contains("peanut-free") || clauseLower.contains("can't eat nut") ||
-                    clauseLower.contains("cannot eat nut") || clauseLower.contains("can't eat peanut") ||
-                    clauseLower.contains("cannot eat peanut") || clauseLower.contains("no nuts") ||
-                    clauseLower.contains("no peanuts") || clauseLower.contains("avoid nuts") ||
-                    clauseLower.contains("avoid peanuts")
+                    clauseLower.contains("cannot eat nut") || clauseLower.contains("no nuts") ||
+                    clauseLower.contains("avoid nuts")
 
             if (mentionsNut) {
                 if (explicitAllergyTerms) {
@@ -385,12 +402,11 @@ class GuruChatEngine(private val context: Context) {
                 }
             }
 
-            // 3B. Travel Time & Drive Distance Parsing (STRICTLY MUTUALLY EXCLUSIVE)
+            // 3B. Travel Time & Drive Distance Parsing (STRICT WORD BOUNDARIES)
             val mentionsTravelKeyword = clauseLower.contains("minute") || clauseLower.contains("min") ||
                     clauseLower.contains("hour") || clauseLower.contains("hr") ||
-                    clauseLower.contains("mile") || clauseLower.contains("mi") ||
-                    clauseLower.contains("drive") || clauseLower.contains("commute") ||
-                    clauseLower.contains("travel")
+                    clauseLower.contains("mile") || clauseLower.contains("drive") ||
+                    clauseLower.contains("commute") || clauseLower.contains("travel")
 
             if (mentionsTravelKeyword) {
                 val clauseWithoutZip = clauseTrimmed.replace(Regex("\\b\\d{5}\\b"), "")
@@ -398,9 +414,9 @@ class GuruChatEngine(private val context: Context) {
                 val num = numbers.firstOrNull()
 
                 if (num != null && num in 1..180) {
-                    val hasMinutesKeyword = clauseLower.contains("minute") || clauseLower.contains("min")
-                    val hasMilesKeyword = clauseLower.contains("mile") || clauseLower.contains("mi")
-                    val hasHoursKeyword = clauseLower.contains("hour") || clauseLower.contains("hr")
+                    val hasMinutesKeyword = Regex("\\b(minutes?|mins?)\\b", RegexOption.IGNORE_CASE).containsMatchIn(clauseLower)
+                    val hasMilesKeyword = Regex("\\b(miles?|mi)\\b", RegexOption.IGNORE_CASE).containsMatchIn(clauseLower)
+                    val hasHoursKeyword = Regex("\\b(hours?|hrs?)\\b", RegexOption.IGNORE_CASE).containsMatchIn(clauseLower)
 
                     if (hasMilesKeyword) {
                         val exists = results.any { it.subject == clauseSubject && it.predicate == "max_distance_miles" }
