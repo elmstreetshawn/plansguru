@@ -5,8 +5,10 @@ import android.content.pm.PackageManager
 import android.provider.ContactsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -66,7 +68,7 @@ fun fetchDeviceContacts(context: android.content.Context): List<ContactEntry> {
     return list
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun PeopleScreen(
     onProceedToGroup: (List<String>) -> Unit,
@@ -141,7 +143,7 @@ fun PeopleScreen(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("People", style = MaterialTheme.typography.headlineMedium)
                         Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
-                            Text("v1.1.0", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
+                            Text("v1.1.1", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 },
@@ -332,48 +334,89 @@ fun PeopleScreen(
             ) {
                 items(filteredFriends) { friend ->
                     var showPreferencesDialog by remember { mutableStateOf(false) }
+                    var showContextMenu by remember { mutableStateOf(false) }
 
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                val index = friends.indexOfFirst { it.id == friend.id }
-                                if (index != -1) friends[index] = friends[index].copy(isSelected = !friend.isSelected)
-                            },
-                        shape = MaterialTheme.shapes.medium,
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                    ) {
-                        Row(
+                    Box {
+                        Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                .combinedClickable(
+                                    onClick = {
+                                        val index = friends.indexOfFirst { it.id == friend.id }
+                                        if (index != -1) friends[index] = friends[index].copy(isSelected = !friend.isSelected)
+                                    },
+                                    onLongClick = { showContextMenu = true }
+                                ),
+                            shape = MaterialTheme.shapes.medium,
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                         ) {
-                            Box(
+                            Row(
                                 modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primaryContainer),
-                                contentAlignment = Alignment.Center
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
                             ) {
-                                Text(friend.initials, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
-                            }
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(friend.name, style = MaterialTheme.typography.titleMedium)
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(friend.tags.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primaryContainer),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(friend.initials, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                                }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(friend.name, style = MaterialTheme.typography.titleMedium)
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Text(friend.tags.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
 
-                            IconButton(onClick = { showPreferencesDialog = true }) {
-                                Icon(Icons.Default.Edit, contentDescription = "Edit Profile & Preferences", tint = MaterialTheme.colorScheme.primary)
-                            }
+                                IconButton(onClick = { showPreferencesDialog = true }) {
+                                    Icon(Icons.Default.Edit, contentDescription = "Edit Profile & Preferences", tint = MaterialTheme.colorScheme.primary)
+                                }
 
-                            Checkbox(
-                                checked = friend.isSelected,
-                                onCheckedChange = { checked ->
-                                    val index = friends.indexOfFirst { it.id == friend.id }
-                                    if (index != -1) friends[index] = friends[index].copy(isSelected = checked)
+                                Checkbox(
+                                    checked = friend.isSelected,
+                                    onCheckedChange = { checked ->
+                                        val index = friends.indexOfFirst { it.id == friend.id }
+                                        if (index != -1) friends[index] = friends[index].copy(isSelected = checked)
+                                    }
+                                )
+                            }
+                        }
+
+                        DropdownMenu(
+                            expanded = showContextMenu,
+                            onDismissRequest = { showContextMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("✏️ Edit Profile & Preferences") },
+                                onClick = {
+                                    showContextMenu = false
+                                    showPreferencesDialog = true
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("💬 Share Invite Link") },
+                                onClick = {
+                                    showContextMenu = false
+                                    val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
+                                    val serverUrl = prefs.getString("server_url", "https://smart-lizards-nail.loca.lt")?.trimEnd('/') ?: "https://smart-lizards-nail.loca.lt"
+                                    val deepLink = "$serverUrl/join?inviter=local_user"
+                                    val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                        type = "text/plain"
+                                        putExtra(android.content.Intent.EXTRA_TEXT, "Connect with me on PlansGuru: $deepLink")
+                                    }
+                                    try { context.startActivity(android.content.Intent.createChooser(shareIntent, "Share Invite Link")) } catch (_: Exception) {}
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("🗑️ Delete Friend", color = MaterialTheme.colorScheme.error) },
+                                onClick = {
+                                    showContextMenu = false
+                                    friends.removeAll { it.id == friend.id }
+                                    try { repository.deletePerson(friend.name) } catch (_: Exception) {}
                                 }
                             )
                         }

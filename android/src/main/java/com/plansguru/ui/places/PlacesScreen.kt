@@ -1,7 +1,9 @@
 package com.plansguru.ui.places
 
 import android.app.Application
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -107,7 +109,7 @@ data class RestaurantDatasetRoot(
     val restaurants: List<Restaurant>
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun PlacesScreen(
     viewModel: PlacesViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
@@ -161,7 +163,7 @@ fun PlacesScreen(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Places", style = MaterialTheme.typography.headlineMedium)
                         Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
-                            Text("v1.1.0", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
+                            Text("v1.1.1", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 },
@@ -236,41 +238,77 @@ fun PlacesScreen(
                     val distanceMiles = calculateZipDistanceMiles(userZip, restaurant.zipCode)
                     val driveMins = (distanceMiles * 2.5).toInt().coerceAtLeast(3)
                     val distFormatted = String.format("%.1f", distanceMiles)
+                    var showPlaceMenu by remember { mutableStateOf(false) }
 
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { selectedRestaurant = restaurant },
-                        shape = MaterialTheme.shapes.large,
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(restaurant.name, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-                                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer) {
-                                    Text(restaurant.priceRange, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
+                    Box {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .combinedClickable(
+                                    onClick = { selectedRestaurant = restaurant },
+                                    onLongClick = { showPlaceMenu = true }
+                                ),
+                            shape = MaterialTheme.shapes.large,
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(restaurant.name, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer) {
+                                        Text(restaurant.priceRange, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp))
+                                    }
+                                }
+                                Text("Cuisine: ${restaurant.cuisine}", style = MaterialTheme.typography.bodyMedium)
+                                Text("📍 ${restaurant.address} (Zip: ${restaurant.zipCode})", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)) {
+                                    Text(
+                                        "🚗 $distFormatted mi · $driveMins min drive from $userZip",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    restaurant.dietaryAccommodations.take(3).forEach { accommodation ->
+                                        AssistChip(onClick = {}, label = { Text(accommodation, style = MaterialTheme.typography.labelSmall) })
+                                    }
                                 }
                             }
-                            Text("Cuisine: ${restaurant.cuisine}", style = MaterialTheme.typography.bodyMedium)
-                            Text("📍 ${restaurant.address} (Zip: ${restaurant.zipCode})", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)) {
-                                Text(
-                                    "🚗 $distFormatted mi · $driveMins min drive from $userZip",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                restaurant.dietaryAccommodations.take(3).forEach { accommodation ->
-                                    AssistChip(onClick = {}, label = { Text(accommodation, style = MaterialTheme.typography.labelSmall) })
+                        }
+
+                        DropdownMenu(
+                            expanded = showPlaceMenu,
+                            onDismissRequest = { showPlaceMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("🗺️ Open in Google Maps") },
+                                onClick = {
+                                    showPlaceMenu = false
+                                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                                        data = android.net.Uri.parse("geo:0,0?q=${android.net.Uri.encode(restaurant.name + ", " + restaurant.address)}")
+                                    }
+                                    try { context.startActivity(intent) } catch (_: Exception) {}
                                 }
-                            }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("✏️ Edit Place Details") },
+                                onClick = {
+                                    showPlaceMenu = false
+                                    selectedRestaurant = restaurant
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("🗑️ Delete Place", color = MaterialTheme.colorScheme.error) },
+                                onClick = {
+                                    showPlaceMenu = false
+                                    viewModel.deleteRestaurant(restaurant.id)
+                                }
+                            )
                         }
                     }
                 }

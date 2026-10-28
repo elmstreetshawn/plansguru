@@ -1,7 +1,9 @@
 package com.plansguru.ui.planning
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -30,7 +32,7 @@ data class PlanRecord(
     val isUpcoming: Boolean = true
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun PlansHistoryScreen(
     onCreateNewPlan: () -> Unit,
@@ -103,7 +105,7 @@ fun PlansHistoryScreen(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Dinner Plans & History", style = MaterialTheme.typography.titleLarge)
                         Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
-                            Text("v1.1.0", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
+                            Text("v1.1.1", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 },
@@ -181,39 +183,80 @@ fun PlansHistoryScreen(
                     }
                 } else {
                     items(upcomingPlans, key = { "up_${it.id}" }) { plan ->
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { selectedPlan = plan },
-                            shape = MaterialTheme.shapes.large,
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(plan.title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = MaterialTheme.colorScheme.primaryContainer
+                        var showPlanMenu by remember { mutableStateOf(false) }
+
+                        Box {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .combinedClickable(
+                                        onClick = { selectedPlan = plan },
+                                        onLongClick = { showPlanMenu = true }
+                                    ),
+                                shape = MaterialTheme.shapes.large,
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(
-                                            plan.consensusScore,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                            color = MaterialTheme.colorScheme.onPrimaryContainer
-                                        )
+                                        Text(plan.title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                                        Surface(
+                                            shape = CircleShape,
+                                            color = MaterialTheme.colorScheme.primaryContainer
+                                        ) {
+                                            Text(
+                                                plan.consensusScore,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                            )
+                                        }
                                     }
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Icon(Icons.Default.Place, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Text("${plan.restaurantName} (${plan.cuisine} • ${plan.price})", style = MaterialTheme.typography.bodyMedium)
+                                    }
+                                    Text("Participants: ${plan.participants.joinToString(", ")}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("Status: ${plan.date}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                                 }
-                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    Icon(Icons.Default.Place, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Text("${plan.restaurantName} (${plan.cuisine} • ${plan.price})", style = MaterialTheme.typography.bodyMedium)
-                                }
-                                Text("Participants: ${plan.participants.joinToString(", ")}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("Status: ${plan.date}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                            }
+
+                            DropdownMenu(
+                                expanded = showPlanMenu,
+                                onDismissRequest = { showPlanMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("✏️ Edit Plan Details") },
+                                    onClick = {
+                                        showPlanMenu = false
+                                        selectedPlan = plan
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("💬 Share Plan Link via Messenger") },
+                                    onClick = {
+                                        showPlanMenu = false
+                                        val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
+                                        val serverUrl = prefs.getString("server_url", "https://smart-lizards-nail.loca.lt")?.trimEnd('/') ?: "https://smart-lizards-nail.loca.lt"
+                                        val deepLink = "$serverUrl/join?inviter=local_user&group=${java.net.URLEncoder.encode(plan.title, "UTF-8")}"
+                                        val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                            type = "text/plain"
+                                            putExtra(android.content.Intent.EXTRA_TEXT, "Join my PlansGuru dinner plan '${plan.title}': $deepLink")
+                                        }
+                                        try { context.startActivity(android.content.Intent.createChooser(shareIntent, "Share Plan Link")) } catch (_: Exception) {}
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("🗑️ Delete Plan", color = MaterialTheme.colorScheme.error) },
+                                    onClick = {
+                                        showPlanMenu = false
+                                        repository.deletePlanRecord(plan.id)
+                                    }
+                                )
                             }
                         }
                     }
