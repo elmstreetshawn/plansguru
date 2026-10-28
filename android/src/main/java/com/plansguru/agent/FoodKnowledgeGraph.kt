@@ -25,6 +25,7 @@ object FoodKnowledgeGraph {
         FoodEntity("Vietnamese", "CUISINE", synonyms = listOf("vietnamese", "pho", "banh mi")),
         FoodEntity("Korean", "CUISINE", synonyms = listOf("korean", "korean bbq", "kimchi", "bibimbap")),
         FoodEntity("Bakery", "CUISINE", synonyms = listOf("bakery", "cafe", "donuts", "coffee", "pastry", "espresso")),
+        FoodEntity("Nuts & Peanuts", "CUISINE", synonyms = listOf("nut", "nuts", "peanut", "peanuts", "cashew", "almond")),
 
         // Dietary Restrictions
         FoodEntity("Vegan", "DIETARY", synonyms = listOf("vegan", "plant-based", "no dairy", "no meat")),
@@ -33,7 +34,7 @@ object FoodKnowledgeGraph {
         FoodEntity("Dairy-Free", "DIETARY", synonyms = listOf("dairy", "dairy-free", "lactose")),
         FoodEntity("Halal", "DIETARY", synonyms = listOf("halal")),
         FoodEntity("Kosher", "DIETARY", synonyms = listOf("kosher")),
-        FoodEntity("Nut-Free", "DIETARY", synonyms = listOf("nut", "nuts", "peanut", "peanut allergy")),
+        FoodEntity("Nut-Free", "DIETARY", synonyms = listOf("nut-free", "peanut-free", "nut allergy", "peanut allergy", "no nuts", "allergic to nuts")),
 
         // Atmosphere & Vibe
         FoodEntity("Quiet / Low Crowds", "VIBE", synonyms = listOf("quiet", "peaceful", "calm", "cozy", "intimate")),

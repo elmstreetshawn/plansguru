@@ -371,31 +371,32 @@ class GuruChatEngine(private val context: Context) {
                 }
             }
 
-            // 3. Travel Time & Distance & Zip Code
-            if (clauseLower.contains("distance") || clauseLower.contains("mile") || clauseLower.contains("travel") ||
-                clauseLower.contains("far") || clauseLower.contains("close") || clauseLower.contains("drive") ||
-                clauseLower.contains("minute") || clauseLower.contains("hour") || clauseLower.contains("min") ||
-                clauseLower.contains("hr") || clauseLower.contains("commute") || clauseLower.contains("zip")) {
+            // 3A. Zip Code Parsing (Exact 5-Digit Match Only)
+            val zipMatch = Regex("\\b\\d{5}\\b").find(clauseTrimmed)?.value
+            if (zipMatch != null) {
+                val exists = results.any { it.subject == clauseSubject && it.predicate == "locationZip" }
+                if (!exists) {
+                    results.add(StructuredAssertion(clauseSubject, "locationZip", zipMatch))
+                }
+            }
 
-                val numbers = Regex("\\d+").findAll(clauseLower).mapNotNull { it.value.toIntOrNull() }.toList()
+            // 3B. Travel Time & Drive Distance Parsing (Explicit time/distance keywords)
+            val mentionsTravelKeyword = clauseLower.contains("minute") || clauseLower.contains("min") ||
+                    clauseLower.contains("hour") || clauseLower.contains("hr") ||
+                    clauseLower.contains("mile") || clauseLower.contains("mi") ||
+                    clauseLower.contains("drive") || clauseLower.contains("commute") ||
+                    clauseLower.contains("travel")
+
+            if (mentionsTravelKeyword) {
+                val clauseWithoutZip = clauseTrimmed.replace(Regex("\\b\\d{5}\\b"), "")
+                val numbers = Regex("\\b\\d{1,3}\\b").findAll(clauseWithoutZip).mapNotNull { it.value.toIntOrNull() }.toList()
                 val num = numbers.firstOrNull()
 
-                val zipMatch = Regex("\\b\\d{5}\\b").find(clauseTrimmed)?.value
-
-                if (zipMatch != null) {
-                    val exists = results.any { it.subject == clauseSubject && it.predicate == "locationZip" }
-                    if (!exists) {
-                        results.add(StructuredAssertion(clauseSubject, "locationZip", zipMatch))
-                    }
-                }
-
-                if (num != null) {
-                    val isMinutes = clauseLower.contains("minute") || clauseLower.contains("min") || clauseLower.contains("drive")
+                if (num != null && num in 1..180) {
                     val isHours = clauseLower.contains("hour") || clauseLower.contains("hr")
                     val isMiles = clauseLower.contains("mile") || clauseLower.contains("mi")
 
                     val normVal = when {
-                        isMinutes -> "$num minutes"
                         isHours -> "${num * 60} minutes"
                         isMiles -> "$num miles"
                         else -> "$num minutes"
