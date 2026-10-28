@@ -276,46 +276,128 @@ fun PeopleScreen(
                     }
 
                     if (showPreferencesDialog) {
+                        var selectedPredicate by remember { mutableStateOf("likes_cuisine") }
+                        var customValueInput by remember { mutableStateOf("") }
+
+                        val taxonomyVariables = listOf(
+                            "likes_cuisine" to "🍕 Likes Cuisine",
+                            "dislikes_cuisine" to "🚫 Dislikes Cuisine",
+                            "dietary_restriction" to "🥗 Dietary / Allergy",
+                            "max_travel_time" to "🚗 Travel Distance / Drive",
+                            "noise_preference" to "🤫 Noise / Crowd Level",
+                            "locationZip" to "📍 Zip Code"
+                        )
+
+                        val quickSuggestions = when (selectedPredicate) {
+                            "likes_cuisine" -> listOf("Italian", "Mexican", "Sushi", "Thai", "Pizza", "BBQ", "Japanese", "Chinese")
+                            "dislikes_cuisine" -> listOf("Spicy", "Fast Food", "Seafood", "Indian", "BBQ")
+                            "dietary_restriction" -> listOf("Vegan", "Gluten-Free", "Vegetarian", "Dairy-Free", "Halal", "Kosher", "Peanut Allergy")
+                            "max_travel_time" -> listOf("10 min", "15 min", "20 min", "30 min")
+                            "noise_preference" -> listOf("Quiet / Low Crowds", "Moderate", "Vibrant / Loud")
+                            "locationZip" -> listOf("78626", "78681", "78701", "78704", "78652", "78748")
+                            else -> listOf("Italian", "Vegan", "15 min")
+                        }
+
                         AlertDialog(
                             onDismissRequest = { showPreferencesDialog = false },
                             title = { Text("Preferences for ${friend.name}") },
                             text = {
-                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Text("Current Encrypted Graph Assertions:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    Text("Current Encrypted Preferences:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                                     if (friendAssertions.isEmpty()) {
-                                        Text("No preferences recorded yet.", style = MaterialTheme.typography.bodySmall)
+                                        Text("No preferences recorded yet. Set one below!", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     } else {
-                                        friendAssertions.forEach { assertion ->
-                                            Text("• ${assertion.predicate}: ${assertion.value}", style = MaterialTheme.typography.bodyMedium)
+                                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                            friendAssertions.forEach { assertion ->
+                                                Row(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                                    verticalAlignment = Alignment.CenterVertically
+                                                ) {
+                                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                        AssistChip(onClick = {}, label = { Text(assertion.predicate.replace('_', ' '), style = MaterialTheme.typography.labelSmall) })
+                                                        Text(assertion.value, style = MaterialTheme.typography.bodyMedium)
+                                                    }
+                                                    IconButton(
+                                                        onClick = {
+                                                            repository.deleteAssertion(assertion.assertionId)
+                                                            friendAssertions = repository.getAssertionsForSubject(friend.name)
+                                                        },
+                                                        modifier = Modifier.size(24.dp)
+                                                    ) {
+                                                        Text("×", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text("Add Preference / Restriction:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                                    Text("Add New Preference:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                    Text("1. Select Preference Category:", style = MaterialTheme.typography.labelSmall)
+
+                                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                        taxonomyVariables.forEach { (varKey, varName) ->
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clickable { selectedPredicate = varKey }
+                                                    .padding(vertical = 2.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                RadioButton(selected = selectedPredicate == varKey, onClick = { selectedPredicate = varKey })
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text(varName, style = MaterialTheme.typography.bodyMedium)
+                                            }
+                                        }
+                                    }
+
+                                    Text("2. Quick Tap Suggestions:", style = MaterialTheme.typography.labelSmall)
+                                    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        items(quickSuggestions) { sug ->
+                                            FilterChip(
+                                                selected = customValueInput == sug,
+                                                onClick = { customValueInput = sug },
+                                                label = { Text(sug, style = MaterialTheme.typography.labelSmall) }
+                                            )
+                                        }
+                                    }
+
                                     OutlinedTextField(
-                                        value = newPrefPredicate,
-                                        onValueChange = { newPrefPredicate = it },
-                                        label = { Text("Predicate (e.g. likes_cuisine, dislikes_cuisine)") },
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
-                                    OutlinedTextField(
-                                        value = newPrefValue,
-                                        onValueChange = { newPrefValue = it },
-                                        label = { Text("Value (e.g. Italian, Vegan)") },
-                                        modifier = Modifier.fillMaxWidth()
+                                        value = customValueInput,
+                                        onValueChange = { customValueInput = it },
+                                        label = { Text("Value / Custom Preference") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = MaterialTheme.shapes.medium,
+                                        singleLine = true
                                     )
                                 }
                             },
                             confirmButton = {
-                                Button(onClick = {
-                                    if (newPrefValue.isNotBlank()) {
+                                Button(
+                                    enabled = customValueInput.isNotBlank(),
+                                    onClick = {
+                                        val valText = customValueInput.trim()
+                                        if (selectedPredicate == "locationZip") {
+                                            val currentPerson = repository.getPerson(friend.name) ?: com.plansguru.data.model.Person(
+                                                localPersonId = friend.name,
+                                                displayName = friend.name,
+                                                publicIdentityKey = "pub_key_${friend.name}",
+                                                creationTimestamp = System.currentTimeMillis(),
+                                                locationZip = valText
+                                            )
+                                            repository.savePerson(currentPerson.copy(locationZip = valText))
+                                        }
+
                                         repository.saveAssertion(
                                             com.plansguru.data.model.Assertion(
                                                 assertionId = java.util.UUID.randomUUID().toString(),
                                                 observerId = "local_user",
                                                 subjectId = friend.name,
-                                                predicate = newPrefPredicate.trim(),
-                                                value = newPrefValue.trim(),
-                                                source = "MANUAL_EDIT",
+                                                predicate = selectedPredicate,
+                                                value = valText,
+                                                source = "PEOPLE_SCREEN_UI",
                                                 confidence = 1.0f,
                                                 validityTimestampStart = System.currentTimeMillis(),
                                                 validityTimestampEnd = null,
@@ -323,10 +405,10 @@ fun PeopleScreen(
                                             )
                                         )
                                         friendAssertions = repository.getAssertionsForSubject(friend.name)
-                                        newPrefValue = ""
+                                        customValueInput = ""
                                     }
-                                }) {
-                                    Text("Add")
+                                ) {
+                                    Text("Save Preference")
                                 }
                             },
                             dismissButton = {
