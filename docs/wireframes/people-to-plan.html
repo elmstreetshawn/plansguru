@@ -198,6 +198,25 @@
   /* Guru tab */
   .quickreplies { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 0 36px; }
 
+  /* Places */
+  .thumb { width: 64px; height: 64px; border-radius: 12px; flex: none; background: repeating-linear-gradient(45deg, #dedee5, #dedee5 6px, #e8e8ee 6px, #e8e8ee 12px); }
+  .place .why-line { font-size: 11px; color: var(--ok); }
+  .pill-sp { font-size: 10px; color: var(--muted); border: 1px solid var(--line); border-radius: 8px; padding: 0 6px; }
+  .bigmap { background: #e3e7e3; border-radius: 14px; height: 470px; position: relative; overflow: hidden; }
+  .bigmap .pin { position: absolute; background: #fff; border-radius: 12px; padding: 3px 8px; font-size: 11px; box-shadow: 0 2px 6px rgba(0,0,0,.2); cursor: pointer; }
+  .fab.wide { width: auto; padding: 0 18px; font-size: 15px; font-weight: 600; border-radius: 18px; text-decoration: none; }
+  /* Calendar */
+  .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; font-size: 12px; }
+  .cal .dow { color: var(--muted); font-size: 11px; padding: 4px 0; }
+  .cal .d { padding: 7px 0 9px; border-radius: 10px; position: relative; cursor: pointer; }
+  .cal .d.out { color: #c4c4cc; }
+  .cal .d.today { font-weight: 700; outline: 1px solid var(--accent); }
+  .cal .d.sel { background: var(--accent); color: #fff; }
+  .cal .d i { position: absolute; left: 50%; bottom: 3px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--accent); }
+  .cal .d i.ask { background: #e0a400; }
+  .cal .d.sel i { background: #fff; }
+  .msg-preview { background: #f1f1f5; border-radius: 14px; padding: 10px 12px; font-size: 13px; margin: 8px 0; }
+
   /* Sheets & dialogs */
   .scrim { position: absolute; inset: 0; background: rgba(0,0,0,.35); display: none; z-index: 5; }
   .scrim.show { display: block; }
@@ -279,7 +298,7 @@
     <a class="fab go off" id="people-fab" data-go="s-group">→<span class="badge" id="fab-badge">0</span></a>
     <nav class="navbar">
       <a class="on"><i>👥</i>People</a>
-      <a><i>📍</i>Places</a>
+      <a class="go" data-go="s-places"><i>📍</i>Places</a>
       <a class="go" data-go="s-howwas"><i>🗓</i>Plans<span class="dot">2</span></a>
       <a class="go" data-go="s-guru"><i><span class="guru" data-crop="912,268,118,150" data-scale=".15" style="display:inline-block;vertical-align:middle"></span></i>Guru</a>
     </nav>
@@ -333,7 +352,7 @@
       <p class="note-inline">Tags are private and save instantly. Circle changes affect what friends see, so they wait for <b>Share changes</b>.</p>
     </div>
     <div class="bottom-actions">
-      <a class="btn primary go" data-go="s-thinking">✨ Guru, Plan it</a>
+      <a class="btn primary go" data-go="s-thinking">✨ Guru, plan it</a>
     </div>
 
     <div class="scrim" id="group-scrim"></div>
@@ -362,7 +381,7 @@
     <p><b>Bulk vs. one person:</b> tick several people and use the bar, or tap one person's row to edit just them.</p>
     <p><b>Undo</b> steps back through unshared changes. <b>Discard</b> goes back to the last shared version. Try: tick two people → Circle → Apply → Undo.</p>
     <p><b>Ticks never change who's invited.</b> The hint and button labels say "Editing the 2 ticked" so nobody thinks unticking removes someone. To remove someone, go back and tap × on People.</p>
-    <p><b>Tools start open</b> (decided). The usual path is still one tap: <b>✨ Guru, Plan it</b>.</p>
+    <p><b>Tools start open</b> (decided). The usual path is still one tap: <b>✨ Guru, plan it</b>.</p>
   </div>
 </section>
 
@@ -439,6 +458,7 @@
     <p><b>One option, yes or no</b>, as your teammate wants. The card answers who, what, when, where at a glance.</p>
     <p><b>Why line:</b> always high-level. If a place is sponsored, the line under it reads e.g. "Sponsored · +4.5 of 100 pts · would rank #2 without it".</p>
     <p><b>Not this one</b> asks for an optional reason, then the Guru tries again. Try it.</p>
+    <p><b>Idea, photo area:</b> AI-generated art themed to the plan (taco night on a patio, fall colors) instead of a stock photo. It could also qualify you for the AutoHDR image track as a second track.</p>
     <p class="ask">Q: Is there a limit on "Not this one"? After 3 tries, should it offer "Pick a day yourself"?</p>
   </div>
 </section>
@@ -475,16 +495,27 @@
 
       <div class="btn-row" style="margin:6px 0 10px">
         <a class="btn secondary">📅 Add to calendar</a>
-        <a class="btn secondary">🛡 Share with trusted contact</a>
+        <a class="btn secondary" data-sheet="sheet-trusted">🛡 Share with trusted contact</a>
       </div>
       <a class="btn disabled">Yes, book it · unlocks at 3 yeses</a>
       <p class="note-inline" style="text-align:center">You're in · <a style="color:var(--accent)">Change my answer</a></p>
+    </div>
+    <div class="scrim" data-scrim></div>
+    <div class="sheet" id="sheet-trusted">
+      <div class="grab"></div>
+      <h3>Share with a trusted contact</h3>
+      <p class="note-inline" style="margin:0 0 4px">Sends a plain message through your usual texting app. PlansGuru never sees who you send it to.</p>
+      <div class="msg-preview" id="trusted-preview">I'm having dinner at <b>Casa Luz</b>, 1900 E 6th St, Austin, on <b>Thu Oct 29 at 7 pm</b> with Maya, Jo and Priya. I'll text you when I'm home.</div>
+      <div class="row on" data-check><span class="box-check"></span><span class="grow">Address</span></div>
+      <div class="row on" data-check><span class="box-check"></span><span class="grow">Who's going <small>first names only</small></span></div>
+      <div class="row on" data-check><span class="box-check"></span><span class="grow">"I'll text you when I'm home"</span></div>
+      <div class="btn-row" style="margin-top:10px"><a class="btn secondary" data-close>Cancel</a><a class="btn primary" data-close>Share…</a></div>
     </div>
   </div>
   <div class="notes">
     <p><b>Borrowed from:</b> food-delivery trackers (Uber Eats, Domino's) for the 4-step bar; Partiful / Luma for "who's coming".</p>
     <p><b>Top to bottom = most to least urgent:</b> where it stands → who → where → actions.</p>
-    <p><b>Share with trusted contact</b> copies a plain summary (what, where, when, who) for your normal texting app.</p>
+    <p><b>Share with trusted contact</b> opens a half sheet, like "Not this one": a preview of the message, ticks for what to include, then <b>Share…</b> opens Android's normal share menu (Signal, SMS, WhatsApp…). Try it.</p>
   </div>
 </section>
 
@@ -597,7 +628,7 @@
     <div class="appbar">
       <span class="avatar sm">ME</span>
       <div class="title"><b>Plans</b></div>
-      <span class="chip">☰ List · 🗓 Calendar</span>
+      <div class="seg" style="margin:0;width:150px"><a class="on">☰ List</a><a class="go" data-go="s-calendar">🗓 Calendar</a></div>
     </div>
     <div class="content">
       <div class="label">Needs your answer · 2</div>
@@ -610,7 +641,7 @@
     </div>
     <nav class="navbar">
       <a class="go" data-go="s-people"><i>👥</i>People</a>
-      <a><i>📍</i>Places</a>
+      <a class="go" data-go="s-places"><i>📍</i>Places</a>
       <a class="on"><i>🗓</i>Plans<span class="dot">2</span></a>
       <a class="go" data-go="s-guru"><i><span class="guru" data-crop="912,268,118,150" data-scale=".15" style="display:inline-block;vertical-align:middle"></span></i>Guru</a>
     </nav>
@@ -637,6 +668,99 @@
     <p><b>Pops up once</b>, based on when the plan was scheduled. Skippable, and it stays reachable from Past (the ● dot).</p>
     <p><b>Plans tab layout</b>, most urgent first: needs your answer → in motion → upcoming → past. Calendar is a toggle at the top right.</p>
     <p>Close the popup to see the list. Rows jump to screens 5 and 6.</p>
+  </div>
+</section>
+
+<!-- 8b. PLANS, CALENDAR VIEW -->
+<section class="frame" id="s-calendar">
+  <h2>8b · Plans tab, calendar view <span>(toggle on 8)</span></h2>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮▮ ◔</span></div>
+    <div class="appbar">
+      <span class="avatar sm">ME</span>
+      <div class="title"><b>Plans</b></div>
+      <div class="seg" style="margin:0;width:150px"><a class="go" data-go="s-howwas">☰ List</a><a class="on">🗓 Calendar</a></div>
+    </div>
+    <div class="content">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:2px 0 6px"><span class="icon">‹</span><b>October 2026</b><span class="icon">›</span></div>
+      <div class="cal" id="cal-grid"></div>
+      <div style="display:flex;gap:12px;font-size:11px;color:var(--muted);margin:8px 0 2px"><span><span style="color:var(--accent)">●</span> plan</span><span><span style="color:#e0a400">●</span> needs your answer</span></div>
+      <div class="label" id="cal-day-label">Thu, Oct 29</div>
+      <div id="cal-day-list"></div>
+    </div>
+    <a class="fab wide go" data-go="s-people" style="bottom:84px">＋ Plan</a>
+    <nav class="navbar">
+      <a class="go" data-go="s-people"><i>👥</i>People</a>
+      <a class="go" data-go="s-places"><i>📍</i>Places</a>
+      <a class="on"><i>🗓</i>Plans<span class="dot">2</span></a>
+      <a class="go" data-go="s-guru"><i><span class="guru" data-crop="912,268,118,150" data-scale=".15" style="display:inline-block;vertical-align:middle"></span></i>Guru</a>
+    </nav>
+  </div>
+  <div class="notes">
+    <p><b>Same plans as the list (8), laid out by day.</b> Purple dot = a plan; yellow dot = an invite waiting for your answer. Tap a day to see its plans. Try Oct 29 and Oct 31.</p>
+    <p><b>Not your free times.</b> This shows plans only. When you're free (for the Guru) lives in the avatar → My free times.</p>
+    <p><b>＋ Plan</b> jumps to People to pick who.</p>
+  </div>
+</section>
+
+<!-- 13. PLACES TAB -->
+<section class="frame" id="s-places">
+  <h2>13 · Places <span>(2nd tab: browse on purpose)</span></h2>
+  <div class="phone">
+    <div class="status"><span>9:41</span><span>▮▮▮ ◔</span></div>
+    <div class="appbar">
+      <span class="avatar sm">ME</span>
+      <div class="title"><b>Places</b><small>Austin</small></div>
+      <div class="seg" id="seg-places" style="margin:0;width:130px"><a class="on" data-pane="places-list">☰ List</a><a data-pane="places-map">🗺 Map</a></div>
+    </div>
+    <div class="content">
+      <div class="search">🔍 <span>Search places</span></div>
+      <div class="chips scroll" style="margin-bottom:6px">
+        <span class="chip on" onclick="this.classList.toggle('on')">Open now</span><span class="chip" onclick="this.classList.toggle('on')">≤ 20 min</span><span class="chip" onclick="this.classList.toggle('on')">$$</span><span class="chip" onclick="this.classList.toggle('on')">🌱 Veg-friendly</span><span class="chip" onclick="this.classList.toggle('on')">🔇 Quieter</span><span class="chip" onclick="this.classList.toggle('on')">Patio</span>
+      </div>
+      <div id="places-list">
+        <div class="label">For you</div>
+        <a class="row place" data-sheet="sheet-place"><span class="thumb"></span><span class="grow"><b>Casa Luz</b><small>Tacos · $$ · 14 min</small><span class="why-line">🌱 lots of veg options · big patio</span></span><span>›</span></a>
+        <a class="row place" data-sheet="sheet-place"><span class="thumb"></span><span class="grow"><b>Green Fork</b><small>Salads · $ · 9 min</small><span class="why-line">🔇 quieter · you liked it before</span></span><span>›</span></a>
+        <a class="row place" data-sheet="sheet-place"><span class="thumb"></span><span class="grow"><b>Juniper</b><small>Italian · $$$ · 18 min</small><span class="pill-sp">Sponsored · +4.5 of 100 pts · would rank #3 without it</span></span><span>›</span></a>
+        <div class="label">A little further, worth it</div>
+        <a class="row place" data-sheet="sheet-place"><span class="thumb"></span><span class="grow"><b>Saffron House</b><small>Indian · $$ · 27 min</small><span class="why-line">🌱 fully vegetarian menu</span></span><span>›</span></a>
+      </div>
+      <div id="places-map" style="display:none">
+        <div class="bigmap">
+          <span class="pin" data-sheet="sheet-place" style="top:120px;left:60px">🌮 Casa Luz</span>
+          <span class="pin" data-sheet="sheet-place" style="top:210px;left:170px">🥗 Green Fork</span>
+          <span class="pin" data-sheet="sheet-place" style="top:300px;left:90px">🍝 Juniper · Ad</span>
+          <span class="pin" data-sheet="sheet-place" style="top:60px;left:190px">🍛 Saffron House</span>
+          <span class="pin" style="top:250px;left:40px;background:var(--accent);color:#fff">● You</span>
+        </div>
+      </div>
+    </div>
+    <a class="fab wide go" data-go="s-people" style="bottom:84px">＋ Plan</a>
+    <nav class="navbar">
+      <a class="go" data-go="s-people"><i>👥</i>People</a>
+      <a class="on"><i>📍</i>Places</a>
+      <a class="go" data-go="s-howwas"><i>🗓</i>Plans<span class="dot">2</span></a>
+      <a class="go" data-go="s-guru"><i><span class="guru" data-crop="912,268,118,150" data-scale=".15" style="display:inline-block;vertical-align:middle"></span></i>Guru</a>
+    </nav>
+    <div class="scrim" data-scrim></div>
+    <div class="sheet" id="sheet-place">
+      <div class="grab"></div>
+      <div class="photo" style="height:110px;border-radius:12px">photos</div>
+      <h3 style="margin-top:10px">Casa Luz</h3>
+      <div class="note-inline">Tacos · $$ · 14 min · open until 11 pm</div>
+      <div class="why">💡 Why you might like it: lots of veg options, big patio, not too loud.</div>
+      <div class="label">Been here?</div>
+      <div class="chips"><span class="chip" onclick="this.classList.toggle('on')">👍 Do it again</span><span class="chip" onclick="this.classList.toggle('on')">👎 Not for me</span></div>
+      <a class="btn primary go" data-go="s-people" style="margin-top:12px">Plan here → pick who</a>
+    </div>
+  </div>
+  <div class="notes">
+    <p><b>Browsing on purpose.</b> Places is the one tab where you choose <i>where</i> first. "Plan here" goes to People to pick who, and the Guru picks when.</p>
+    <p><b>Why lines</b> are about <i>you</i> only ("you liked it before"), never about friends' private notes.</p>
+    <p><b>Sponsored is always labeled</b>, with the boost and where it would rank without it.</p>
+    <p><b>List / Map</b> toggle at the top right. Try the map, then tap a pin.</p>
+    <p class="ask">Q: Does the demo need Places at all, or is it a "look, it's there" screen?</p>
   </div>
 </section>
 
@@ -923,7 +1047,7 @@
     <div class="composer" style="position:absolute;left:0;right:0;bottom:68px;background:#fff"><div class="search">Tell your Guru…</div><span class="send">➤</span></div>
     <nav class="navbar">
       <a class="go" data-go="s-people"><i>👥</i>People</a>
-      <a><i>📍</i>Places</a>
+      <a class="go" data-go="s-places"><i>📍</i>Places</a>
       <a class="go" data-go="s-howwas"><i>🗓</i>Plans<span class="dot">2</span></a>
       <a class="on"><i><span class="guru" data-crop="912,268,118,150" data-scale=".15" style="display:inline-block;vertical-align:middle"></span></i>Guru</a>
     </nav>
@@ -1179,12 +1303,44 @@
   });
 
   // ---- 10b segmented control ----
-  document.querySelectorAll('.seg a').forEach(a => a.addEventListener('click', () => {
-    a.parentElement.querySelectorAll('a').forEach(b => {
+  document.querySelectorAll('.seg a[data-pane]').forEach(a => a.addEventListener('click', () => {
+    a.parentElement.querySelectorAll('a[data-pane]').forEach(b => {
       b.classList.toggle('on', b === a);
       document.getElementById(b.dataset.pane).style.display = b === a ? '' : 'none';
     });
   }));
+
+  // ---- 8b calendar ----
+  (() => {
+    const plans = {
+      25: [{ t: 'Brunch at Juniper', s: 'Past · How was it? ●', go: 's-howwas' }],
+      29: [{ t: 'Dinner at Casa Luz', s: 'From Dee · 7 pm · needs your answer', go: 's-invite', ask: true },
+           { t: 'Dinner at Casa Luz', s: 'Yours · 2 of 4 in', go: 's-detail' }],
+      31: [{ t: 'Lunch at Green Fork', s: 'From Lena · noon · needs your answer', go: 's-invite', ask: true }],
+    };
+    const grid = document.getElementById('cal-grid');
+    const dows = ['M','T','W','T','F','S','S'].map(d => `<div class="dow">${d}</div>`).join('');
+    let cells = '';
+    for (let i = 28; i <= 30; i++) cells += `<div class="d out">${i}</div>`;   // Oct 1 2026 is a Thursday
+    for (let d = 1; d <= 31; d++) {
+      const p = plans[d];
+      const dot = p ? `<i class="${p.some(x => x.ask) ? 'ask' : ''}"></i>` : '';
+      cells += `<div class="d ${d === 27 ? 'today' : ''} ${d === 29 ? 'sel' : ''}" data-day="${d}">${d}${dot}</div>`;
+    }
+    cells += `<div class="d out">1</div>`;
+    grid.innerHTML = dows + cells;
+    const names = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    function show(d) {
+      grid.querySelectorAll('.d').forEach(c => c.classList.toggle('sel', c.dataset.day == d));
+      document.getElementById('cal-day-label').textContent = `${names[new Date(2026, 9, d).getDay()]}, Oct ${d}`;
+      const p = plans[d] || [];
+      document.getElementById('cal-day-list').innerHTML = p.length ? p.map(x =>
+        `<a class="row go" data-go="${x.go}" style="text-decoration:none;color:inherit"><span class="avatar sm">${x.ask ? '✉' : '🍽'}</span><span class="grow"><b>${x.t}</b><small>${x.s}</small></span><span>›</span></a>`).join('')
+        : '<p class="note-inline">Nothing planned. Free for the Guru if your free times say so.</p>';
+    }
+    grid.addEventListener('click', e => { const c = e.target.closest('[data-day]'); if (c) show(+c.dataset.day); });
+    show(29);
+  })();
 </script>
 </body>
 </html>

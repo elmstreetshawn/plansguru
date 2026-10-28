@@ -110,7 +110,7 @@ flowchart TD
 | Screen | Notes |
 |---|---|
 | People | Search box (no keyboard/number-pad toggle). Selected people appear as a row of avatars with ×. Saved squads as quick-start chips. Tap a row to select; tap the photo to open the friend. Arrow button continues. |
-| Your group | Like WhatsApp's second "New group" screen. Optional name + "Save as squad". Bulk bar: select all, Tag, Circle, Undo. Per-person rows show circle + tags. Ticks are only for editing ("Editing the 2 ticked"); they never change who's invited. Tools start open. Big button: **✨ Guru, Plan it**. |
+| Your group | Like WhatsApp's second "New group" screen. Optional name + "Save as squad". Bulk bar: select all, Tag, Circle, Undo. Per-person rows show circle + tags. Ticks are only for editing ("Editing the 2 ticked"); they never change who's invited. Tools start open. Big button: **✨ Guru, plan it**. |
 | Friend detail | What they've shared with you · **My notes 🔒** · circle · tags · plans together. |
 | Add a friend | Share invite link, show my QR, scan QR, enter code. Manual only, no suggestions. |
 
@@ -122,16 +122,17 @@ Buttons: **Not this one** (quick reason chips, then the Guru tries again) / **Ye
 | Screen | Notes |
 |---|---|
 | Plans list | Sections: Needs your answer · In motion ("2 of 4 in, needs 3 by Wed") · Upcoming · Past. List/Calendar toggle. |
+| Calendar view | Month grid; purple dot = plan, yellow dot = invite waiting for your answer. Tap a day to list its plans. Plans only, not free times. ＋ Plan button. |
 | Invite card | The same plan card as Guru's pick. Buttons: I'm in / Maybe / Can't make it. **Chat with the group** button, so you can ask questions before answering. |
-| Plan detail | Tracker: Proposed → Gathering → Booking → Happening. Who's coming with status. Deadline as a plain date. Directions, Add to my calendar, Share with trusted contact. Organizer: **Yes, book it** (unlocks when enough people are in), Cancel plan. |
+| Plan detail | Tracker: Proposed → Gathering → Booking → Happening. Who's coming with status. Deadline as a plain date. Directions, Add to my calendar, **Share with trusted contact** (half sheet: message preview, ticks for address / who / "I'll text you when I'm home", then Android's share menu). Organizer: **Yes, book it** (unlocks when enough people are in), Cancel plan. |
 | Plan chat | One per plan. Plan card pinned on top. Friends-of-friends show as "Priya · Dee's friend". A ＋ badge and "＋ Add friend" button mark people you can add. Friend request: step 1 pick what you share, step 2 review (with Back), then the other person picks what they share back. ⋮ → Mute, Leave. |
 | Did you go? / How was it? | Pops up once after the scheduled time. Skippable; reachable later from Past. Venue and activity only: Do it again / Once was enough / Not for me. Never rates people. |
 
 ### Places
 | Screen | Notes |
 |---|---|
-| Places list | List/Map toggle. Filter chips: cuisine, price, travel time, open now. Sections: "For you", "A little further, worth it". |
-| Place detail | Photos, "Why you might like it", 👍/👎 + what you liked (tags). "Plan here" → People to pick who. |
+| Places list | List/Map toggle. Filter chips: open now, travel time, price, veg-friendly, quieter, patio. Sections: "For you", "A little further, worth it". Why lines are about you only. ＋ Plan button. |
+| Place detail | Half sheet: photos, "Why you might like it", Do it again / Not for me. "Plan here" → People to pick who. |
 | Sponsored label | Always visible: "Sponsored · +4.5 of 100 points (max 5). Would rank #2 without it." |
 
 ### You hub (avatar, top-left, from any tab)
