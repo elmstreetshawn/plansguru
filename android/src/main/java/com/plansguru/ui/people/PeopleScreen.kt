@@ -38,6 +38,34 @@ data class FriendItem(
     var isSelected: Boolean = false
 )
 
+data class ContactEntry(val name: String, val number: String)
+
+fun fetchDeviceContacts(context: android.content.Context): List<ContactEntry> {
+    val list = mutableListOf<ContactEntry>()
+    try {
+        val cursor = context.contentResolver.query(
+            ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+            arrayOf(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME, ContactsContract.CommonDataKinds.Phone.NUMBER),
+            null, null, ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " ASC"
+        )
+        cursor?.use {
+            val nameIdx = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+            val numIdx = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+            val seen = mutableSetOf<String>()
+            while (it.moveToNext()) {
+                if (nameIdx != -1) {
+                    val name = it.getString(nameIdx)
+                    val num = if (numIdx != -1) it.getString(numIdx) ?: "" else ""
+                    if (!name.isNullOrBlank() && seen.add(name.lowercase())) {
+                        list.add(ContactEntry(name, num))
+                    }
+                }
+            }
+        }
+    } catch (_: Exception) {}
+    return list
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PeopleScreen(
@@ -48,6 +76,8 @@ fun PeopleScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var showQrScannerDialog by remember { mutableStateOf(false) }
     var showMyQrDialog by remember { mutableStateOf(false) }
+    var showContactPickerModal by remember { mutableStateOf(false) }
+
     val context = LocalContext.current
     val repository = remember { GraphRepository(context) }
 
@@ -94,12 +124,11 @@ fun PeopleScreen(
         } catch (_: Exception) {}
     }
 
-    // Contact import permission launcher
     val contactPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            importPhoneContacts(context, friends)
+            showContactPickerModal = true
         }
     }
 
@@ -134,7 +163,6 @@ fun PeopleScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Selected avatar pills row
             if (selectedFriends.isNotEmpty()) {
                 Text("${selectedFriends.size} picked", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                 LazyRow(
@@ -246,7 +274,7 @@ fun PeopleScreen(
                     }
                     Column {
                         Text("Add a friend", style = MaterialTheme.typography.titleSmall)
-                        Text("Invite link · QR · Import Contacts", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Invite link · QR · Select Phone Contacts", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -331,7 +359,7 @@ fun PeopleScreen(
         }
     }
 
-    // Modal for YOU Card (Pencil Icon)
+    // Modal for YOU Card
     if (showEditMyProfileDialog) {
         PersonProfileAndPreferencesDialog(
             personId = "local_user",
@@ -341,6 +369,41 @@ fun PeopleScreen(
             onDismissRequest = { showEditMyProfileDialog = false },
             onPersonUpdated = { updatedName ->
                 myPersonState = repository.getPerson("local_user")
+            }
+        )
+    }
+
+    // Interactive Phone Contact Picker Modal
+    if (showContactPickerModal) {
+        ContactPickerModal(
+            context = context,
+            existingFriendNames = friends.map { it.name },
+            onDismissRequest = { showContactPickerModal = false },
+            onContactsSelected = { selectedList ->
+                for (contact in selectedList) {
+                    val name = contact.name
+                    val initials = name.split(" ").mapNotNull { part -> part.firstOrNull()?.toString() }.take(2).joinToString("").uppercase()
+                    if (friends.none { f -> f.name.equals(name, ignoreCase = true) }) {
+                        friends.add(
+                            FriendItem(
+                                id = "contact_${System.currentTimeMillis()}_${friends.size}",
+                                name = name,
+                                initials = initials,
+                                tags = listOf("Phone Contact"),
+                                isSelected = false
+                            )
+                        )
+                        repository.savePerson(
+                            com.plansguru.data.model.Person(
+                                localPersonId = name,
+                                displayName = name,
+                                publicIdentityKey = "pub_key_$name",
+                                creationTimestamp = System.currentTimeMillis()
+                            )
+                        )
+                    }
+                }
+                android.widget.Toast.makeText(context, "✨ Imported ${selectedList.size} selected contacts!", android.widget.Toast.LENGTH_SHORT).show()
             }
         )
     }
@@ -374,6 +437,21 @@ fun PeopleScreen(
                         Text("📱 Show My Personal QR Code")
                     }
 
+                    Button(
+                        onClick = {
+                            showAddDialog = false
+                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
+                                showContactPickerModal = true
+                            } else {
+                                contactPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                    ) {
+                        Text("📇 Select Phone Contacts")
+                    }
+
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
                     OutlinedTextField(
@@ -399,7 +477,6 @@ fun PeopleScreen(
                                             isSelected = false
                                         )
                                     )
-                                    val repository = GraphRepository(context)
                                     repository.savePerson(
                                         com.plansguru.data.model.Person(
                                             localPersonId = name,
@@ -416,53 +493,6 @@ fun PeopleScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Add Friend Manually")
-                    }
-
-                    OutlinedButton(
-                        onClick = {
-                            val demos = listOf("Alex Johnson", "David Miller", "Jessica Taylor", "Chris Evans")
-                            val repository = GraphRepository(context)
-                            for (demo in demos) {
-                                if (friends.none { f -> f.name.equals(demo, ignoreCase = true) }) {
-                                    val initials = demo.split(" ").mapNotNull { part -> part.firstOrNull()?.toString() }.take(2).joinToString("").uppercase()
-                                    friends.add(
-                                        FriendItem(
-                                            id = "demo_${System.currentTimeMillis()}_${friends.size}",
-                                            name = demo,
-                                            initials = initials,
-                                            tags = listOf("Demo Contact"),
-                                            isSelected = false
-                                        )
-                                    )
-                                    repository.savePerson(
-                                        com.plansguru.data.model.Person(
-                                            localPersonId = demo,
-                                            displayName = demo,
-                                            publicIdentityKey = "pub_key_$demo",
-                                            creationTimestamp = System.currentTimeMillis()
-                                        )
-                                    )
-                                }
-                            }
-                            showAddDialog = false
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Load Demo Contacts (For Emulator)")
-                    }
-
-                    Button(
-                        onClick = {
-                            showAddDialog = false
-                            if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
-                                importPhoneContacts(context, friends)
-                            } else {
-                                contactPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Import from Phone Contacts")
                     }
                 }
             },
@@ -536,6 +566,133 @@ fun PeopleScreen(
             }
         )
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ContactPickerModal(
+    context: android.content.Context,
+    existingFriendNames: List<String>,
+    onDismissRequest: () -> Unit,
+    onContactsSelected: (List<ContactEntry>) -> Unit
+) {
+    val allContacts = remember { fetchDeviceContacts(context) }
+    var searchQuery by remember { mutableStateOf("") }
+    val selectedContacts = remember { mutableStateListOf<ContactEntry>() }
+
+    val filteredContacts = allContacts.filter { 
+        it.name.contains(searchQuery, ignoreCase = true) && !existingFriendNames.contains(it.name)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        title = { Text("Select Contacts to Import") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(380.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("Search phone contacts...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                    singleLine = true
+                )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AssistChip(
+                        onClick = {
+                            selectedContacts.clear()
+                            selectedContacts.addAll(filteredContacts)
+                        },
+                        label = { Text("☑ Select All") }
+                    )
+                    AssistChip(
+                        onClick = { selectedContacts.clear() },
+                        label = { Text("☐ Clear All") }
+                    )
+                }
+
+                Text("${selectedContacts.size} selected", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+
+                if (filteredContacts.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("No contacts found.", style = MaterialTheme.typography.bodySmall)
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        items(filteredContacts) { contact ->
+                            val isChecked = selectedContacts.any { it.name == contact.name }
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        if (isChecked) {
+                                            selectedContacts.removeAll { it.name == contact.name }
+                                        } else {
+                                            selectedContacts.add(contact)
+                                        }
+                                    },
+                                shape = MaterialTheme.shapes.small,
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (isChecked) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Checkbox(
+                                        checked = isChecked,
+                                        onCheckedChange = { checked ->
+                                            if (checked) {
+                                                if (selectedContacts.none { it.name == contact.name }) selectedContacts.add(contact)
+                                            } else {
+                                                selectedContacts.removeAll { it.name == contact.name }
+                                            }
+                                        }
+                                    )
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(contact.name, style = MaterialTheme.typography.titleMedium)
+                                        if (contact.number.isNotBlank()) {
+                                            Text(contact.number, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = selectedContacts.isNotEmpty(),
+                onClick = {
+                    onContactsSelected(selectedContacts.toList())
+                    onDismissRequest()
+                }
+            ) {
+                Text("Import Selected (${selectedContacts.size})")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
