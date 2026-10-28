@@ -9,7 +9,7 @@ class PlansGuruApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        syncClient = EncryptedSyncClient("local_user")
-        syncClient.connect("ws://192.168.2.37:8000/ws/local_user")
+        syncClient = EncryptedSyncClient(this, "local_user_session")
+        syncClient.connect()
     }
 }
