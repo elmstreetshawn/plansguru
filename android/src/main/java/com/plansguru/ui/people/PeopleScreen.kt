@@ -141,7 +141,7 @@ fun PeopleScreen(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("People", style = MaterialTheme.typography.headlineMedium)
                         Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
-                            Text("v1.0.9", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
+                            Text("v1.1.0", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 },
@@ -238,6 +238,40 @@ fun PeopleScreen(
 
                     IconButton(onClick = { showEditMyProfileDialog = true }) {
                         Icon(Icons.Default.Edit, contentDescription = "Edit Profile & Preferences", tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
+            }
+
+            // Create Profile using Guru Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onOpenGuruChat() },
+                shape = MaterialTheme.shapes.large,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.secondary),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("🧙‍♂️", style = MaterialTheme.typography.titleMedium)
+                    }
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Create Profile using Guru", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                        Text("Interactive 5-step guided setup with your on-device AI", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f))
+                    }
+                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondary) {
+                        Text("Guided Setup", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), color = MaterialTheme.colorScheme.onSecondary)
                     }
                 }
             }

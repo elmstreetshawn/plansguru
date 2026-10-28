@@ -33,9 +33,19 @@ fun AgentChatBottomSheet(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
         ) {
             Column(modifier = Modifier.padding(12.dp)) {
-                Text("🤖 On-Device AI Agent (PlansGuru)", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("🤖 On-Device AI Agent", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+                    AssistChip(
+                        onClick = { viewModel.startGuidedProfileWizard() },
+                        label = { Text("🧙‍♂️ Guided Setup", style = MaterialTheme.typography.labelSmall) }
+                    )
+                }
                 Spacer(modifier = Modifier.height(2.dp))
-                Text("Chat naturally with your local agent. It learns your tastes and saves them to your encrypted social graph.", style = MaterialTheme.typography.bodySmall)
+                Text("Chat naturally with your local agent. Tap 'Guided Setup' for step-by-step profile creation!", style = MaterialTheme.typography.bodySmall)
             }
         }
 

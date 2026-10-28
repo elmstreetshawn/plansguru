@@ -27,9 +27,12 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
     private var pendingFriendName: String? = null
     private var pendingAssertionText: String? = null
 
+    private var wizardStep = 0
+    private var wizardSubject = "local_user"
+
     private val _messages = MutableStateFlow<List<ChatMessage>>(
         listOf(
-            ChatMessage("1", "Hi! I'm your on-device PlansGuru agent. Tell me what cuisines, dietary needs, travel distance, or loud crowd preferences you or your friends have, and I'll structure them into your encrypted social graph!", false)
+            ChatMessage("1", "Hi! I'm your on-device PlansGuru agent. Tap '🧙‍♂️ Guided Setup' to set up your profile step-by-step, or tell me your food tastes below!", false)
         )
     )
     val messages: StateFlow<List<ChatMessage>> = _messages.asStateFlow()
@@ -54,21 +57,34 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun startGuidedProfileWizard(subject: String = "local_user") {
+        wizardSubject = subject
+        wizardStep = 1
+        val subjName = if (subject == "local_user") "your" else "$subject's"
+        val firstPrompt = "🧙‍♂️ Let me guide you through setting up $subjName profile step-by-step!\n\nStep 1 of 5: What foods or cuisines do you love? (e.g. Tacos, Italian, Pizza, Sushi, Steak, Burgers)"
+        val botMsg = ChatMessage(UUID.randomUUID().toString(), firstPrompt, false)
+        _messages.value = _messages.value + botMsg
+    }
+
     fun sendMessage(text: String) {
         if (text.isBlank()) return
+
+        if (wizardStep > 0) {
+            handleWizardInput(text)
+            return
+        }
+
         val userMsg = ChatMessage(UUID.randomUUID().toString(), text, true)
         _messages.value = _messages.value + userMsg
 
         viewModelScope.launch {
             val lower = text.lowercase()
 
-            // If we are waiting for confirmation/details to create a pending friend
             if (pendingFriendName != null) {
                 if (lower.contains("yes") || lower.contains("sure") || lower.contains("create") || text.length > 2) {
                     val friendName = pendingFriendName!!
                     val fullName = if (text.lowercase().contains(friendName.lowercase())) text else "$friendName $text"
 
-                    // Save person to graph
                     repository.savePerson(
                         Person(
                             localPersonId = friendName,
@@ -90,7 +106,6 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
                     val confirmationMsg = ChatMessage(UUID.randomUUID().toString(), "Created profile for $fullName and added them to your social graph!", false)
                     _messages.value = _messages.value + confirmationMsg
 
-                    // If there was a pending assertion, process it now via structured parser
                     pendingAssertionText?.let { pending ->
                         val (_, structuredAssertions) = chatEngine.generateStructuredResponse(pending)
                         for (sa in structuredAssertions) {
@@ -123,10 +138,8 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
                 }
             }
 
-            // Get LLM structured response and assertions
             val (replyText, structuredAssertions) = chatEngine.generateStructuredResponse(text)
 
-            // Check if assertions reference a subject other than local_user that isn't in graph yet
             val newFriendSubject = structuredAssertions.map { it.subject }.firstOrNull { it != "local_user" && repository.getPerson(it) == null }
 
             if (newFriendSubject != null) {
@@ -167,6 +180,60 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
                     )
                 )
             }
+        }
+    }
+
+    private fun handleWizardInput(text: String) {
+        val userMsg = ChatMessage(UUID.randomUUID().toString(), text, true)
+        _messages.value = _messages.value + userMsg
+
+        viewModelScope.launch {
+            val (_, assertions) = chatEngine.generateStructuredResponse(text)
+
+            for (sa in assertions) {
+                val finalSubj = wizardSubject
+                if (sa.predicate == "locationZip") {
+                    val currentMe = repository.getPerson(finalSubj) ?: Person(
+                        localPersonId = finalSubj,
+                        displayName = if (finalSubj == "local_user") "Me" else finalSubj,
+                        publicIdentityKey = "pub_key_$finalSubj",
+                        creationTimestamp = System.currentTimeMillis(),
+                        locationZip = sa.value
+                    )
+                    repository.savePerson(currentMe.copy(locationZip = sa.value))
+                }
+
+                repository.saveAssertion(
+                    Assertion(
+                        assertionId = UUID.randomUUID().toString(),
+                        observerId = "local_user",
+                        subjectId = finalSubj,
+                        predicate = sa.predicate,
+                        value = sa.value,
+                        source = "GUIDED_WIZARD",
+                        confidence = sa.confidence,
+                        validityTimestampStart = System.currentTimeMillis(),
+                        validityTimestampEnd = null,
+                        visibilityPolicy = "PRIVATE"
+                    )
+                )
+            }
+
+            wizardStep++
+            val nextPrompt = when (wizardStep) {
+                2 -> "Awesome! Step 2 of 5: What foods do you dislike or want to avoid? (e.g. Spicy food, American Cheese, Fast Food, None)"
+                3 -> "Got it! Step 3 of 5: Any dietary restrictions or medical allergies? (e.g. Vegan, Gluten-Free, Nut Allergy, Halal, Kosher, None)"
+                4 -> "Step 4 of 5: What's your local zip code and maximum drive time for dinner? (e.g. 78626, under 20 minutes)"
+                5 -> "Final Step 5 of 5: Do you prefer quiet, cozy spots or lively, vibrant atmospheres?"
+                else -> {
+                    wizardStep = 0
+                    val targetName = if (wizardSubject == "local_user") "Your" else "$wizardSubject's"
+                    "✨ $targetName profile setup is complete! All preferences have been structured and saved into your encrypted social graph database."
+                }
+            }
+
+            val botMsg = ChatMessage(UUID.randomUUID().toString(), nextPrompt, false)
+            _messages.value = _messages.value + botMsg
         }
     }
 }
