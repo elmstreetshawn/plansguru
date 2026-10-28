@@ -25,7 +25,7 @@ data class FaqItem(
     val answer: String
 )
 
-const val SERVER_BASE_URL = "http://192.168.2.37:8000"
+const val SERVER_BASE_URL = "https://few-jars-wear.loca.lt"
 
 class GuruChatEngine(private val context: Context) {
     private val repository = GraphRepository(context)
@@ -117,6 +117,7 @@ class GuruChatEngine(private val context: Context) {
                             if (modelFile.exists()) modelFile.delete()
                             val request = Request.Builder()
                                 .url("$serverUrl/api/model/gemma")
+                                .addHeader("Bypass-Tunnel-Remainder", "true")
                                 .addHeader("ngrok-skip-browser-warning", "true")
                                 .addHeader("User-Agent", "PlansGuruApp/1.0")
                                 .build()

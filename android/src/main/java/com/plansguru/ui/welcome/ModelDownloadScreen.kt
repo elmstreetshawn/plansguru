@@ -154,7 +154,7 @@ fun ModelDownloadScreen(
 
             if (showServerUrlDialog) {
                 val prefs = remember { context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE) }
-                var urlInput by remember { mutableStateOf(prefs.getString("server_url", "http://192.168.2.37:8000") ?: "") }
+                var urlInput by remember { mutableStateOf(prefs.getString("server_url", "https://few-jars-wear.loca.lt") ?: "") }
 
                 AlertDialog(
                     onDismissRequest = { showServerUrlDialog = false },
