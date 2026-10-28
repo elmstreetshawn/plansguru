@@ -311,7 +311,6 @@ class GuruChatEngine(private val context: Context) {
         val dietaryMap = mapOf(
             "vegan" to "Vegan", "gluten" to "Gluten-Free", "vegetarian" to "Vegetarian",
             "dairy" to "Dairy-Free", "halal" to "Halal", "kosher" to "Kosher",
-            "peanut" to "Peanut Allergy", "nut" to "Nut Allergy", "allergy" to "Allergies",
             "pescatarian" to "Pescatarian"
         )
 
@@ -347,6 +346,27 @@ class GuruChatEngine(private val context: Context) {
                     val exists = results.any { it.subject == clauseSubject && it.predicate == predicate && it.value == value }
                     if (!exists) {
                         results.add(StructuredAssertion(clauseSubject, predicate, value))
+                    }
+                }
+            }
+
+            // Special Nut & Peanut Discrimination
+            val mentionsNut = clauseLower.contains("nut") || clauseLower.contains("peanut")
+            val mentionsAllergy = clauseLower.contains("allerg") || clauseLower.contains("cannot") ||
+                    clauseLower.contains("can't") || clauseLower.contains("cant") || isClauseNegative
+
+            if (mentionsNut) {
+                if (mentionsAllergy) {
+                    val nutVal = if (clauseLower.contains("peanut")) "Peanut Allergy" else "Nut Allergy"
+                    val exists = results.any { it.subject == clauseSubject && it.predicate == "dietary_restriction" && it.value == nutVal }
+                    if (!exists) {
+                        results.add(StructuredAssertion(clauseSubject, "dietary_restriction", nutVal))
+                    }
+                } else {
+                    val nutVal = if (clauseLower.contains("peanut")) "Peanuts" else "Nuts"
+                    val exists = results.any { it.subject == clauseSubject && it.predicate == "likes_cuisine" && it.value == nutVal }
+                    if (!exists) {
+                        results.add(StructuredAssertion(clauseSubject, "likes_cuisine", nutVal))
                     }
                 }
             }

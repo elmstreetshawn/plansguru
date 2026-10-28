@@ -167,8 +167,10 @@ fun RecommendationsScreen(
                         shape = MaterialTheme.shapes.medium,
                         color = if (msg.sender == myName) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
                     ) {
-                        Column(modifier = Modifier.padding(10.dp)) {
-                            Text("${msg.sender}: ${msg.text}", style = MaterialTheme.typography.bodySmall)
+                        androidx.compose.foundation.text.selection.SelectionContainer {
+                            Column(modifier = Modifier.padding(10.dp)) {
+                                Text("${msg.sender}: ${msg.text}", style = MaterialTheme.typography.bodySmall)
+                            }
                         }
                     }
                 }
