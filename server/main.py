@@ -6,7 +6,7 @@ import time
 import uuid
 import os
 
-app = FastAPI(title="PlansGuru Relay & Distribution Server", version="1.0.0")
+app = FastAPI(title="PlansGuru Relay & Distribution Server", version="1.2.0")
 
 # In-memory storage with ephemeral expiration (No persistent DB)
 active_sessions: Dict[str, Set[WebSocket]] = {}
