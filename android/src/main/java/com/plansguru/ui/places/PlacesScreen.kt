@@ -141,7 +141,14 @@ fun PlacesScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Places", style = MaterialTheme.typography.headlineMedium) },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("Places", style = MaterialTheme.typography.headlineMedium)
+                        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
+                            Text("v1.0.4", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                },
                 actions = {
                     com.plansguru.ui.common.GuruTopBarAction(onOpenGuruChat)
                 },
