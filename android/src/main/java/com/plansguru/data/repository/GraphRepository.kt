@@ -136,4 +136,55 @@ class GraphRepository(context: Context) {
         db.delete("assertions", "subjectId = ?", arrayOf(personId))
         db.delete("relationships", "relatedPersonId = ?", arrayOf(personId))
     }
+
+    fun savePlanRecord(planId: String, title: String, restaurantName: String, cuisine: String, price: String, participants: List<String>, consensusScore: String, date: String, isUpcoming: Boolean = true) {
+        val db = dbHelper.getWritableEncryptedDatabase()
+        val values = ContentValues().apply {
+            put("planId", planId)
+            put("title", title)
+            put("restaurantName", restaurantName)
+            put("cuisine", cuisine)
+            put("price", price)
+            put("participants", participants.joinToString(","))
+            put("consensusScore", consensusScore)
+            put("date", date)
+            put("isUpcoming", if (isUpcoming) 1 else 0)
+        }
+        db.insertWithOnConflict("plans", null, values, SQLiteDatabase.CONFLICT_REPLACE)
+    }
+
+    fun getAllPlanRecords(): List<com.plansguru.ui.planning.PlanRecord> {
+        val db = dbHelper.getReadableEncryptedDatabase()
+        val list = mutableListOf<com.plansguru.ui.planning.PlanRecord>()
+        try {
+            val cursor = db.query("plans", null, null, null, null, null, "rowid DESC")
+            cursor.use {
+                while (it.moveToNext()) {
+                    val partsStr = it.getString(it.getColumnIndexOrThrow("participants"))
+                    val isUp = it.getInt(it.getColumnIndexOrThrow("isUpcoming")) == 1
+                    list.add(
+                        com.plansguru.ui.planning.PlanRecord(
+                            id = it.getString(it.getColumnIndexOrThrow("planId")),
+                            title = it.getString(it.getColumnIndexOrThrow("title")),
+                            restaurantName = it.getString(it.getColumnIndexOrThrow("restaurantName")),
+                            cuisine = it.getString(it.getColumnIndexOrThrow("cuisine")),
+                            price = it.getString(it.getColumnIndexOrThrow("price")),
+                            participants = partsStr.split(",").filter { p -> p.isNotBlank() },
+                            consensusScore = it.getString(it.getColumnIndexOrThrow("consensusScore")),
+                            date = it.getString(it.getColumnIndexOrThrow("date")),
+                            isUpcoming = isUp
+                        )
+                    )
+                }
+            }
+        } catch (_: Exception) {}
+        return list
+    }
+
+    fun deletePlanRecord(planId: String) {
+        val db = dbHelper.getWritableEncryptedDatabase()
+        try {
+            db.delete("plans", "planId = ?", arrayOf(planId))
+        } catch (_: Exception) {}
+    }
 }

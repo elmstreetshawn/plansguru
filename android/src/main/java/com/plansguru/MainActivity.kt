@@ -54,6 +54,20 @@ class MainActivity : ComponentActivity() {
                         creationTimestamp = System.currentTimeMillis()
                     )
                 )
+
+                val planId = "plan_dl_${System.currentTimeMillis()}"
+                repository.savePlanRecord(
+                    planId = planId,
+                    title = group,
+                    restaurantName = "Suerte",
+                    cuisine = "Interior Mexican",
+                    price = "$$$",
+                    participants = listOf("Me", inviter),
+                    consensusScore = "98% Match",
+                    date = "Active Now",
+                    isUpcoming = true
+                )
+
                 Toast.makeText(this, "✨ Joined '$group' with $inviter!", Toast.LENGTH_LONG).show()
             } catch (_: Exception) {}
         }

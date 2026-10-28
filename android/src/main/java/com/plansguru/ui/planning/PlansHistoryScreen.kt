@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 
 data class PlanRecord(
@@ -25,7 +26,8 @@ data class PlanRecord(
     val price: String,
     val participants: List<String>,
     val consensusScore: String,
-    val date: String
+    val date: String,
+    val isUpcoming: Boolean = true
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,45 +36,32 @@ fun PlansHistoryScreen(
     onCreateNewPlan: () -> Unit,
     onOpenGuruChat: () -> Unit = {}
 ) {
-    val previousPlans = remember {
-        mutableStateListOf(
-            PlanRecord(
-                id = "1",
-                title = "Friday Taco Crew Night",
-                restaurantName = "El Fuego Taqueria",
-                cuisine = "Mexican",
-                price = "$",
-                participants = listOf("Maya", "Jo", "Priya"),
-                consensusScore = "98% Match",
-                date = "Yesterday, 7:30 PM"
-            ),
-            PlanRecord(
-                id = "2",
-                title = "Sunday Salad Friends Brunch",
-                restaurantName = "Green Leaf Bistro",
-                cuisine = "Vegetarian / Vegan",
-                price = "$$",
-                participants = listOf("Lena", "Sam"),
-                consensusScore = "95% Match",
-                date = "Oct 24, 11:30 AM"
-            ),
-            PlanRecord(
-                id = "3",
-                title = "Friday Night Italian Dinner",
-                restaurantName = "Trattoria Bella",
-                cuisine = "Italian",
-                price = "$$$",
-                participants = listOf("Maya", "Jo", "Priya", "Sam"),
-                consensusScore = "92% Match",
-                date = "Oct 18, 8:00 PM"
-            )
-        )
+    val context = LocalContext.current
+    val repository = remember { com.plansguru.data.repository.GraphRepository(context) }
+    val allPlans = remember { mutableStateListOf<PlanRecord>() }
+
+    fun refreshPlansFromDb() {
+        val dbPlans = repository.getAllPlanRecords()
+        if (dbPlans.isEmpty()) {
+            val defaultSample1 = PlanRecord("1", "Friday Taco Crew Night", "Suerte", "Interior Mexican", "$$$", listOf("Maya", "Jo", "Priya"), "98% Match", "Active Now", isUpcoming = true)
+            val defaultSample2 = PlanRecord("2", "Sunday Salad Friends Brunch", "Green Leaf Bistro", "Vegetarian / Vegan", "$$", listOf("Lena", "Sam"), "95% Match", "Oct 24, 11:30 AM", isUpcoming = false)
+            val defaultSample3 = PlanRecord("3", "Friday Night Italian Dinner", "Trattoria Bella", "Italian", "$$$", listOf("Maya", "Jo", "Priya", "Sam"), "92% Match", "Oct 18, 8:00 PM", isUpcoming = false)
+
+            repository.savePlanRecord(defaultSample1.id, defaultSample1.title, defaultSample1.restaurantName, defaultSample1.cuisine, defaultSample1.price, defaultSample1.participants, defaultSample1.consensusScore, defaultSample1.date, defaultSample1.isUpcoming)
+            repository.savePlanRecord(defaultSample2.id, defaultSample2.title, defaultSample2.restaurantName, defaultSample2.cuisine, defaultSample2.price, defaultSample2.participants, defaultSample2.consensusScore, defaultSample2.date, defaultSample2.isUpcoming)
+            repository.savePlanRecord(defaultSample3.id, defaultSample3.title, defaultSample3.restaurantName, defaultSample3.cuisine, defaultSample3.price, defaultSample3.participants, defaultSample3.consensusScore, defaultSample3.date, defaultSample3.isUpcoming)
+
+            allPlans.clear()
+            allPlans.addAll(listOf(defaultSample1, defaultSample2, defaultSample3))
+        } else {
+            allPlans.clear()
+            allPlans.addAll(dbPlans)
+        }
     }
 
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val repository = remember { com.plansguru.data.repository.GraphRepository(context) }
-
     LaunchedEffect(Unit) {
+        refreshPlansFromDb()
+
         val friendsList = repository.getAllPersons().map { it.displayName } + listOf("Maya", "Jo", "Priya", "Lena", "Sam", "Alex", "Brian")
         val syncClient = com.plansguru.data.sync.EncryptedSyncClient(context)
         syncClient.listenOnFriendChannels(friendsList.distinct()) { msg ->
@@ -83,24 +72,29 @@ fun PlansHistoryScreen(
                     val title = payload["groupTitle"] ?: "New Group Dinner"
                     val parts = payload["participants"]?.split(",") ?: listOf(msg.senderId)
 
-                    val newRecord = PlanRecord(
-                        id = "plan_${System.currentTimeMillis()}",
+                    val planId = "plan_${System.currentTimeMillis()}"
+                    repository.savePlanRecord(
+                        planId = planId,
                         title = title,
-                        restaurantName = "Via 313 Pizza",
-                        cuisine = "Detroit Style Pizza",
-                        price = "$$",
+                        restaurantName = "Suerte",
+                        cuisine = "Interior Mexican",
+                        price = "$$$",
                         participants = parts,
                         consensusScore = "98% Match",
-                        date = "Just now"
+                        date = "Active Now",
+                        isUpcoming = true
                     )
 
-                    previousPlans.add(0, newRecord)
+                    refreshPlansFromDb()
                 } catch (_: Exception) {}
             }
         }
     }
 
     var selectedPlan by remember { mutableStateOf<PlanRecord?>(null) }
+
+    val upcomingPlans = allPlans.filter { it.isUpcoming }
+    val pastPlans = allPlans.filter { !it.isUpcoming }
 
     Scaffold(
         topBar = {
@@ -163,48 +157,107 @@ fun PlansHistoryScreen(
                 }
             }
 
-            Text("PREVIOUS DINNER PLANS · ${previousPlans.size}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(previousPlans, key = { it.id }) { plan ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { selectedPlan = plan },
-                        shape = MaterialTheme.shapes.large,
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(plan.title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-                                Surface(
-                                    shape = CircleShape,
-                                    color = MaterialTheme.colorScheme.secondaryContainer
+                // Section 1: ACTIVE & UPCOMING PLANS
+                item {
+                    Text("🚀 ACTIVE & UPCOMING PLANS · ${upcomingPlans.size}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                }
+
+                if (upcomingPlans.isEmpty()) {
+                    item {
+                        Text("No active upcoming plans yet. Tap 'New Plan' to start one!", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                } else {
+                    items(upcomingPlans, key = { "up_${it.id}" }) { plan ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedPlan = plan },
+                            shape = MaterialTheme.shapes.large,
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        plan.consensusScore,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                        color = MaterialTheme.colorScheme.onSecondaryContainer
-                                    )
+                                    Text(plan.title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.primaryContainer
+                                    ) {
+                                        Text(
+                                            plan.consensusScore,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                    }
                                 }
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Icon(Icons.Default.Place, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("${plan.restaurantName} (${plan.cuisine} • ${plan.price})", style = MaterialTheme.typography.bodyMedium)
+                                }
+                                Text("Participants: ${plan.participants.joinToString(", ")}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("Status: ${plan.date}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                             }
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Icon(Icons.Default.Place, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text("${plan.restaurantName} (${plan.cuisine} • ${plan.price})", style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                }
+
+                // Section 2: PAST DINNER HISTORY
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("📜 PAST DINNER HISTORY · ${pastPlans.size}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+
+                if (pastPlans.isEmpty()) {
+                    item {
+                        Text("No completed dinner history yet.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                } else {
+                    items(pastPlans, key = { "past_${it.id}" }) { plan ->
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedPlan = plan },
+                            shape = MaterialTheme.shapes.large,
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(plan.title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.secondaryContainer
+                                    ) {
+                                        Text(
+                                            plan.consensusScore,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                                        )
+                                    }
+                                }
+                                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Icon(Icons.Default.Place, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("${plan.restaurantName} (${plan.cuisine} • ${plan.price})", style = MaterialTheme.typography.bodyMedium)
+                                }
+                                Text("Participants: ${plan.participants.joinToString(", ")}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("Completed: ${plan.date}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
                             }
-                            Text("Participants: ${plan.participants.joinToString(", ")}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("Completed: ${plan.date}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
                         }
                     }
                 }
@@ -235,22 +288,22 @@ fun PlansHistoryScreen(
                     Spacer(modifier = Modifier.height(4.dp))
                     TextButton(
                         onClick = {
-                            previousPlans.remove(selectedPlan)
+                            repository.deletePlanRecord(selectedPlan!!.id)
+                            refreshPlansFromDb()
                             selectedPlan = null
                         },
                         colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                     ) {
-                        Text("Delete Plan History")
+                        Text("Delete Plan")
                     }
                 }
             },
             confirmButton = {
                 Button(
                     onClick = {
-                        val idx = previousPlans.indexOfFirst { it.id == selectedPlan!!.id }
-                        if (idx != -1) {
-                            previousPlans[idx] = selectedPlan!!.copy(title = editableTitle.trim())
-                        }
+                        val p = selectedPlan!!
+                        repository.savePlanRecord(p.id, editableTitle.trim(), p.restaurantName, p.cuisine, p.price, p.participants, p.consensusScore, p.date, p.isUpcoming)
+                        refreshPlansFromDb()
                         selectedPlan = null
                     },
                     shape = CircleShape

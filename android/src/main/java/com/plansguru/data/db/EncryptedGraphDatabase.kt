@@ -8,7 +8,7 @@ class EncryptedGraphDatabase(context: Context) : SQLiteOpenHelper(context, DATAB
 
     companion object {
         private const val DATABASE_NAME = "plansguru_secure.db"
-        private const val DATABASE_VERSION = 2
+        private const val DATABASE_VERSION = 3
     }
 
     override fun onCreate(db: SQLiteDatabase) {
@@ -47,12 +47,43 @@ class EncryptedGraphDatabase(context: Context) : SQLiteOpenHelper(context, DATAB
                 PRIMARY KEY (ownerId, relatedPersonId)
             )
         """)
+
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS plans (
+                planId TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                restaurantName TEXT NOT NULL,
+                cuisine TEXT NOT NULL,
+                price TEXT NOT NULL,
+                participants TEXT NOT NULL,
+                consensusScore TEXT NOT NULL,
+                date TEXT NOT NULL,
+                isUpcoming INTEGER NOT NULL DEFAULT 1
+            )
+        """)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         if (oldVersion < 2) {
             try {
                 db.execSQL("ALTER TABLE persons ADD COLUMN locationZip TEXT DEFAULT '90210'")
+            } catch (_: Exception) {}
+        }
+        if (oldVersion < 3) {
+            try {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS plans (
+                        planId TEXT PRIMARY KEY,
+                        title TEXT NOT NULL,
+                        restaurantName TEXT NOT NULL,
+                        cuisine TEXT NOT NULL,
+                        price TEXT NOT NULL,
+                        participants TEXT NOT NULL,
+                        consensusScore TEXT NOT NULL,
+                        date TEXT NOT NULL,
+                        isUpcoming INTEGER NOT NULL DEFAULT 1
+                    )
+                """)
             } catch (_: Exception) {}
         }
     }
