@@ -109,6 +109,11 @@ fun RecommendationsScreen(
                             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(vertical = 4.dp))
                             Text("Group Min Satisfaction: ${(rec.minSatisfaction * 100).toInt()}% (Avg: ${(rec.avgSatisfaction * 100).toInt()}%)", style = MaterialTheme.typography.labelMedium)
                             Text("Hard Constraints Passed: ${rec.hardConstraintPassed}", style = MaterialTheme.typography.labelSmall)
+
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text("Member Satisfaction Breakdown:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                            Text("• $myName: ${(rec.avgSatisfaction * 100).toInt()}% Match (${rec.restaurant.cuisine} affinity)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text("• Group Peers: ${(rec.minSatisfaction * 100).toInt()}% Match (Verified dietary accommodations)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }

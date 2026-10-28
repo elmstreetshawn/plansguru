@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
@@ -127,15 +128,30 @@ fun PlacesScreen(
 
     val restaurants by viewModel.restaurants.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
+    var activeFilterChip by remember { mutableStateOf("All") }
     var showAddPlaceDialog by remember { mutableStateOf(false) }
     var selectedRestaurant by remember { mutableStateOf<Restaurant?>(null) }
 
-    val filtered = restaurants.filter { 
-        it.name.contains(searchQuery, ignoreCase = true) || 
-        it.cuisine.contains(searchQuery, ignoreCase = true) ||
-        it.location.contains(searchQuery, ignoreCase = true) ||
-        it.address.contains(searchQuery, ignoreCase = true) ||
-        it.zipCode.contains(searchQuery, ignoreCase = true)
+    val filtered = restaurants.filter { rest ->
+        val matchesSearch = rest.name.contains(searchQuery, ignoreCase = true) ||
+                rest.cuisine.contains(searchQuery, ignoreCase = true) ||
+                rest.location.contains(searchQuery, ignoreCase = true) ||
+                rest.address.contains(searchQuery, ignoreCase = true) ||
+                rest.zipCode.contains(searchQuery, ignoreCase = true)
+
+        val distMiles = calculateZipDistanceMiles(userZip, rest.zipCode)
+        val driveMins = (distMiles * 2.5).toInt().coerceAtLeast(3)
+
+        val matchesFilter = when (activeFilterChip) {
+            "Vegan" -> rest.dietaryAccommodations.any { it.contains("Vegan", true) } || rest.vegetarianOptions
+            "Gluten-Free" -> rest.dietaryAccommodations.any { it.contains("Gluten", true) }
+            "< 15 Min" -> driveMins <= 15
+            "< 30 Min" -> driveMins <= 30
+            "Quiet" -> rest.noiseLevel.equals("Quiet", true) || rest.crowdLevel.equals("Quiet", true)
+            else -> true
+        }
+
+        matchesSearch && matchesFilter
     }
 
     Scaffold(
@@ -145,7 +161,7 @@ fun PlacesScreen(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Places", style = MaterialTheme.typography.headlineMedium)
                         Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
-                            Text("v1.0.8", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
+                            Text("v1.0.9", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 },
@@ -188,6 +204,25 @@ fun PlacesScreen(
                     focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                 )
             )
+
+            // 1-Tap Quick Filter Chips
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val chips = listOf(
+                    "All" to "All Places",
+                    "Vegan" to "🌱 Vegan",
+                    "Gluten-Free" to "🌾 Gluten-Free",
+                    "< 15 Min" to "🚗 < 15 Min",
+                    "< 30 Min" to "🚗 < 30 Min",
+                    "Quiet" to "🤫 Quiet Spots"
+                )
+                items(chips) { (filterKey, filterLabel) ->
+                    FilterChip(
+                        selected = activeFilterChip == filterKey,
+                        onClick = { activeFilterChip = filterKey },
+                        label = { Text(filterLabel, style = MaterialTheme.typography.labelMedium) }
+                    )
+                }
+            }
 
             Text("PLACES NEAR YOUR ZIP ($userZip) · ${filtered.size} AVAILABLE", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
