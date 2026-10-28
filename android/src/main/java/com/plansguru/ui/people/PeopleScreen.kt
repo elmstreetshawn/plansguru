@@ -52,7 +52,7 @@ fun PeopleScreen(
     val repository = remember { GraphRepository(context) }
 
     var myPersonState by remember { mutableStateOf(repository.getPerson("local_user")) }
-    val myName = myPersonState?.displayName?.takeIf { it.isNotBlank() && it != "local_user" } ?: "Shawn (You)"
+    val myName = myPersonState?.displayName?.takeIf { it.isNotBlank() && it != "local_user" } ?: "Me"
     val myZip = myPersonState?.locationZip ?: "78626"
     var showEditMyProfileDialog by remember { mutableStateOf(false) }
 
