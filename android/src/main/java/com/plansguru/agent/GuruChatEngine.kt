@@ -350,21 +350,26 @@ class GuruChatEngine(private val context: Context) {
                 }
             }
 
-            // Special Nut & Peanut Discrimination
+            // Special Nut & Peanut Discrimination (STRICT EXPLICIT ALLERGY CHECK)
             val mentionsNut = clauseLower.contains("nut") || clauseLower.contains("peanut")
-            val mentionsAllergy = clauseLower.contains("allerg") || clauseLower.contains("cannot") ||
-                    clauseLower.contains("can't") || clauseLower.contains("cant") || isClauseNegative
+            val explicitAllergyTerms = clauseLower.contains("allerg") || clauseLower.contains("nut-free") ||
+                    clauseLower.contains("peanut-free") || clauseLower.contains("can't eat nut") ||
+                    clauseLower.contains("cannot eat nut") || clauseLower.contains("can't eat peanut") ||
+                    clauseLower.contains("cannot eat peanut") || clauseLower.contains("no nuts") ||
+                    clauseLower.contains("no peanuts") || clauseLower.contains("avoid nuts") ||
+                    clauseLower.contains("avoid peanuts")
 
             if (mentionsNut) {
-                if (mentionsAllergy) {
+                if (explicitAllergyTerms) {
                     val nutVal = if (clauseLower.contains("peanut")) "Peanut Allergy" else "Nut Allergy"
+                    results.removeAll { it.subject == clauseSubject && (it.value == "Nuts" || it.value == "Peanuts") }
                     val exists = results.any { it.subject == clauseSubject && it.predicate == "dietary_restriction" && it.value == nutVal }
                     if (!exists) {
                         results.add(StructuredAssertion(clauseSubject, "dietary_restriction", nutVal))
                     }
                 } else {
                     val nutVal = if (clauseLower.contains("peanut")) "Peanuts" else "Nuts"
-                    val exists = results.any { it.subject == clauseSubject && it.predicate == "likes_cuisine" && it.value == nutVal }
+                    val exists = results.any { it.subject == clauseSubject && it.value == nutVal }
                     if (!exists) {
                         results.add(StructuredAssertion(clauseSubject, "likes_cuisine", nutVal))
                     }
@@ -380,7 +385,7 @@ class GuruChatEngine(private val context: Context) {
                 }
             }
 
-            // 3B. Travel Time & Drive Distance Parsing (Explicit time/distance keywords)
+            // 3B. Travel Time & Drive Distance Parsing (STRICTLY MUTUALLY EXCLUSIVE)
             val mentionsTravelKeyword = clauseLower.contains("minute") || clauseLower.contains("min") ||
                     clauseLower.contains("hour") || clauseLower.contains("hr") ||
                     clauseLower.contains("mile") || clauseLower.contains("mi") ||
@@ -393,19 +398,21 @@ class GuruChatEngine(private val context: Context) {
                 val num = numbers.firstOrNull()
 
                 if (num != null && num in 1..180) {
-                    val isHours = clauseLower.contains("hour") || clauseLower.contains("hr")
-                    val isMiles = clauseLower.contains("mile") || clauseLower.contains("mi")
+                    val hasMinutesKeyword = clauseLower.contains("minute") || clauseLower.contains("min")
+                    val hasMilesKeyword = clauseLower.contains("mile") || clauseLower.contains("mi")
+                    val hasHoursKeyword = clauseLower.contains("hour") || clauseLower.contains("hr")
 
-                    val normVal = when {
-                        isHours -> "${num * 60} minutes"
-                        isMiles -> "$num miles"
-                        else -> "$num minutes"
-                    }
-
-                    val predicate = if (isMiles) "max_distance_miles" else "max_travel_time"
-                    val exists = results.any { it.subject == clauseSubject && it.predicate == predicate }
-                    if (!exists) {
-                        results.add(StructuredAssertion(clauseSubject, predicate, normVal))
+                    if (hasMilesKeyword) {
+                        val exists = results.any { it.subject == clauseSubject && it.predicate == "max_distance_miles" }
+                        if (!exists) {
+                            results.add(StructuredAssertion(clauseSubject, "max_distance_miles", "$num miles"))
+                        }
+                    } else if (hasMinutesKeyword || hasHoursKeyword || clauseLower.contains("drive") || clauseLower.contains("travel")) {
+                        val normVal = if (hasHoursKeyword) "${num * 60} minutes" else "$num minutes"
+                        val exists = results.any { it.subject == clauseSubject && it.predicate == "max_travel_time" }
+                        if (!exists) {
+                            results.add(StructuredAssertion(clauseSubject, "max_travel_time", normVal))
+                        }
                     }
                 }
             }
