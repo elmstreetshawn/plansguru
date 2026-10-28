@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
@@ -219,17 +220,19 @@ fun PlacesScreen(
         )
     }
 
-    // Edit / Delete Place Dialog
+    // Edit / Delete Place & Tags Dialog
     if (selectedRestaurant != null) {
         var name by remember { mutableStateOf(selectedRestaurant!!.name) }
         var cuisine by remember { mutableStateOf(selectedRestaurant!!.cuisine) }
         var location by remember { mutableStateOf(selectedRestaurant!!.location) }
         var price by remember { mutableStateOf(selectedRestaurant!!.priceRange) }
         var noise by remember { mutableStateOf(selectedRestaurant!!.noiseLevel) }
+        val accommodations = remember { mutableStateListOf<String>().apply { addAll(selectedRestaurant!!.dietaryAccommodations) } }
+        var newTagInput by remember { mutableStateOf("") }
 
         AlertDialog(
             onDismissRequest = { selectedRestaurant = null },
-            title = { Text("Edit Place") },
+            title = { Text("Edit Place & Tags") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Restaurant Name") }, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium)
@@ -238,6 +241,44 @@ fun PlacesScreen(
                     OutlinedTextField(value = price, onValueChange = { price = it }, label = { Text("Price Range") }, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium)
                     OutlinedTextField(value = noise, onValueChange = { noise = it }, label = { Text("Noise Level") }, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium)
                     
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("Dietary Tags & Accommodations:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    if (accommodations.isEmpty()) {
+                        Text("No tags recorded yet.", style = MaterialTheme.typography.bodySmall)
+                    } else {
+                        accommodations.forEach { tag ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("• $tag", style = MaterialTheme.typography.bodyMedium)
+                                TextButton(onClick = { accommodations.remove(tag) }) {
+                                    Text("Remove", color = MaterialTheme.colorScheme.error)
+                                }
+                            }
+                        }
+                    }
+                    OutlinedTextField(
+                        value = newTagInput,
+                        onValueChange = { newTagInput = it },
+                        label = { Text("Add tag (e.g. Nut-Free)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium
+                    )
+                    Button(
+                        onClick = {
+                            if (newTagInput.isNotBlank() && !accommodations.contains(newTagInput.trim())) {
+                                accommodations.add(newTagInput.trim())
+                                newTagInput = ""
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = CircleShape
+                    ) {
+                        Text("Add Tag")
+                    }
+
                     Spacer(modifier = Modifier.height(8.dp))
                     TextButton(
                         onClick = {
@@ -258,7 +299,8 @@ fun PlacesScreen(
                             cuisine = cuisine.trim(),
                             location = location.trim(),
                             priceRange = price.trim(),
-                            noiseLevel = noise.trim()
+                            noiseLevel = noise.trim(),
+                            dietaryAccommodations = accommodations.toList()
                         )
                         viewModel.updateRestaurant(updated)
                         selectedRestaurant = null

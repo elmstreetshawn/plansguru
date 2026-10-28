@@ -3,6 +3,7 @@ package com.plansguru.ui.people
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,25 +18,47 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.plansguru.data.repository.GraphRepository
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupSetupScreen(
     initialMembers: List<String>,
     onBack: () -> Unit,
-    onAskGuru: (String) -> Unit
+    onAskGuru: (String, List<String>) -> Unit
 ) {
     var groupName by remember { mutableStateOf("") }
-    var saveAsSquad by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val repository = remember { GraphRepository(context) }
+
+    val allFriendsList = remember {
+        mutableStateListOf("Maya", "Jo", "Priya", "Lena", "Sam").apply {
+            try {
+                val dbPersons = repository.getAllPersons().map { it.displayName }
+                for (pName in dbPersons) {
+                    if (!contains(pName) && pName != "Me" && pName != "local_user") add(pName)
+                }
+            } catch (_: Exception) {}
+        }
+    }
+
+    val selectedMembers = remember {
+        mutableStateListOf<String>().apply {
+            if (initialMembers.isNotEmpty()) {
+                addAll(initialMembers)
+            } else {
+                addAll(listOf("Maya", "Jo", "Priya"))
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Column {
-                        Text("Your group", style = MaterialTheme.typography.titleLarge)
-                        Text("${initialMembers.size} people · not saved", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("Select Group Members", style = MaterialTheme.typography.titleLarge)
+                        Text("${selectedMembers.size} selected", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 },
                 navigationIcon = {
@@ -53,7 +76,6 @@ fun GroupSetupScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Group name input & camera icon
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -71,47 +93,29 @@ fun GroupSetupScreen(
                 OutlinedTextField(
                     value = groupName,
                     onValueChange = { groupName = it },
-                    placeholder = { Text("Name this group (optional)") },
+                    placeholder = { Text("Name this group (e.g. Taco Crew)") },
                     modifier = Modifier.weight(1f),
                     shape = MaterialTheme.shapes.medium
                 )
             }
 
-            // Save as a squad toggle
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaterialTheme.shapes.medium,
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Save as a squad", style = MaterialTheme.typography.titleSmall)
-                        Text("Start with this group in one tap next time", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Switch(
-                        checked = saveAsSquad,
-                        onCheckedChange = { saveAsSquad = it }
-                    )
-                }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                AssistChip(
+                    onClick = {
+                        selectedMembers.clear()
+                        selectedMembers.addAll(allFriendsList)
+                    },
+                    label = { Text("☑ Select All") }
+                )
+                AssistChip(
+                    onClick = {
+                        selectedMembers.clear()
+                    },
+                    label = { Text("☐ Clear All") }
+                )
             }
 
-            Text("EDIT EVERYONE AT ONCE", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                AssistChip(onClick = {}, label = { Text("☑ All") })
-                AssistChip(onClick = {}, label = { Text("Tag") })
-                AssistChip(onClick = {}, label = { Text("Circle") })
-                AssistChip(onClick = {}, label = { Text("Undo") })
-            }
-
-            Text("Tick people below, then tag them or set their circle.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Select people below for your dinner plan:", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
             LazyColumn(
                 modifier = Modifier
@@ -119,10 +123,18 @@ fun GroupSetupScreen(
                     .weight(1f),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(initialMembers) { name ->
+                items(allFriendsList) { name ->
+                    val isChecked = selectedMembers.contains(name)
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.medium
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                if (isChecked) selectedMembers.remove(name) else selectedMembers.add(name)
+                            },
+                        shape = MaterialTheme.shapes.medium,
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (isChecked) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        )
                     ) {
                         Row(
                             modifier = Modifier
@@ -131,7 +143,16 @@ fun GroupSetupScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            Checkbox(checked = true, onCheckedChange = {})
+                            Checkbox(
+                                checked = isChecked,
+                                onCheckedChange = { checked ->
+                                    if (checked) {
+                                        if (!selectedMembers.contains(name)) selectedMembers.add(name)
+                                    } else {
+                                        selectedMembers.remove(name)
+                                    }
+                                }
+                            )
                             Box(
                                 modifier = Modifier
                                     .size(36.dp)
@@ -143,45 +164,22 @@ fun GroupSetupScreen(
                             }
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(name, style = MaterialTheme.typography.titleMedium)
-                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    AssistChip(onClick = {}, label = { Text("Circle 1", style = MaterialTheme.typography.labelSmall) })
-                                    AssistChip(onClick = {}, label = { Text("taco crew", style = MaterialTheme.typography.labelSmall) })
-                                }
                             }
                         }
                     }
                 }
             }
 
-            OutlinedButton(
-                onClick = {
-                    val inviteUri = "https://plansguru.app/join?coordinator=local_user_key&session=session_${System.currentTimeMillis()}"
-                    val message = "Hey! Join my PlansGuru dinner plan by tapping here: $inviteUri"
-                    val intent = Intent(Intent.ACTION_SENDTO).apply {
-                        data = Uri.parse("smsto:")
-                        putExtra("sms_body", message)
-                    }
-                    try {
-                        context.startActivity(intent)
-                    } catch (_: Exception) {}
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                shape = CircleShape
-            ) {
-                Text("💬 Invite Friends via SMS")
-            }
-
             Button(
-                onClick = { onAskGuru(groupName.ifBlank { "Dinner Group" }) },
+                enabled = selectedMembers.isNotEmpty(),
+                onClick = { onAskGuru(groupName.ifBlank { "Dinner Group" }, selectedMembers.toList()) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = CircleShape,
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                Text("✨ Ask the Guru", style = MaterialTheme.typography.titleMedium)
+                Text("✨ Ask the Guru (${selectedMembers.size} members)", style = MaterialTheme.typography.titleMedium)
             }
         }
     }

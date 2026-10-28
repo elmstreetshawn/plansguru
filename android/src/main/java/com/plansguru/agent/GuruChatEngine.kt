@@ -1,5 +1,18 @@
 package com.plansguru.agent
 
+import android.content.Context
+import android.util.Log
+import com.google.ai.edge.litertlm.Backend
+import com.google.ai.edge.litertlm.Conversation
+import com.google.ai.edge.litertlm.Engine
+import com.google.ai.edge.litertlm.EngineConfig
+import com.plansguru.data.repository.GraphRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.io.File
+
 data class StructuredAssertion(
     val subject: String,
     val predicate: String,
@@ -12,7 +25,16 @@ data class FaqItem(
     val answer: String
 )
 
-class GuruChatEngine {
+const val SERVER_BASE_URL = "http://192.168.2.37:8000"
+
+class GuruChatEngine(private val context: Context) {
+    private val repository = GraphRepository(context)
+    private var engine: Engine? = null
+    private var conversation: Conversation? = null
+    var isModelLoaded = false
+        private set
+    var initializationError: String? = null
+        private set
 
     private val faqKnowledgeBase = listOf(
         FaqItem(
@@ -33,10 +55,147 @@ class GuruChatEngine {
         )
     )
 
-    fun generateStructuredResponse(userMessage: String): Pair<String, List<StructuredAssertion>> {
+    init {
+        // Non-blocking quick check
+    }
+
+    suspend fun initializeModel(statusCallback: (String) -> Unit = { _ -> }): Boolean = withContext(Dispatchers.IO) {
+        if (isModelLoaded && engine != null) return@withContext true
+
+        try {
+            statusCallback("Checking local model file...")
+            val modelFileName = "gemma3-1b-it-int4.litertlm"
+            val externalDir = context.getExternalFilesDir(null)
+            val externalFile = if (externalDir != null) File(externalDir, modelFileName) else null
+
+            val modelFile = if (externalFile != null && externalFile.exists() && externalFile.length() > 500L * 1024L * 1024L) {
+                Log.d("GuruChatEngine", "Using external files model: ${externalFile.absolutePath}")
+                externalFile
+            } else {
+                File(context.filesDir, modelFileName)
+            }
+
+            val isValidTaskFile = modelFile.exists() && modelFile.length() > 500L * 1024L * 1024L
+
+            if (!isValidTaskFile) {
+                if (modelFile.exists()) {
+                    modelFile.delete()
+                }
+
+                val assetOpened = try {
+                    context.assets.open(modelFileName).use { input ->
+                        modelFile.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    true
+                } catch (_: Exception) {
+                    false
+                }
+
+                if (!assetOpened && (!modelFile.exists() || modelFile.length() < 500L * 1024L * 1024L)) {
+                    statusCallback("Connecting to laptop ($SERVER_BASE_URL)...")
+                    Log.d("GuruChatEngine", "Downloading Gemma model from laptop ($SERVER_BASE_URL/api/model/gemma)...")
+
+                    val client = OkHttpClient.Builder()
+                        .connectTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+                        .readTimeout(1800, java.util.concurrent.TimeUnit.SECONDS)
+                        .writeTimeout(1800, java.util.concurrent.TimeUnit.SECONDS)
+                        .retryOnConnectionFailure(true)
+                        .build()
+
+                    var success = false
+                    var attempts = 0
+                    var lastException: Throwable? = null
+
+                    while (!success && attempts < 3) {
+                        attempts++
+                        try {
+                            if (modelFile.exists()) modelFile.delete()
+                            val request = Request.Builder()
+                                .url("$SERVER_BASE_URL/api/model/gemma")
+                                .build()
+
+                            client.newCall(request).execute().use { response ->
+                                if (!response.isSuccessful) {
+                                    val errorBody = response.body?.string() ?: "Unknown error"
+                                    throw java.io.IOException("HTTP error ${response.code}: $errorBody")
+                                }
+                                val body = response.body ?: throw java.io.IOException("Empty response body")
+                                val contentLength = body.contentLength()
+
+                                body.byteStream().use { input ->
+                                    modelFile.outputStream().use { output ->
+                                        val buffer = ByteArray(65536)
+                                        var bytesCopied = 0L
+                                        var bytes: Int
+                                        while (input.read(buffer).also { bytes = it } >= 0) {
+                                            output.write(buffer, 0, bytes)
+                                            bytesCopied += bytes
+                                            if (contentLength > 0) {
+                                                val percent = (bytesCopied * 100 / contentLength).toInt()
+                                                val mbCopied = bytesCopied / (1024 * 1024)
+                                                val mbTotal = contentLength / (1024 * 1024)
+                                                statusCallback("Downloading Gemma model (Attempt $attempts/3):\n$mbCopied MB / $mbTotal MB ($percent%)")
+                                            } else {
+                                                val mbCopied = bytesCopied / (1024 * 1024)
+                                                statusCallback("Downloading Gemma model (Attempt $attempts/3):\n$mbCopied MB downloaded...")
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            success = true
+                        } catch (e: Throwable) {
+                            lastException = e
+                            Log.w("GuruChatEngine", "Download attempt $attempts failed: ${e.message}. Retrying...", e)
+                            statusCallback("⚠️ Connection dropped. Retrying (Attempt ${attempts + 1}/3)...")
+                            kotlinx.coroutines.delay(3000L * attempts)
+                        }
+                    }
+
+                    if (!success) {
+                        throw lastException ?: java.io.IOException("Failed to download model after 3 attempts.")
+                    }
+
+                    statusCallback("Download complete! Initializing LiteRT-LM engine...")
+                    Log.d("GuruChatEngine", "Successfully downloaded Gemma model to ${modelFile.absolutePath}")
+                }
+            }
+
+            if (modelFile.exists() && modelFile.length() > 500L * 1024L * 1024L) {
+                statusCallback("Initializing LiteRT-LM Gemma Engine...")
+                val engineConfig = EngineConfig(
+                    modelPath = modelFile.absolutePath,
+                    backend = Backend.CPU()
+                )
+                val newEngine = Engine(engineConfig)
+                newEngine.initialize()
+                conversation = newEngine.createConversation()
+                engine = newEngine
+                isModelLoaded = true
+                initializationError = null
+                statusCallback("✨ LiteRT-LM Gemma AI engine is ready!")
+                Log.d("GuruChatEngine", "LiteRT-LM Engine successfully initialized!")
+                true
+            } else {
+                throw java.io.IOException("Model file is missing or invalid.")
+            }
+        } catch (e: Throwable) {
+            isModelLoaded = false
+            engine = null
+            conversation = null
+            initializationError = e.message ?: e.toString()
+            statusCallback("❌ LiteRT-LM initialization failed: ${e.message}")
+            Log.e("GuruChatEngine", "Failed to initialize LiteRT-LM Engine", e)
+            false
+        }
+    }
+
+    suspend fun generateStructuredResponse(userMessage: String): Pair<String, List<StructuredAssertion>> {
         val lower = userMessage.lowercase().trim()
 
-        // 1. Check FAQ / Helper Agent queries first
+        // 1. Check FAQ queries first
         val matchingFaq = faqKnowledgeBase.find { faq ->
             faq.keywords.any { keyword -> lower.contains(keyword) }
         }
@@ -44,44 +203,93 @@ class GuruChatEngine {
             return Pair(matchingFaq.answer, emptyList())
         }
 
-        // 2. Check if it's a conversational greeting or general question
-        val greetings = listOf("hello", "hi", "hey", "are you there", "how are you", "who are you", "what can you do", "help", "sup", "good morning", "good evening")
-        val isGreeting = greetings.any { lower == it || lower.startsWith("$it ") || lower.contains(it) } && 
-            !lower.contains("like") && !lower.contains("dislike") && !lower.contains("want") && !lower.contains("prefer") && !lower.contains("drive")
-
-        if (isGreeting) {
-            val greetingReply = when {
-                lower.contains("there") || lower.contains("hello") || lower.contains("hi") || lower.contains("hey") ->
-                    "👋 Hello! I'm your on-device PlansGuru agent. I'm here to learn your dining tastes or help guide you around the app. What can I help you with?"
-                lower.contains("who") || lower.contains("what") ->
-                    "🤖 I am PlansGuru, your privacy-first on-device social graph agent. I keep your data 100% encrypted locally while helping you and your friends reach dinner consensus without compromise."
-                else ->
-                    "💬 I'm listening! Ask me how to use the app, or tell me about cuisines and travel distance limits so I can map them to your encrypted social graph."
-            }
-            return Pair(greetingReply, emptyList())
-        }
-
-        // 3. Otherwise, parse structured assertions
+        // 2. Run real Gemma LLM Inference on-device via LiteRT-LM with Local RAG Memory Context!
         val assertions = parseLlmSemanticOutput(userMessage)
-        val responseText = if (assertions.isNotEmpty()) {
-            val formatted = assertions.joinToString("\n") { "• [${it.subject}] ${it.predicate}: ${it.value}" }
-            "✨ [Gemma LLM Structured Output Parsing (42 tokens, 1,150ms)]:\n$formatted\n\nSuccessfully normalized and mapped to your encrypted social graph."
+        val graphContext = buildLocalGraphContext()
+
+        val prompt = if (assertions.isNotEmpty()) {
+            """
+            You are PlansGuru, a warm, friendly, and intelligent on-device AI dinner agent.
+            User logged: "$userMessage"
+            
+            Instruction: Acknowledge logging this preference warmly in 1-2 friendly, natural sentences. Do not write a long lecture.
+            """.trimIndent()
         } else {
-            val defaultSubject = "local_user"
-            "✨ [Gemma LLM Structured Output Parsing (38 tokens, 980ms)]:\n• [$defaultSubject] general_preference: $userMessage\n\nSuccessfully normalized and mapped to your encrypted social graph."
+            """
+            You are PlansGuru, a warm, friendly, and intelligent on-device AI dinner agent.
+            
+            Known Social Graph Context:
+            $graphContext
+            
+            User message: "$userMessage"
+            
+            Instructions:
+            - Answer the user warmly and conversationally in 1-2 helpful sentences.
+            - Use the Known Social Graph Context above to answer questions from memory or suggest restaurant ideas.
+            """.trimIndent()
         }
-        val finalAssertions = if (assertions.isNotEmpty()) assertions else listOf(StructuredAssertion("local_user", "general_preference", userMessage))
-        return Pair(responseText, finalAssertions)
+
+        val llmOutput = if (isModelLoaded && conversation != null) {
+            try {
+                withContext(Dispatchers.IO) {
+                    val resultMsg = conversation!!.sendMessage(prompt)
+                    resultMsg.toString()
+                }
+            } catch (e: Throwable) {
+                Log.e("GuruChatEngine", "LiteRT-LM inference execution error", e)
+                null
+            }
+        } else {
+            null
+        }
+
+        val agentReply = llmOutput ?: buildString {
+            if (assertions.isNotEmpty()) {
+                append("On-Device Agent: Got it! I extracted ")
+                append(assertions.joinToString(", ") { "${it.subject}'s ${it.predicate.replace('_', ' ')} (${it.value})" })
+                append(" and updated your local social graph.")
+            } else {
+                append("On-Device Agent: Recorded your preferences locally into your secure social graph.")
+            }
+        }
+
+        val responseText = buildString {
+            append(agentReply)
+            if (assertions.isNotEmpty()) {
+                append("\n\n📌 Mapped Social Graph Assertions:\n")
+                append(assertions.joinToString("\n") { "• [${it.subject}] ${it.predicate.replace('_', ' ')}: ${it.value}" })
+            }
+        }
+
+        return Pair(responseText, assertions)
+    }
+
+    private fun buildLocalGraphContext(): String {
+        val persons = repository.getAllPersons()
+        val sb = StringBuilder()
+
+        val userAssertions = repository.getAssertionsForSubject("local_user")
+        if (userAssertions.isNotEmpty()) {
+            sb.append("User (local_user) preferences:\n")
+            userAssertions.forEach { sb.append("  - ${it.predicate.replace('_', ' ')}: ${it.value}\n") }
+        }
+
+        for (person in persons) {
+            val pAssertions = repository.getAssertionsForSubject(person.localPersonId)
+            if (pAssertions.isNotEmpty()) {
+                sb.append("${person.displayName}'s preferences:\n")
+                pAssertions.forEach { sb.append("  - ${it.predicate.replace('_', ' ')}: ${it.value}\n") }
+            }
+        }
+
+        return if (sb.isEmpty()) "No preferences logged in social graph yet." else sb.toString().trim()
     }
 
     private fun parseLlmSemanticOutput(userMessage: String, defaultSubject: String = "local_user"): List<StructuredAssertion> {
         val lower = userMessage.lowercase()
         val isNegative = lower.contains("don't") || lower.contains("doesn't") || lower.contains("dont") || lower.contains("doesnt") || lower.contains("dislike") || lower.contains("hate") || lower.contains("no ")
 
-        val knownNames = listOf("sam", "maya", "jo", "priya", "lena", "sarah", "mike", "jen", "gina", "alex", "david")
-        val foundName = knownNames.find { lower.contains(it) }
-        val subject = foundName?.replaceFirstChar { it.uppercase() } ?: defaultSubject
-
+        val subject = extractSubjectFromText(userMessage)
         val results = mutableListOf<StructuredAssertion>()
 
         // 1. Cuisines
@@ -147,7 +355,36 @@ class GuruChatEngine {
         return results
     }
 
-    fun generateResponse(userMessage: String): String {
+    private fun extractSubjectFromText(userMessage: String): String {
+        val words = userMessage.split(" ", ",", ".")
+        for (i in words.indices) {
+            val cleanWord = words[i].replace(Regex("[^a-zA-Z]"), "")
+            if (cleanWord.length > 1 && cleanWord[0].isUpperCase()) {
+                val lower = cleanWord.lowercase()
+                val stopWords = listOf("i", "my", "we", "our", "the", "a", "an", "this", "that", "hello", "hi", "hey", "plansguru", "italian", "mexican", "japanese", "thai", "chinese", "indian", "american", "pizza", "burger", "sushi", "vegan", "gluten", "vegetarian")
+                if (!stopWords.contains(lower)) {
+                    return cleanWord.replaceFirstChar { it.uppercase() }
+                }
+            }
+        }
+        return "local_user"
+    }
+
+    suspend fun generateResponse(userMessage: String): String {
         return generateStructuredResponse(userMessage).first
+    }
+
+    companion object {
+        fun isModelReady(context: Context): Boolean {
+            val filenames = listOf("gemma3-1b-it-int4.litertlm", "gemma-4-E2B-it-web.task")
+            val extDir = context.getExternalFilesDir(null)
+            for (fn in filenames) {
+                val extFile = if (extDir != null) File(extDir, fn) else null
+                if (extFile != null && extFile.exists() && extFile.length() > 500L * 1024L * 1024L) return true
+                val localFile = File(context.filesDir, fn)
+                if (localFile.exists() && localFile.length() > 500L * 1024L * 1024L) return true
+            }
+            return false
+        }
     }
 }

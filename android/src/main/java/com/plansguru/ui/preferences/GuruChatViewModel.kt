@@ -8,7 +8,6 @@ import com.plansguru.data.model.Assertion
 import com.plansguru.data.model.Person
 import com.plansguru.data.model.Relationship
 import com.plansguru.data.repository.GraphRepository
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,7 +21,7 @@ data class ChatMessage(
 )
 
 class GuruChatViewModel(application: Application) : AndroidViewModel(application) {
-    private val chatEngine = GuruChatEngine()
+    private val chatEngine = GuruChatEngine(application)
     private val repository = GraphRepository(application)
 
     private var pendingFriendName: String? = null
@@ -34,6 +33,26 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
         )
     )
     val messages: StateFlow<List<ChatMessage>> = _messages.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            if (!chatEngine.isModelLoaded) {
+                val statusMsgId = UUID.randomUUID().toString()
+                val statusMsg = ChatMessage(statusMsgId, "⚙️ Checking on-device Gemma AI engine...", false)
+                _messages.value = _messages.value + statusMsg
+
+                val success = chatEngine.initializeModel { statusText ->
+                    _messages.value = _messages.value.map { msg ->
+                        if (msg.id == statusMsgId) msg.copy(text = statusText) else msg
+                    }
+                }
+
+                if (success) {
+                    _messages.value = _messages.value.filterNot { it.id == statusMsgId }
+                }
+            }
+        }
+    }
 
     fun sendMessage(text: String) {
         if (text.isBlank()) return
@@ -104,36 +123,40 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
                 }
             }
 
-            // Dynamically extract friend name from message (e.g. "my friend Gina", "Gina doesn't like...")
-            val mentionedName = extractMentionedFriend(text)
-
-            if (mentionedName != null) {
-                val existingPerson = repository.getPerson(mentionedName)
-                if (existingPerson == null) {
-                    // Ask user if they want to create this person! NEVER auto-add!
-                    pendingFriendName = mentionedName
-                    pendingAssertionText = text
-                    val askMsg = ChatMessage(UUID.randomUUID().toString(), "I can't find $mentionedName in your social graph. Should I create them? What's their last name or details?", false)
-                    _messages.value = _messages.value + askMsg
-                    return@launch
-                }
-            }
-
-            // Simulate neural network inference time (token generation latency)
-            delay(1200)
-
             // Get LLM structured response and assertions
             val (replyText, structuredAssertions) = chatEngine.generateStructuredResponse(text)
+
+            // Check if assertions reference a subject other than local_user that isn't in graph yet
+            val newFriendSubject = structuredAssertions.map { it.subject }.firstOrNull { it != "local_user" && repository.getPerson(it) == null }
+
+            if (newFriendSubject != null) {
+                pendingFriendName = newFriendSubject
+                pendingAssertionText = text
+                val askMsg = ChatMessage(UUID.randomUUID().toString(), "I noted preferences for $newFriendSubject, but I can't find them in your social graph. Should I create a profile for $newFriendSubject?", false)
+                _messages.value = _messages.value + askMsg
+                return@launch
+            }
+
             val botMsg = ChatMessage(UUID.randomUUID().toString(), replyText, false)
             _messages.value = _messages.value + botMsg
 
-            val targetSubject = mentionedName ?: "local_user"
             for (sa in structuredAssertions) {
+                if (sa.predicate == "locationZip") {
+                    val currentMe = repository.getPerson("local_user") ?: Person(
+                        localPersonId = "local_user",
+                        displayName = "Me",
+                        publicIdentityKey = "pub_key_local_user",
+                        creationTimestamp = System.currentTimeMillis(),
+                        locationZip = sa.value
+                    )
+                    repository.savePerson(currentMe.copy(locationZip = sa.value))
+                }
+
                 repository.saveAssertion(
                     Assertion(
                         assertionId = UUID.randomUUID().toString(),
                         observerId = "local_user",
-                        subjectId = if (mentionedName != null) targetSubject else sa.subject,
+                        subjectId = sa.subject,
                         predicate = sa.predicate,
                         value = sa.value,
                         source = "LLM_STRUCTURED_PARSER",
@@ -145,29 +168,5 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
                 )
             }
         }
-    }
-
-    private fun extractMentionedFriend(text: String): String? {
-        val patterns = listOf(
-            Regex("my friend ([A-Z][a-zA-Z]*)", RegexOption.IGNORE_CASE),
-            Regex("friend ([A-Z][a-zA-Z]*)", RegexOption.IGNORE_CASE),
-            Regex("for ([A-Z][a-zA-Z]*)", RegexOption.IGNORE_CASE)
-        )
-        for (pattern in patterns) {
-            val match = pattern.find(text)
-            if (match != null && match.groupValues.size > 1) {
-                val name = match.groupValues[1]
-                if (!listOf("my", "the", "a", "an", "our", "their").contains(name.lowercase())) {
-                    return name.replaceFirstChar { it.uppercase() }
-                }
-            }
-        }
-        val knownNames = listOf("Sam", "Maya", "Jo", "Priya", "Lena", "Sarah", "Mike", "Jen", "Gina", "Alex", "David")
-        for (name in knownNames) {
-            if (text.contains(name, ignoreCase = true)) {
-                return name
-            }
-        }
-        return null
     }
 }

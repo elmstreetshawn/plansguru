@@ -4,13 +4,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
@@ -57,11 +60,12 @@ fun PreferencesScreen(
 
     LaunchedEffect(selectedTab) {
         try {
+            repository.deleteGeneralPreferences()
             allPersons = repository.getAllPersons()
             val subjects = listOf("local_user") + allPersons.map { it.localPersonId } + allPersons.map { it.displayName }
             val combined = mutableListOf<Assertion>()
             for (subj in subjects.distinct()) {
-                combined.addAll(repository.getAssertionsForSubject(subj))
+                combined.addAll(repository.getAssertionsForSubject(subj).filter { it.predicate != "general_preference" })
             }
             allAssertions = combined
         } catch (_: Exception) {}
@@ -119,11 +123,28 @@ fun PreferencesScreen(
         ) {
             when (selectedTab) {
                 0 -> {
-                    // People Graph Tab
+                    // People Graph Tab (Full Interactive CRUD)
+                    var targetSubjectForNewAssertion by remember { mutableStateOf<String?>(null) }
+                    var selectedPredicate by remember { mutableStateOf("likes_cuisine") }
+                    var customValueInput by remember { mutableStateOf("") }
+
+                    val refreshGraphData = {
+                        try {
+                            repository.deleteGeneralPreferences()
+                            allPersons = repository.getAllPersons()
+                            val subjects = listOf("local_user") + allPersons.map { it.localPersonId }
+                            val combined = mutableListOf<Assertion>()
+                            for (subj in subjects.distinct()) {
+                                combined.addAll(repository.getAssertionsForSubject(subj).filter { it.predicate != "general_preference" })
+                            }
+                            allAssertions = combined
+                        } catch (_: Exception) {}
+                    }
+
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text("Encrypted Social Graph • People & Assertions", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-                        Text("View all connected profiles and their individual preference assertions stored locally.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        
+                        Text("Encrypted Social Graph • People & Preference Assertions", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                        Text("Manage connected profiles and their individual preference variables directly.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
                         LazyColumn(
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                             modifier = Modifier.fillMaxSize()
@@ -140,17 +161,46 @@ fun PreferencesScreen(
                                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                                 ) {
                                     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                            Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.size(36.dp)) {
-                                                Box(contentAlignment = Alignment.Center) {
-                                                    Text(personName.take(2).uppercase(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.size(36.dp)) {
+                                                    Box(contentAlignment = Alignment.Center) {
+                                                        Text(personName.take(2).uppercase(), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                                    }
+                                                }
+                                                Text(personName, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                                            }
+
+                                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                                TextButton(onClick = {
+                                                    targetSubjectForNewAssertion = subj
+                                                    selectedPredicate = "likes_cuisine"
+                                                    customValueInput = ""
+                                                }) {
+                                                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                    Spacer(modifier = Modifier.width(4.dp))
+                                                    Text("Add Preference", style = MaterialTheme.typography.labelMedium)
+                                                }
+
+                                                if (subj != "local_user") {
+                                                    IconButton(onClick = {
+                                                        repository.deletePerson(subj)
+                                                        refreshGraphData()
+                                                    }) {
+                                                        Icon(Icons.Default.Delete, contentDescription = "Delete Person", tint = MaterialTheme.colorScheme.error)
+                                                    }
                                                 }
                                             }
-                                            Text(personName, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
                                         }
+
                                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
                                         if (assertions.isEmpty()) {
-                                            Text("No preferences recorded yet. Chat with Guru or use the People tab to add some.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            Text("No preferences recorded yet. Tap '+ Add Preference' or chat with Guru.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         } else {
                                             assertions.forEach { assertion ->
                                                 Row(
@@ -158,8 +208,16 @@ fun PreferencesScreen(
                                                     horizontalArrangement = Arrangement.SpaceBetween,
                                                     verticalAlignment = Alignment.CenterVertically
                                                 ) {
-                                                    AssistChip(onClick = {}, label = { Text(assertion.predicate, style = MaterialTheme.typography.labelSmall) })
-                                                    Text(assertion.value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.secondary)
+                                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                        AssistChip(onClick = {}, label = { Text(assertion.predicate.replace('_', ' '), style = MaterialTheme.typography.labelSmall) })
+                                                        Text(assertion.value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.secondary)
+                                                    }
+                                                    IconButton(onClick = {
+                                                        repository.deleteAssertion(assertion.assertionId)
+                                                        refreshGraphData()
+                                                    }) {
+                                                        Icon(Icons.Default.Clear, contentDescription = "Delete Assertion", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.outline)
+                                                    }
                                                 }
                                             }
                                         }
@@ -167,6 +225,97 @@ fun PreferencesScreen(
                                 }
                             }
                         }
+                    }
+
+                    // Dialog to Add/CRUD Assertion Directly
+                    if (targetSubjectForNewAssertion != null) {
+                        val targetSubj = targetSubjectForNewAssertion!!
+                        val targetName = if (targetSubj == "local_user") "You (Local User)" else allPersons.find { it.localPersonId == targetSubj }?.displayName ?: targetSubj
+
+                        AlertDialog(
+                            onDismissRequest = { targetSubjectForNewAssertion = null },
+                            title = { Text("Add Preference for $targetName") },
+                            text = {
+                                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    Text("Select Variable Type:", style = MaterialTheme.typography.labelMedium)
+                                    val taxonomyVariables = listOf(
+                                        "likes_cuisine" to "Likes Cuisine",
+                                        "dislikes_cuisine" to "Dislikes Cuisine",
+                                        "dietary_restriction" to "Dietary Restriction",
+                                        "max_travel_time" to "Max Travel Time",
+                                        "noise_preference" to "Noise Preference",
+                                        "locationZip" to "Zip Code"
+                                    )
+
+                                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                        taxonomyVariables.forEach { (varKey, varName) ->
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clickable { selectedPredicate = varKey }
+                                                    .padding(vertical = 4.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                RadioButton(selected = selectedPredicate == varKey, onClick = { selectedPredicate = varKey })
+                                                Spacer(modifier = Modifier.width(8.dp))
+                                                Text(varName, style = MaterialTheme.typography.bodyMedium)
+                                            }
+                                        }
+                                    }
+
+                                    OutlinedTextField(
+                                        value = customValueInput,
+                                        onValueChange = { customValueInput = it },
+                                        label = { Text("Value (e.g. Italian, Vegan, 15 min, 90210)") },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true
+                                    )
+                                }
+                            },
+                            confirmButton = {
+                                Button(
+                                    enabled = customValueInput.isNotBlank(),
+                                    onClick = {
+                                        val valText = customValueInput.trim()
+                                        if (selectedPredicate == "locationZip") {
+                                            val currentPerson = repository.getPerson(targetSubj) ?: Person(
+                                                localPersonId = targetSubj,
+                                                displayName = if (targetSubj == "local_user") "Me" else targetSubj,
+                                                publicIdentityKey = "pub_key_$targetSubj",
+                                                creationTimestamp = System.currentTimeMillis(),
+                                                locationZip = valText
+                                            )
+                                            repository.savePerson(currentPerson.copy(locationZip = valText))
+                                        }
+
+                                        repository.saveAssertion(
+                                            Assertion(
+                                                assertionId = java.util.UUID.randomUUID().toString(),
+                                                observerId = "local_user",
+                                                subjectId = targetSubj,
+                                                predicate = selectedPredicate,
+                                                value = valText,
+                                                source = "MANUAL_UI_CRUD",
+                                                confidence = 1.0f,
+                                                validityTimestampStart = System.currentTimeMillis(),
+                                                validityTimestampEnd = null,
+                                                visibilityPolicy = "PRIVATE"
+                                            )
+                                        )
+
+                                        refreshGraphData()
+                                        targetSubjectForNewAssertion = null
+                                    }
+                                ) {
+                                    Text("Save Preference")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { targetSubjectForNewAssertion = null }) {
+                                    Text("Cancel")
+                                }
+                            }
+                        )
                     }
                 }
                 1 -> {
@@ -224,12 +373,18 @@ fun PreferencesScreen(
 
                     // Edit Squad Dialog
                     if (selectedSquad != null) {
-                        var editableTitle by remember { mutableStateOf(selectedSquad!!.title) }
+                        var editableTitle by remember { mutableStateOf(selectedSquad!!.title.replace(Regex("^[\\p{So}\\p{Cs}\\s]+"), "")) }
+                        var selectedEmoji by remember { mutableStateOf(selectedSquad!!.title.takeWhile { !it.isLetterOrDigit() }.ifBlank { "🌮" }.trim()) }
+
                         AlertDialog(
                             onDismissRequest = { selectedSquad = null },
                             title = { Text("Edit Squad") },
                             text = {
                                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    EmojiPickerRow(
+                                        selectedEmoji = selectedEmoji,
+                                        onEmojiSelected = { selectedEmoji = it }
+                                    )
                                     OutlinedTextField(
                                         value = editableTitle,
                                         onValueChange = { editableTitle = it },
@@ -275,7 +430,8 @@ fun PreferencesScreen(
                             },
                             confirmButton = {
                                 Button(onClick = {
-                                    selectedSquad!!.title = editableTitle.trim()
+                                    val emojiPrefix = if (selectedEmoji.isNotBlank()) "$selectedEmoji " else ""
+                                    selectedSquad!!.title = "$emojiPrefix${editableTitle.trim()}".trim()
                                     selectedSquad = null
                                 }) {
                                     Text("Save Changes")
@@ -291,15 +447,20 @@ fun PreferencesScreen(
 
                     // Add Squad Dialog
                     if (showAddSquadDialog) {
+                        var selectedEmoji by remember { mutableStateOf("🌮") }
                         AlertDialog(
                             onDismissRequest = { showAddSquadDialog = false },
                             title = { Text("Create New Squad") },
                             text = {
                                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    EmojiPickerRow(
+                                        selectedEmoji = selectedEmoji,
+                                        onEmojiSelected = { selectedEmoji = it }
+                                    )
                                     OutlinedTextField(
                                         value = newSquadTitle,
                                         onValueChange = { newSquadTitle = it },
-                                        label = { Text("Squad Title (e.g. 🍔 Burger crew)") },
+                                        label = { Text("Squad Title (e.g. Taco Crew)") },
                                         modifier = Modifier.fillMaxWidth(),
                                         shape = MaterialTheme.shapes.medium
                                     )
@@ -308,7 +469,8 @@ fun PreferencesScreen(
                             confirmButton = {
                                 Button(onClick = {
                                     if (newSquadTitle.isNotBlank()) {
-                                        squads.add(SquadItem(System.currentTimeMillis().toString(), newSquadTitle.trim(), mutableStateListOf("Maya", "Sam")))
+                                        val fullTitle = "$selectedEmoji ${newSquadTitle.trim()}"
+                                        squads.add(SquadItem(System.currentTimeMillis().toString(), fullTitle, mutableStateListOf("Maya", "Sam")))
                                         newSquadTitle = ""
                                         showAddSquadDialog = false
                                     }
@@ -622,6 +784,35 @@ fun PreferencesScreen(
                                 Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", modifier = Modifier.size(20.dp))
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun EmojiPickerRow(
+    selectedEmoji: String,
+    onEmojiSelected: (String) -> Unit
+) {
+    val emojis = listOf("🌮", "🥗", "🍕", "🍔", "🍱", "🍝", "☕", "🍦", "🍹", "🍻", "🍿", "✨", "🎉", "🔥")
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text("Select Emoji:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(vertical = 4.dp)
+        ) {
+            items(emojis) { emoji ->
+                Surface(
+                    onClick = { onEmojiSelected(emoji) },
+                    shape = CircleShape,
+                    color = if (selectedEmoji == emoji) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
+                    border = if (selectedEmoji == emoji) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(emoji, style = MaterialTheme.typography.titleMedium)
                     }
                 }
             }

@@ -7,12 +7,12 @@ plugins {
 
 android {
     namespace = "com.plansguru"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.plansguru"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -35,9 +35,7 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
+
     buildFeatures {
         compose = true
     }
@@ -85,6 +83,9 @@ dependencies {
 
     // Network (OkHttp)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // On-Device GenAI (Google LiteRT-LM Android Engine)
+    implementation("com.google.ai.edge.litertlm:litertlm-android:0.18.1")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

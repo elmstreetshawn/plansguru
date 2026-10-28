@@ -33,7 +33,9 @@ sealed class BottomTab(val route: String, val title: String, val icon: androidx.
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    initialShowChat: Boolean = false
+) {
     val navController = rememberNavController()
     val planningViewModel: androidx.lifecycle.ViewModelStoreOwner = androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner.current!!
     val sharedPlanningViewModel: PlanningViewModel = androidx.lifecycle.viewmodel.compose.viewModel(planningViewModel)
@@ -46,9 +48,10 @@ fun MainScreen() {
     )
 
     var currentGroupTitle by remember { mutableStateOf("Dinner Group") }
-    var showGlobalChatSheet by remember { mutableStateOf(false) }
+    var showGlobalChatSheet by remember { mutableStateOf(initialShowChat) }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             NavigationBar(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -81,7 +84,7 @@ fun MainScreen() {
         NavHost(
             navController = navController,
             startDestination = BottomTab.People.route,
-            modifier = Modifier.padding(padding)
+            modifier = Modifier.padding(bottom = padding.calculateBottomPadding())
         ) {
             composable(BottomTab.People.route) {
                 PeopleScreen(
@@ -98,14 +101,15 @@ fun MainScreen() {
                 )
             }
             composable("group_setup?members={members}") { backStackEntry ->
-                val membersStr = backStackEntry.arguments?.getString("members") ?: "Maya,Jo,Priya"
+                val membersStr = backStackEntry.arguments?.getString("members") ?: ""
                 val members = membersStr.split(",").filter { it.isNotBlank() }
                 GroupSetupScreen(
                     initialMembers = members,
                     onBack = { navController.popBackStack() },
-                    onAskGuru = { groupName ->
+                    onAskGuru = { groupName, selectedList ->
                         currentGroupTitle = groupName
-                        navController.navigate("guru_planning?members=$membersStr")
+                        val selectedStr = selectedList.joinToString(",")
+                        navController.navigate("guru_planning?members=$selectedStr")
                     }
                 )
             }
@@ -130,8 +134,7 @@ fun MainScreen() {
             composable(BottomTab.Plans.route) {
                 PlansHistoryScreen(
                     onCreateNewPlan = {
-                        val members = listOf("Maya", "Jo", "Priya")
-                        navController.navigate("group_setup?members=${members.joinToString(",")}")
+                        navController.navigate("group_setup?members=")
                     },
                     onOpenGuruChat = { showGlobalChatSheet = true }
                 )

@@ -37,3 +37,7 @@ google-services.json
 # AI Model files (prevent large binary uploads to Git)
 *.bin
 *.task
+*.litertlm
+*.model
+__pycache__/
+*.pyc

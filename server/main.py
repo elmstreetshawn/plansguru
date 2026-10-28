@@ -1,8 +1,10 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Dict, Set, List, Optional
 import time
 import uuid
+import os
 
 app = FastAPI(title="PlansGuru Relay Server", version="1.0.0")
 
@@ -61,3 +63,33 @@ async def websocket_relay(websocket: WebSocket, session_id: str):
             active_sessions[session_id].discard(websocket)
             if not active_sessions[session_id]:
                 del active_sessions[session_id]
+
+MODEL_FILE_NAME = "gemma3-1b-it-int4.litertlm"
+
+@app.get("/api/model/gemma")
+def download_gemma_model():
+    search_paths = [
+        MODEL_FILE_NAME,
+        os.path.join(os.path.dirname(__file__), MODEL_FILE_NAME),
+        "gemma-4-E2B-it-web.task",
+        os.path.join(os.path.dirname(__file__), "gemma-4-E2B-it-web.task")
+    ]
+
+    found_path = None
+    for p in search_paths:
+        if os.path.exists(p):
+            found_path = p
+            break
+
+    if not found_path:
+        server_dir = os.path.dirname(__file__) or "."
+        for f in os.listdir(server_dir):
+            if f.endswith(".litertlm") or f.endswith(".task"):
+                found_path = os.path.join(server_dir, f)
+                break
+
+    if not found_path:
+        raise HTTPException(status_code=404, detail="Gemma model file (.litertlm / .task) not found in server directory.")
+
+    filename = os.path.basename(found_path)
+    return FileResponse(found_path, media_type="application/octet-stream", filename=filename)

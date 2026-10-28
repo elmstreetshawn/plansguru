@@ -119,4 +119,21 @@ class GraphRepository(context: Context) {
         }
         db.insertWithOnConflict("relationships", null, values, SQLiteDatabase.CONFLICT_REPLACE)
     }
+
+    fun deleteGeneralPreferences() {
+        val db = dbHelper.getWritableEncryptedDatabase()
+        db.delete("assertions", "predicate = ?", arrayOf("general_preference"))
+    }
+
+    fun deleteAssertion(assertionId: String) {
+        val db = dbHelper.getWritableEncryptedDatabase()
+        db.delete("assertions", "assertionId = ?", arrayOf(assertionId))
+    }
+
+    fun deletePerson(personId: String) {
+        val db = dbHelper.getWritableEncryptedDatabase()
+        db.delete("persons", "localPersonId = ?", arrayOf(personId))
+        db.delete("assertions", "subjectId = ?", arrayOf(personId))
+        db.delete("relationships", "relatedPersonId = ?", arrayOf(personId))
+    }
 }
