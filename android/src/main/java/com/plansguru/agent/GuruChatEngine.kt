@@ -262,11 +262,16 @@ class GuruChatEngine(private val context: Context) {
             }
         }
 
+        val myName = repository.getPerson("local_user")?.displayName?.takeIf { it.isNotBlank() && it != "local_user" } ?: "You"
+
         val responseText = buildString {
             append(agentReply)
             if (assertions.isNotEmpty()) {
                 append("\n\n📌 Mapped Social Graph Assertions:\n")
-                append(assertions.joinToString("\n") { "• [${it.subject}] ${it.predicate.replace('_', ' ')}: ${it.value}" })
+                append(assertions.joinToString("\n") {
+                    val displaySubj = if (it.subject == "local_user") myName else it.subject
+                    "• [$displaySubj] ${it.predicate.replace('_', ' ')}: ${it.value}"
+                })
             }
         }
 
@@ -305,21 +310,30 @@ class GuruChatEngine(private val context: Context) {
             "sushi" to "Sushi", "ramen" to "Ramen", "thai" to "Thai", "tai" to "Thai",
             "chinese" to "Chinese", "indian" to "Indian", "american" to "American",
             "pizza" to "Pizza", "burger" to "Burger", "burgers" to "Burger",
-            "bbq" to "BBQ", "barbecue" to "BBQ", "hotdog" to "American (Hotdogs)",
-            "hotdogs" to "American (Hotdogs)", "hot dog" to "American (Hotdogs)",
-            "hot dogs" to "American (Hotdogs)", "tex-mex" to "Tex-Mex", "seafood" to "Seafood",
-            "steak" to "Steakhouse", "mediterranean" to "Mediterranean", "greek" to "Greek",
-            "french" to "French", "cuban" to "Cuban", "vietnamese" to "Vietnamese",
-            "pho" to "Vietnamese", "korean" to "Korean", "dim sum" to "Chinese", "taco" to "Mexican",
-            "tacos" to "Mexican", "spicy" to "Spicy",
+            "bbq" to "BBQ", "barbecue" to "BBQ", "hotdog" to "Hotdogs",
+            "hotdogs" to "Hotdogs", "hot dog" to "Hotdogs", "hot dogs" to "Hotdogs",
+            "tex-mex" to "Tex-Mex", "seafood" to "Seafood", "steak" to "Steakhouse",
+            "mediterranean" to "Mediterranean", "greek" to "Greek", "french" to "French",
+            "cuban" to "Cuban", "vietnamese" to "Vietnamese", "pho" to "Vietnamese",
+            "korean" to "Korean", "dim sum" to "Chinese", "taco" to "Mexican",
+            "tacos" to "Mexican", "spicy" to "Spicy Cuisine"
+        )
+
+        val ingredientMap = mapOf(
             "american cheese" to "American Cheese", "cheese" to "Cheese",
             "broccoli" to "Broccoli", "cauliflower" to "Cauliflower",
             "olive oil" to "Olive Oil", "extra virgin olive oil" to "Olive Oil",
-            "protein shake" to "Protein Shakes", "protein shakes" to "Protein Shakes",
-            "shake" to "Protein Shakes", "smoothie" to "Protein Shakes",
             "egg" to "Eggs", "eggs" to "Eggs", "chicken" to "Chicken",
             "salad" to "Salad & Greens", "salads" to "Salad & Greens",
-            "potato" to "Potatoes", "potatoes" to "Potatoes"
+            "potato" to "Potatoes", "potatoes" to "Potatoes",
+            "mushroom" to "Mushrooms", "mushrooms" to "Mushrooms",
+            "avocado" to "Avocado", "bacon" to "Bacon"
+        )
+
+        val beverageMap = mapOf(
+            "protein shake" to "Protein Shakes", "protein shakes" to "Protein Shakes",
+            "shake" to "Protein Shakes", "smoothie" to "Protein Shakes",
+            "coffee" to "Coffee", "espresso" to "Espresso", "tea" to "Tea"
         )
 
         val dietaryMap = mapOf(
@@ -356,7 +370,7 @@ class GuruChatEngine(private val context: Context) {
 
             val isClauseNegative = currentSentimentIsNegative
 
-            // 1. Cuisines & Food Items (Context-Aware for Compound Terms like American Cheese)
+            // 1. Cuisines
             for ((key, value) in cuisineMap) {
                 if (key == "american" && (clauseLower.contains("american cheese") || clauseLower.contains("american slice"))) {
                     continue // Skip mapping American cuisine when the user specifically mentioned American Cheese
@@ -371,7 +385,31 @@ class GuruChatEngine(private val context: Context) {
                 }
             }
 
-            // 2. Dietary Restrictions
+            // 2. Ingredients
+            for ((key, value) in ingredientMap) {
+                val keyRegex = Regex("\\b${key}s?\\b", RegexOption.IGNORE_CASE)
+                if (keyRegex.containsMatchIn(clauseLower)) {
+                    val predicate = if (isClauseNegative) "disliked_ingredient" else "favorite_ingredient"
+                    val exists = results.any { it.subject == clauseSubject && it.predicate == predicate && it.value == value }
+                    if (!exists) {
+                        results.add(StructuredAssertion(clauseSubject, predicate, value))
+                    }
+                }
+            }
+
+            // 3. Beverages
+            for ((key, value) in beverageMap) {
+                val keyRegex = Regex("\\b${key}s?\\b", RegexOption.IGNORE_CASE)
+                if (keyRegex.containsMatchIn(clauseLower)) {
+                    val predicate = if (isClauseNegative) "dislikes_beverage" else "beverage_preference"
+                    val exists = results.any { it.subject == clauseSubject && it.predicate == predicate && it.value == value }
+                    if (!exists) {
+                        results.add(StructuredAssertion(clauseSubject, predicate, value))
+                    }
+                }
+            }
+
+            // 4. Dietary Restrictions
             for ((key, value) in dietaryMap) {
                 val keyRegex = Regex("\\b${key}\\b", RegexOption.IGNORE_CASE)
                 if (keyRegex.containsMatchIn(clauseLower)) {
