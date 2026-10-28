@@ -24,5 +24,7 @@ data class Restaurant(
     val crowdLevel: String,
     val location: String,
     val openingHours: String,
-    val accessibilityAttributes: List<String>
+    val accessibilityAttributes: List<String>,
+    val address: String = "450 N Canon Dr, Beverly Hills, CA",
+    val zipCode: String = "90210"
 )
