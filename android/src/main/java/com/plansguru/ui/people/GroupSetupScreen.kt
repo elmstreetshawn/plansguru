@@ -173,7 +173,7 @@ fun GroupSetupScreen(
             OutlinedButton(
                 onClick = {
                     val gName = groupName.ifBlank { "Dinner Group" }
-                    val deepLink = "https://plansguru.app/join?inviter=local_user&group=${java.net.URLEncoder.encode(gName, "UTF-8")}"
+                    val deepLink = "plansguru://plan/join?inviter=local_user&group=${java.net.URLEncoder.encode(gName, "UTF-8")}"
                     val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                         type = "text/plain"
                         putExtra(android.content.Intent.EXTRA_SUBJECT, "Join my PlansGuru Dinner Plan")

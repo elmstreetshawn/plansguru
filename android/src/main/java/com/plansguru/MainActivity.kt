@@ -40,22 +40,22 @@ class MainActivity : ComponentActivity() {
     private fun handleDeepLinkIntent(intent: Intent?) {
         val uri: Uri? = intent?.data
         if (uri != null) {
-            val inviter = uri.getQueryParameter("inviter") ?: uri.getQueryParameter("coordinator")
+            val inviter = uri.getQueryParameter("inviter") ?: uri.getQueryParameter("coordinator") ?: "Friend"
+            val group = uri.getQueryParameter("group") ?: "Dinner Plan"
             val pubkey = uri.getQueryParameter("pubkey") ?: "pub_key_$inviter"
-            if (!inviter.isNullOrBlank()) {
-                try {
-                    val repository = GraphRepository(this)
-                    repository.savePerson(
-                        Person(
-                            localPersonId = inviter,
-                            displayName = inviter,
-                            publicIdentityKey = pubkey,
-                            creationTimestamp = System.currentTimeMillis()
-                        )
+
+            try {
+                val repository = GraphRepository(this)
+                repository.savePerson(
+                    Person(
+                        localPersonId = inviter,
+                        displayName = inviter,
+                        publicIdentityKey = pubkey,
+                        creationTimestamp = System.currentTimeMillis()
                     )
-                    Toast.makeText(this, "✨ Connected with $inviter via Deep Link!", Toast.LENGTH_LONG).show()
-                } catch (_: Exception) {}
-            }
+                )
+                Toast.makeText(this, "✨ Joined '$group' with $inviter!", Toast.LENGTH_LONG).show()
+            } catch (_: Exception) {}
         }
     }
 }

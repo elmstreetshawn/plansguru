@@ -52,6 +52,38 @@ def landing_page():
     """
     return HTMLResponse(content=html_content)
 
+@app.get("/join", response_class=HTMLResponse)
+def join_redirect(inviter: str = "Friend", group: str = "Dinner Plan"):
+    app_deep_link = f"plansguru://plan/join?inviter={inviter}&group={group}"
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Joining PlansGuru...</title>
+        <script>
+            window.location.href = "{app_deep_link}";
+            setTimeout(function() {{
+                window.location.href = "/api/apk/download";
+            }}, 2500);
+        </script>
+        <style>
+            body {{ font-family: sans-serif; background: #121016; color: #E6E1E5; text-align: center; padding: 40px; }}
+            .card {{ background: #1D1B20; padding: 24px; border-radius: 16px; display: inline-block; border: 1px solid #49454F; }}
+            a {{ color: #D0BCFF; font-weight: bold; }}
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h2>Opening PlansGuru App...</h2>
+            <p>Joining <b>{group}</b> invited by <b>{inviter}</b>.</p>
+            <p><a href="{app_deep_link}">Tap here to open PlansGuru App</a></p>
+        </div>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
+
 @app.get("/health")
 def health_check():
     return {"status": "healthy", "service": "plansguru-relay"}
