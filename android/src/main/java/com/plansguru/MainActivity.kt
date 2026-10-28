@@ -40,20 +40,34 @@ class MainActivity : ComponentActivity() {
     private fun handleDeepLinkIntent(intent: Intent?) {
         val uri: Uri? = intent?.data
         if (uri != null) {
-            val inviter = uri.getQueryParameter("inviter") ?: uri.getQueryParameter("coordinator") ?: "Friend"
+            // New UUID-based format
+            val inviterId = uri.getQueryParameter("inviter")  // UUID
+            val inviterPubKey = uri.getQueryParameter("pubkey")  // Public key
             val group = uri.getQueryParameter("group") ?: "Dinner Plan"
-            val pubkey = uri.getQueryParameter("pubkey") ?: "pub_key_$inviter"
+
+            // Fallback to old format for backwards compatibility
+            val displayName = uri.getQueryParameter("name") ?: inviterId ?: "Friend"
 
             try {
                 val repository = GraphRepository(this)
-                repository.savePerson(
-                    Person(
-                        localPersonId = inviter,
-                        displayName = inviter,
-                        publicIdentityKey = pubkey,
-                        creationTimestamp = System.currentTimeMillis()
-                    )
+
+                // Check if this person already exists by public key
+                val existingPerson = if (!inviterPubKey.isNullOrBlank()) {
+                    repository.getPersonByPublicKey(inviterPubKey)
+                } else {
+                    null
+                }
+
+                // Use existing person or create new one
+                val personId = existingPerson?.localPersonId ?: (inviterId ?: "friend_${System.currentTimeMillis()}")
+
+                val person = Person(
+                    localPersonId = personId,
+                    displayName = displayName,
+                    publicIdentityKey = inviterPubKey ?: "pub_key_$displayName",
+                    creationTimestamp = System.currentTimeMillis()
                 )
+                repository.savePerson(person)
 
                 val planId = "plan_dl_${System.currentTimeMillis()}"
                 repository.savePlanRecord(
@@ -62,14 +76,16 @@ class MainActivity : ComponentActivity() {
                     restaurantName = "Suerte",
                     cuisine = "Interior Mexican",
                     price = "$$$",
-                    participants = listOf("Me", inviter),
+                    participants = listOf("Me", displayName),
                     consensusScore = "98% Match",
                     date = "Active Now",
                     isUpcoming = true
                 )
 
-                Toast.makeText(this, "✨ Joined '$group' with $inviter!", Toast.LENGTH_LONG).show()
-            } catch (_: Exception) {}
+                Toast.makeText(this, "✨ Joined '$group' with $displayName!", Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                Toast.makeText(this, "Error joining plan: ${e.message}", Toast.LENGTH_LONG).show()
+            }
         }
     }
 }

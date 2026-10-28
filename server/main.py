@@ -11,10 +11,21 @@ app = FastAPI(title="PlansGuru Relay & Distribution Server", version="1.0.0")
 # In-memory storage with ephemeral expiration (No persistent DB)
 active_sessions: Dict[str, Set[WebSocket]] = {}
 active_invitations: Dict[str, dict] = {}
+registered_users: Dict[str, dict] = {}  # userId -> {publicKey, displayName, createdAt}
 
 class InvitationCreate(BaseModel):
     inviter_name: str
     inviter_pub_key: str
+
+class RegisterUserRequest(BaseModel):
+    userId: str
+    publicKey: str
+    displayName: str
+
+class RegisterUserResponse(BaseModel):
+    status: str
+    userId: str
+    message: Optional[str] = None
 
 @app.get("/", response_class=HTMLResponse)
 def landing_page():
@@ -53,8 +64,12 @@ def landing_page():
     return HTMLResponse(content=html_content)
 
 @app.get("/join", response_class=HTMLResponse)
-def join_redirect(inviter: str = "Friend", group: str = "Dinner Plan"):
-    app_deep_link = f"plansguru://plan/join?inviter={inviter}&group={group}"
+def join_redirect(inviter: str = "Friend", pubkey: Optional[str] = None, name: Optional[str] = None, group: str = "Dinner Plan"):
+    """Handle plan join deep link redirects with support for UUID-based identity."""
+    # Use name parameter if provided (display name), fallback to inviter
+    display_name = name or inviter
+    app_deep_link = f"plansguru://plan/join?inviter={inviter}&pubkey={pubkey or ''}&name={display_name}&group={group}"
+
     html_content = f"""
     <!DOCTYPE html>
     <html>
@@ -76,7 +91,7 @@ def join_redirect(inviter: str = "Friend", group: str = "Dinner Plan"):
     <body>
         <div class="card">
             <h2>Opening PlansGuru App...</h2>
-            <p>Joining <b>{group}</b> invited by <b>{inviter}</b>.</p>
+            <p>Joining <b>{group}</b> invited by <b>{display_name}</b>.</p>
             <p><a href="{app_deep_link}">Tap here to open PlansGuru App</a></p>
         </div>
     </body>
@@ -87,6 +102,96 @@ def join_redirect(inviter: str = "Friend", group: str = "Dinner Plan"):
 @app.get("/health")
 def health_check():
     return {"status": "healthy", "service": "plansguru-relay"}
+
+@app.post("/api/register", response_model=RegisterUserResponse)
+def register_user(request: RegisterUserRequest):
+    """Register a new user with their public key for identity verification."""
+    userId = request.userId.strip()
+    publicKey = request.publicKey.strip()
+    displayName = request.displayName.strip()
+
+    if not userId or not publicKey or not displayName:
+        raise HTTPException(status_code=400, detail="userId, publicKey, and displayName are required")
+
+    if len(userId) < 8:
+        raise HTTPException(status_code=400, detail="userId must be at least 8 characters")
+
+    if len(publicKey) < 16:
+        raise HTTPException(status_code=400, detail="publicKey must be at least 16 characters")
+
+    # Check if user already registered
+    if userId in registered_users:
+        existing = registered_users[userId]
+        if existing["publicKey"] == publicKey:
+            # Same key, idempotent registration
+            return RegisterUserResponse(
+                status="success",
+                userId=userId,
+                message="User already registered with this public key"
+            )
+        else:
+            # Different key, potential security issue
+            raise HTTPException(
+                status_code=409,
+                detail="User ID already registered with a different public key"
+            )
+
+    # Register new user
+    registered_users[userId] = {
+        "publicKey": publicKey,
+        "displayName": displayName,
+        "createdAt": time.time()
+    }
+
+    return RegisterUserResponse(
+        status="success",
+        userId=userId,
+        message="User registered successfully"
+    )
+
+@app.get("/api/users/{user_id}/publickey")
+def get_user_public_key(user_id: str):
+    """Look up a user's public key by their user ID."""
+    user_id = user_id.strip()
+
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    user = registered_users.get(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {"publicKey": user["publicKey"]}
+
+@app.get("/api/users/{user_id}")
+def get_user_info(user_id: str):
+    """Get user information (public key and display name)."""
+    user_id = user_id.strip()
+
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    user = registered_users.get(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {
+        "userId": user_id,
+        "publicKey": user["publicKey"],
+        "displayName": user["displayName"],
+        "createdAt": user["createdAt"]
+    }
+
+@app.get("/api/health/users")
+def get_user_stats():
+    """Get server statistics about registered users."""
+    return {
+        "status": "healthy",
+        "service": "plansguru-user-registry",
+        "registeredUsers": len(registered_users),
+        "activeSessions": len(active_sessions),
+        "timestamp": time.time()
+    }
 
 @app.get("/api/apk/download")
 @app.get("/download")
