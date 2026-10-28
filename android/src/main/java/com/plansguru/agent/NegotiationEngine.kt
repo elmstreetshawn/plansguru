@@ -30,7 +30,10 @@ class NegotiationEngine {
                 val dietaryRestrictions = assertions.filter { it.predicate == "dietary_restriction" }
                 for (restriction in dietaryRestrictions) {
                     val rVal = restriction.value.lowercase()
-                    if (rVal.contains("vegan") && !restaurant.dietaryAccommodations.any { it.equals("Vegan", true) } && !restaurant.vegetarianOptions) {
+                    if (rVal.contains("vegan") && !restaurant.dietaryAccommodations.any { it.contains("Vegan", true) } && !restaurant.vegetarianOptions) {
+                        hardPassed = false
+                    }
+                    if (rVal.contains("vegetarian") && !restaurant.vegetarianOptions && !restaurant.dietaryAccommodations.any { it.contains("Vegetarian", true) || it.contains("Vegan", true) }) {
                         hardPassed = false
                     }
                     if (rVal.contains("gluten") && !restaurant.dietaryAccommodations.any { it.contains("Gluten-Free", true) }) {
