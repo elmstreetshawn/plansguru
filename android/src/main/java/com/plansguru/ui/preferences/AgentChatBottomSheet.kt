@@ -16,7 +16,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.ExperimentalFoundationApi
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AgentChatBottomSheet(
     viewModel: GuruChatViewModel = androidx.lifecycle.viewmodel.compose.viewModel()

@@ -49,9 +49,10 @@ class EncryptedSyncClient(
     fun listenOnFriendChannels(friendsList: List<String>, onProtocolMessageReceived: (ProtocolMessage) -> Unit) {
         val prefs = context.getSharedPreferences("plansguru_prefs", Context.MODE_PRIVATE)
         val httpUrl = prefs.getString("server_url", "https://smart-lizards-nail.loca.lt")?.trimEnd('/') ?: "https://smart-lizards-nail.loca.lt"
+        val userId = prefs.getString("user_id", "local_user") ?: "local_user"
 
         for (friend in friendsList) {
-            val channelTopic = ChannelCryptoHelper.computeChannelTopic("local_user", friend)
+            val channelTopic = ChannelCryptoHelper.computeChannelTopic(userId, friend)
             val wsUrl = httpUrl.replace("https://", "wss://").replace("http://", "ws://") + "/ws/session/$channelTopic"
 
             val request = Request.Builder()
@@ -65,7 +66,7 @@ class EncryptedSyncClient(
                 override fun onMessage(webSocket: WebSocket, text: String) {
                     try {
                         val msg = json.decodeFromString<ProtocolMessage>(text)
-                        if (msg.senderId != "local_user") {
+                        if (msg.senderId != userId) {
                             onProtocolMessageReceived(msg)
                         }
                     } catch (e: Exception) {
@@ -79,18 +80,19 @@ class EncryptedSyncClient(
     fun broadcastPlanRequest(groupTitle: String, participants: List<String>) {
         val prefs = context.getSharedPreferences("plansguru_prefs", Context.MODE_PRIVATE)
         val httpUrl = prefs.getString("server_url", "https://smart-lizards-nail.loca.lt")?.trimEnd('/') ?: "https://smart-lizards-nail.loca.lt"
+        val userId = prefs.getString("user_id", "local_user") ?: "local_user"
 
         for (p in participants) {
-            if (p == "local_user") continue
-            val channelTopic = ChannelCryptoHelper.computeChannelTopic("local_user", p)
+            if (p == userId) continue
+            val channelTopic = ChannelCryptoHelper.computeChannelTopic(userId, p)
             val wsUrl = httpUrl.replace("https://", "wss://").replace("http://", "ws://") + "/ws/session/$channelTopic"
 
             val message = ProtocolMessage(
                 type = "PLAN_REQUEST",
-                senderId = "local_user",
+                senderId = userId,
                 sessionId = channelTopic,
                 payload = json.encodeToString(mapOf("groupTitle" to groupTitle, "participants" to participants.joinToString(","))),
-                signature = "sig_local_user",
+                signature = "sig_$userId",
                 timestamp = System.currentTimeMillis()
             )
 

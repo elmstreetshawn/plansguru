@@ -49,12 +49,14 @@ class PlanningViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun provideClarification(person: String, preferenceText: String, onResumed: () -> Unit) {
+        val prefs = getApplication<Application>().getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
+        val localUserId = prefs.getString("user_id", "local_user") ?: "local_user"
         viewModelScope.launch(Dispatchers.IO) {
             val predicate = if (preferenceText.lowercase().contains("don't") || preferenceText.lowercase().contains("doesn't") || preferenceText.lowercase().contains("dislike")) "dislikes_cuisine" else "likes_cuisine"
             repository.saveAssertion(
                 Assertion(
                     assertionId = UUID.randomUUID().toString(),
-                    observerId = "local_user",
+                    observerId = localUserId,
                     subjectId = person,
                     predicate = predicate,
                     value = preferenceText.trim(),
@@ -79,8 +81,11 @@ class PlanningViewModel(application: Application) : AndroidViewModel(application
             val jsonString = context.assets.open("restaurant_dataset.json").bufferedReader().use { it.readText() }
             val root = Json { ignoreUnknownKeys = true }.decodeFromString<RestaurantDatasetRoot>(jsonString)
 
+            val prefs = getApplication<Application>().getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
+            val localUserId = prefs.getString("user_id", "local_user") ?: "local_user"
+
             val participantsAssertions = mutableMapOf<String, List<Assertion>>()
-            participantsAssertions["local_user"] = repository.getAssertionsForSubject("local_user")
+            participantsAssertions[localUserId] = repository.getAssertionsForSubject(localUserId)
 
             for (p in participants) {
                 val assertions = repository.getAssertionsForSubject(p)

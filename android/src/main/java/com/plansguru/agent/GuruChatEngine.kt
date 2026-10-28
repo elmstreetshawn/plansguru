@@ -35,6 +35,9 @@ class GuruChatEngine(private val context: Context) {
         private set
     var initializationError: String? = null
         private set
+        
+    private val localUserId: String
+        get() = context.getSharedPreferences("plansguru_prefs", Context.MODE_PRIVATE).getString("user_id", "local_user") ?: "local_user"
 
     private val faqKnowledgeBase = listOf(
         FaqItem(
@@ -262,14 +265,14 @@ class GuruChatEngine(private val context: Context) {
             }
         }
 
-        val myName = repository.getPerson("local_user")?.displayName?.takeIf { it.isNotBlank() && it != "local_user" } ?: "You"
+        val myName = repository.getPerson(localUserId)?.displayName?.takeIf { it.isNotBlank() && it != localUserId } ?: "You"
 
         val responseText = buildString {
             append(agentReply)
             if (assertions.isNotEmpty()) {
                 append("\n\n📌 Mapped Social Graph Assertions:\n")
                 append(assertions.joinToString("\n") {
-                    val displaySubj = if (it.subject == "local_user") myName else it.subject
+                    val displaySubj = if (it.subject == localUserId) myName else it.subject
                     "• [$displaySubj] ${it.predicate.replace('_', ' ')}: ${it.value}"
                 })
             }
@@ -282,9 +285,9 @@ class GuruChatEngine(private val context: Context) {
         val persons = repository.getAllPersons()
         val sb = StringBuilder()
 
-        val userAssertions = repository.getAssertionsForSubject("local_user")
+        val userAssertions = repository.getAssertionsForSubject(localUserId)
         if (userAssertions.isNotEmpty()) {
-            sb.append("User (local_user) preferences:\n")
+            sb.append("User ($localUserId) preferences:\n")
             userAssertions.forEach { sb.append("  - ${it.predicate.replace('_', ' ')}: ${it.value}\n") }
         }
 
@@ -299,7 +302,7 @@ class GuruChatEngine(private val context: Context) {
         return if (sb.isEmpty()) "No preferences logged in social graph yet." else sb.toString().trim()
     }
 
-    private fun parseLlmSemanticOutput(userMessage: String, defaultSubject: String = "local_user"): List<StructuredAssertion> {
+    private fun parseLlmSemanticOutput(userMessage: String, defaultSubject: String = localUserId): List<StructuredAssertion> {
         val results = mutableListOf<StructuredAssertion>()
         val globalSubject = extractSubjectFromText(userMessage)
 
@@ -524,7 +527,7 @@ class GuruChatEngine(private val context: Context) {
                     lowerMessage.contains("i prefer") || lowerMessage.contains("my zip")
 
             if (isFirstPerson) {
-                return "local_user"
+                return localUserId
             }
         }
 
@@ -555,7 +558,7 @@ class GuruChatEngine(private val context: Context) {
             }
         }
 
-        return "local_user"
+        return localUserId
     }
 
     suspend fun generateResponse(userMessage: String): String {

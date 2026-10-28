@@ -121,7 +121,9 @@ fun PlacesScreen(
 
     LaunchedEffect(Unit) {
         try {
-            val userPerson = repository.getPerson("local_user")
+            val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
+            val userId = prefs.getString("user_id", "local_user") ?: "local_user"
+            val userPerson = repository.getPerson(userId)
             if (userPerson != null && userPerson.locationZip.isNotBlank()) {
                 userZip = userPerson.locationZip
             }

@@ -34,7 +34,9 @@ fun RecommendationsScreen(
     val recommendations by viewModel.recommendations.collectAsState()
     val context = LocalContext.current
     val repository = remember { com.plansguru.data.repository.GraphRepository(context) }
-    val myName = remember { repository.getPerson("local_user")?.displayName?.takeIf { it.isNotBlank() && it != "local_user" } ?: "Me" }
+    val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
+    val localUserId = prefs.getString("user_id", "local_user") ?: "local_user"
+    val myName = remember { repository.getPerson(localUserId)?.displayName?.takeIf { it.isNotBlank() && it != localUserId } ?: "Me" }
     val syncClient = remember { com.plansguru.data.sync.EncryptedSyncClient(context, "group_discussion_session") }
 
     val chatMessages = remember { mutableStateListOf<PlanChatMessage>() }

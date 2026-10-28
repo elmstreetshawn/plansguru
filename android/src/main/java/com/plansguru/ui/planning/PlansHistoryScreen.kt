@@ -240,8 +240,9 @@ fun PlansHistoryScreen(
                                     text = { Text("💬 Share Plan Link via Messenger") },
                                     onClick = {
                                         showPlanMenu = false
-                                        val userDisplayName = repository.getPerson("local_user")?.displayName?.takeIf { it.isNotBlank() && it != "local_user" } ?: "Me"
                                         val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
+                                        val localUserId = prefs.getString("user_id", "local_user") ?: "local_user"
+                                        val userDisplayName = repository.getPerson(localUserId)?.displayName?.takeIf { it.isNotBlank() && it != localUserId } ?: "Me"
                                         val serverUrl = prefs.getString("server_url", "https://smart-lizards-nail.loca.lt")?.trimEnd('/') ?: "https://smart-lizards-nail.loca.lt"
 
                                         val userId = prefs.getString("user_id", null)

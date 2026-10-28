@@ -31,14 +31,16 @@ fun GroupSetupScreen(
     var groupName by remember { mutableStateOf("") }
     val context = LocalContext.current
     val repository = remember { GraphRepository(context) }
-    val userDisplayName = remember { repository.getPerson("local_user")?.displayName?.takeIf { it.isNotBlank() && it != "local_user" } ?: "Me" }
+    val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
+    val localUserId = prefs.getString("user_id", "local_user") ?: "local_user"
+    val userDisplayName = remember { repository.getPerson(localUserId)?.displayName?.takeIf { it.isNotBlank() && it != localUserId } ?: "Me" }
 
     val allFriendsList = remember {
         mutableStateListOf("Maya", "Jo", "Priya", "Lena", "Sam").apply {
             try {
                 val dbPersons = repository.getAllPersons().map { it.displayName }
                 for (pName in dbPersons) {
-                    if (!contains(pName) && pName != "Me" && pName != "local_user" && pName != userDisplayName) add(pName)
+                    if (!contains(pName) && pName != "Me" && pName != localUserId && pName != userDisplayName) add(pName)
                 }
             } catch (_: Exception) {}
         }
@@ -47,7 +49,7 @@ fun GroupSetupScreen(
     val selectedMembers = remember {
         mutableStateListOf<String>().apply {
             if (initialMembers.isNotEmpty()) {
-                addAll(initialMembers.filter { it != "Me" && it != "local_user" && it != userDisplayName })
+                addAll(initialMembers.filter { it != "Me" && it != localUserId && it != userDisplayName })
             }
         }
     }

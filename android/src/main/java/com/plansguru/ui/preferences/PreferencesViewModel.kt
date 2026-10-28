@@ -22,17 +22,19 @@ class PreferencesViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     fun loadPreferences() {
+        val localUserId = getApplication<Application>().getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE).getString("user_id", "local_user") ?: "local_user"
         viewModelScope.launch {
-            val list = repository.getAssertionsForSubject("local_user")
+            val list = repository.getAssertionsForSubject(localUserId)
             _assertionsState.value = list
         }
     }
 
     fun addPreference(predicate: String, value: String) {
+        val localUserId = getApplication<Application>().getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE).getString("user_id", "local_user") ?: "local_user"
         val assertion = Assertion(
             assertionId = UUID.randomUUID().toString(),
-            observerId = "local_user",
-            subjectId = "local_user",
+            observerId = localUserId,
+            subjectId = localUserId,
             predicate = predicate,
             value = value,
             source = "SELF",
