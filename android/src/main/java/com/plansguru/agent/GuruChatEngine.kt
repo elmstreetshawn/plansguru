@@ -292,70 +292,121 @@ class GuruChatEngine(private val context: Context) {
     }
 
     private fun parseLlmSemanticOutput(userMessage: String, defaultSubject: String = "local_user"): List<StructuredAssertion> {
-        val lower = userMessage.lowercase()
-        val isNegative = lower.contains("don't") || lower.contains("doesn't") || lower.contains("dont") || lower.contains("doesnt") || lower.contains("dislike") || lower.contains("hate") || lower.contains("no ")
-
-        val subject = extractSubjectFromText(userMessage)
         val results = mutableListOf<StructuredAssertion>()
+        val globalSubject = extractSubjectFromText(userMessage)
 
-        // 1. Cuisines
-        val cuisines = listOf("italian", "mexican", "japanese", "thai", "chinese", "indian", "american", "pizza", "burger", "sushi", "tai")
-        for (cuisine in cuisines) {
-            if (lower.contains(cuisine)) {
-                val cleanCuisine = if (cuisine == "tai") "Thai" else cuisine.replaceFirstChar { it.uppercase() }
-                val predicate = if (isNegative) "dislikes_cuisine" else "likes_cuisine"
-                results.add(StructuredAssertion(subject, predicate, cleanCuisine))
-            }
-        }
+        val clauses = userMessage.split(Regex("[.!?;\\n]|\\b(but|however|except)\\b", RegexOption.IGNORE_CASE))
 
-        // 2. Dietary Restrictions
-        val dietary = mapOf("vegan" to "Vegan", "gluten" to "Gluten-Free", "vegetarian" to "Vegetarian", "dairy" to "Dairy-Free", "halal" to "Halal", "kosher" to "Kosher")
-        for ((key, value) in dietary) {
-            if (lower.contains(key)) {
-                val predicate = if (isNegative) "dislikes_dietary" else "dietary_restriction"
-                results.add(StructuredAssertion(subject, predicate, value))
-            }
-        }
+        val cuisineMap = mapOf(
+            "italian" to "Italian", "mexican" to "Mexican", "japanese" to "Japanese",
+            "sushi" to "Sushi", "ramen" to "Ramen", "thai" to "Thai", "tai" to "Thai",
+            "chinese" to "Chinese", "indian" to "Indian", "american" to "American",
+            "pizza" to "Pizza", "burger" to "Burger", "bbq" to "BBQ", "barbecue" to "BBQ",
+            "tex-mex" to "Tex-Mex", "seafood" to "Seafood", "steak" to "Steakhouse",
+            "mediterranean" to "Mediterranean", "greek" to "Greek", "french" to "French",
+            "cuban" to "Cuban", "vietnamese" to "Vietnamese", "pho" to "Vietnamese",
+            "korean" to "Korean", "dim sum" to "Chinese", "taco" to "Mexican", "spicy" to "Spicy"
+        )
 
-        // 3. Structured Distance / Travel Time / Zip Code Parsing
-        if (lower.contains("distance") || lower.contains("mile") || lower.contains("travel") || lower.contains("far") || lower.contains("close") || lower.contains("travelled") || lower.contains("drive") || lower.contains("minute") || lower.contains("hour") || lower.contains("min") || lower.contains("hr") || lower.contains("commute") || lower.contains("time") || lower.contains("zip")) {
-            val numberRegex = Regex("\\d+")
-            val numbers = numberRegex.findAll(lower).map { it.value.toInt() }.toList()
-            val num = numbers.firstOrNull()
+        val dietaryMap = mapOf(
+            "vegan" to "Vegan", "gluten" to "Gluten-Free", "vegetarian" to "Vegetarian",
+            "dairy" to "Dairy-Free", "halal" to "Halal", "kosher" to "Kosher",
+            "peanut" to "Peanut Allergy", "nut" to "Nut Allergy", "allergy" to "Allergies",
+            "pescatarian" to "Pescatarian"
+        )
 
-            val isMinutes = lower.contains("minute") || lower.contains("min")
-            val isHours = lower.contains("hour") || lower.contains("hr")
-            val isMiles = lower.contains("mile") || lower.contains("mi")
+        for (clause in clauses) {
+            val clauseTrimmed = clause.trim()
+            if (clauseTrimmed.isBlank()) continue
+            val clauseLower = clauseTrimmed.lowercase()
 
-            // Extract 5-digit zip code if present
-            val zipRegex = Regex("\\b\\d{5}\\b")
-            val zipMatch = zipRegex.find(userMessage)
-            val zipCode = zipMatch?.value
+            val clauseSubject = extractSubjectFromText(clauseTrimmed).ifEmpty { globalSubject }
 
-            val normalizedValue = buildString {
-                if (num != null) {
-                    when {
-                        isMinutes -> append("$num minutes")
-                        isHours -> append("$num hours (${num * 60} minutes)")
-                        isMiles -> append("$num miles")
-                        else -> append("$num units")
+            val isClauseNegative = clauseLower.contains("don't") || clauseLower.contains("doesn't") ||
+                    clauseLower.contains("dont") || clauseLower.contains("doesnt") ||
+                    clauseLower.contains("dislike") || clauseLower.contains("hate") ||
+                    clauseLower.contains("avoid") || clauseLower.contains("no ") ||
+                    clauseLower.contains("not ") || clauseLower.contains("can't") ||
+                    clauseLower.contains("cant")
+
+            // 1. Cuisines
+            for ((key, value) in cuisineMap) {
+                if (clauseLower.contains(key)) {
+                    val predicate = if (isClauseNegative) "dislikes_cuisine" else "likes_cuisine"
+                    val exists = results.any { it.subject == clauseSubject && it.predicate == predicate && it.value == value }
+                    if (!exists) {
+                        results.add(StructuredAssertion(clauseSubject, predicate, value))
                     }
-                } else {
-                    append(userMessage)
-                }
-                if (zipCode != null) {
-                    append(" from zip $zipCode")
                 }
             }
 
-            val predicate = if (isMinutes || isHours) "max_travel_time" else "max_distance_miles"
-            results.add(StructuredAssertion(subject, predicate, normalizedValue))
-        }
+            // 2. Dietary Restrictions
+            for ((key, value) in dietaryMap) {
+                if (clauseLower.contains(key)) {
+                    val predicate = if (isClauseNegative) "dislikes_dietary" else "dietary_restriction"
+                    val exists = results.any { it.subject == clauseSubject && it.predicate == predicate && it.value == value }
+                    if (!exists) {
+                        results.add(StructuredAssertion(clauseSubject, predicate, value))
+                    }
+                }
+            }
 
-        // 4. Noise / Crowds / Vibe
-        if (lower.contains("loud") || lower.contains("crowd") || lower.contains("quiet") || lower.contains("noise") || lower.contains("vibe") || lower.contains("busy")) {
-            val valText = if (isNegative && (lower.contains("loud") || lower.contains("crowd"))) "Quiet / No Crowds" else userMessage
-            results.add(StructuredAssertion(subject, "noise_preference", valText))
+            // 3. Travel Time & Distance & Zip Code
+            if (clauseLower.contains("distance") || clauseLower.contains("mile") || clauseLower.contains("travel") ||
+                clauseLower.contains("far") || clauseLower.contains("close") || clauseLower.contains("drive") ||
+                clauseLower.contains("minute") || clauseLower.contains("hour") || clauseLower.contains("min") ||
+                clauseLower.contains("hr") || clauseLower.contains("commute") || clauseLower.contains("zip")) {
+
+                val numbers = Regex("\\d+").findAll(clauseLower).mapNotNull { it.value.toIntOrNull() }.toList()
+                val num = numbers.firstOrNull()
+
+                val zipMatch = Regex("\\b\\d{5}\\b").find(clauseTrimmed)?.value
+
+                if (zipMatch != null) {
+                    val exists = results.any { it.subject == clauseSubject && it.predicate == "locationZip" }
+                    if (!exists) {
+                        results.add(StructuredAssertion(clauseSubject, "locationZip", zipMatch))
+                    }
+                }
+
+                if (num != null) {
+                    val isMinutes = clauseLower.contains("minute") || clauseLower.contains("min") || clauseLower.contains("drive")
+                    val isHours = clauseLower.contains("hour") || clauseLower.contains("hr")
+                    val isMiles = clauseLower.contains("mile") || clauseLower.contains("mi")
+
+                    val normVal = when {
+                        isMinutes -> "$num minutes"
+                        isHours -> "${num * 60} minutes"
+                        isMiles -> "$num miles"
+                        else -> "$num minutes"
+                    }
+
+                    val predicate = if (isMiles) "max_distance_miles" else "max_travel_time"
+                    val exists = results.any { it.subject == clauseSubject && it.predicate == predicate }
+                    if (!exists) {
+                        results.add(StructuredAssertion(clauseSubject, predicate, normVal))
+                    }
+                }
+            }
+
+            // 4. Noise & Crowd Preference
+            if (clauseLower.contains("loud") || clauseLower.contains("crowd") || clauseLower.contains("quiet") ||
+                clauseLower.contains("noise") || clauseLower.contains("vibe") || clauseLower.contains("busy") ||
+                clauseLower.contains("peaceful")) {
+
+                val normVal = when {
+                    clauseLower.contains("quiet") || clauseLower.contains("peaceful") -> "Quiet / Low Crowds"
+                    clauseLower.contains("loud") || clauseLower.contains("busy") || clauseLower.contains("crowd") -> {
+                        if (isClauseNegative) "Quiet / Low Crowds" else "Vibrant / Moderate"
+                    }
+                    else -> "Moderate"
+                }
+
+                val exists = results.any { it.subject == clauseSubject && it.predicate == "noise_preference" }
+                if (!exists) {
+                    results.add(StructuredAssertion(clauseSubject, predicate = "noise_preference", value = normVal))
+                }
+            }
         }
 
         return results
