@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -163,6 +164,15 @@ fun GroupSetupScreen(
                             }
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(name, style = MaterialTheme.typography.titleMedium)
+                            }
+                            IconButton(onClick = {
+                                selectedMembers.remove(name)
+                                allFriendsList.remove(name)
+                                try {
+                                    repository.deletePerson(name)
+                                } catch (_: Exception) {}
+                            }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Remove Person", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.outline)
                             }
                         }
                     }

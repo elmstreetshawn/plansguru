@@ -413,17 +413,44 @@ class GuruChatEngine(private val context: Context) {
     }
 
     private fun extractSubjectFromText(userMessage: String): String {
-        val words = userMessage.split(" ", ",", ".")
-        for (i in words.indices) {
-            val cleanWord = words[i].replace(Regex("[^a-zA-Z]"), "")
+        val lowerMessage = userMessage.lowercase().trim()
+
+        val isFirstPerson = lowerMessage.startsWith("i ") || lowerMessage.startsWith("i'm ") ||
+                lowerMessage.startsWith("im ") || lowerMessage.startsWith("my ") ||
+                lowerMessage.startsWith("we ") || lowerMessage.startsWith("our ") ||
+                lowerMessage.contains("i like") || lowerMessage.contains("i love") ||
+                lowerMessage.contains("i hate") || lowerMessage.contains("i want") ||
+                lowerMessage.contains("i prefer") || lowerMessage.contains("my zip")
+
+        if (isFirstPerson) {
+            return "local_user"
+        }
+
+        val nonPersonWords = setOf(
+            "i", "me", "my", "mine", "we", "our", "us", "you", "your", "yours", "he", "him", "his",
+            "she", "her", "hers", "they", "them", "their", "this", "that", "these", "those",
+            "hello", "hi", "hey", "plansguru", "guru", "thanks", "thank", "ok", "okay",
+            "taco", "tacos", "pizza", "pizzas", "burger", "burgers", "sushi", "ramen",
+            "italian", "mexican", "japanese", "thai", "chinese", "indian", "american", "french",
+            "cuban", "vietnamese", "korean", "pho", "bbq", "barbecue", "steak", "steakhouse",
+            "pasta", "food", "dinner", "lunch", "breakfast", "brunch", "snack", "meal",
+            "restaurant", "restaurants", "place", "places", "zip", "code", "mile", "miles",
+            "minute", "minutes", "min", "mins", "hour", "hours", "drive", "travel", "distance",
+            "quiet", "loud", "crowd", "crowds", "vibe", "spicy", "vegan", "vegetarian", "gluten",
+            "dairy", "halal", "kosher", "peanut", "nut", "allergy", "allergies", "pescatarian"
+        )
+
+        val words = userMessage.split(" ", ",", ".", "!", "?", "\n")
+        for (word in words) {
+            val cleanWord = word.replace(Regex("[^a-zA-Z]"), "")
             if (cleanWord.length > 1 && cleanWord[0].isUpperCase()) {
                 val lower = cleanWord.lowercase()
-                val stopWords = listOf("i", "my", "we", "our", "the", "a", "an", "this", "that", "hello", "hi", "hey", "plansguru", "italian", "mexican", "japanese", "thai", "chinese", "indian", "american", "pizza", "burger", "sushi", "vegan", "gluten", "vegetarian")
-                if (!stopWords.contains(lower)) {
+                if (!nonPersonWords.contains(lower) && !FoodKnowledgeGraph.isFoodOrGeneralTerm(cleanWord)) {
                     return cleanWord.replaceFirstChar { it.uppercase() }
                 }
             }
         }
+
         return "local_user"
     }
 
