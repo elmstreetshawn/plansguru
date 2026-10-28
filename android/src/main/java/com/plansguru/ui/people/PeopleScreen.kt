@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -62,11 +63,18 @@ fun PeopleScreen(
         }
     }
 
+    var myPersonState by remember { mutableStateOf(repository.getPerson("local_user")) }
+    val myName = myPersonState?.displayName?.takeIf { it.isNotBlank() && it != "local_user" } ?: "Shawn (You)"
+    val myZip = myPersonState?.locationZip ?: "78626"
+    var showEditMyNameInPeople by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         try {
+            myPersonState = repository.getPerson("local_user")
             val dbPersons = repository.getAllPersons()
             val existingNames = friends.map { it.name }
             for (person in dbPersons) {
+                if (person.localPersonId == "local_user" || person.displayName == "local_user" || person.displayName == "Me") continue
                 if (!existingNames.contains(person.displayName) && !existingNames.contains(person.localPersonId)) {
                     val name = person.displayName
                     val initials = name.take(2).uppercase()
@@ -149,6 +157,50 @@ fun PeopleScreen(
                                 }, style = MaterialTheme.typography.bodyMedium)
                             }
                         }
+                    }
+                }
+            }
+
+            // Pinned "YOU" Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.large,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(42.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(myName.take(2).uppercase(), style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onPrimary)
+                            }
+                        }
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(myName, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primary) {
+                                    Text("YOU", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.onPrimary)
+                                }
+                            }
+                            Text("📍 Zip: $myZip • Encrypted Profile", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+
+                    IconButton(onClick = { showEditMyNameInPeople = true }) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit My Name", tint = MaterialTheme.colorScheme.primary)
                     }
                 }
             }
@@ -612,6 +664,51 @@ fun PeopleScreen(
             confirmButton = {
                 Button(onClick = { showMyQrDialog = false }) {
                     Text("Done")
+                }
+            }
+        )
+    }
+
+    if (showEditMyNameInPeople) {
+        var nameInput by remember { mutableStateOf(myPersonState?.displayName?.takeIf { it != "local_user" } ?: "") }
+        AlertDialog(
+            onDismissRequest = { showEditMyNameInPeople = false },
+            title = { Text("Set Your Profile Display Name") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Your display name will be shown to friends when coordinating group dinner plans.", style = MaterialTheme.typography.bodySmall)
+                    OutlinedTextField(
+                        value = nameInput,
+                        onValueChange = { nameInput = it },
+                        label = { Text("Your Name (e.g. Shawn)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium,
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    enabled = nameInput.isNotBlank(),
+                    onClick = {
+                        val updated = (myPersonState ?: com.plansguru.data.model.Person(
+                            localPersonId = "local_user",
+                            displayName = nameInput.trim(),
+                            publicIdentityKey = "pub_key_local_user",
+                            creationTimestamp = System.currentTimeMillis()
+                        )).copy(displayName = nameInput.trim())
+
+                        repository.savePerson(updated)
+                        myPersonState = updated
+                        showEditMyNameInPeople = false
+                    }
+                ) {
+                    Text("Save Name")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditMyNameInPeople = false }) {
+                    Text("Cancel")
                 }
             }
         )
