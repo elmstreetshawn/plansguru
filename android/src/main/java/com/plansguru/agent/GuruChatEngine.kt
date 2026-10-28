@@ -218,7 +218,10 @@ class GuruChatEngine(private val context: Context) {
             You are PlansGuru, a warm, friendly, and intelligent on-device AI dinner agent.
             User logged: "$userMessage"
             
-            Instruction: Acknowledge logging this preference warmly in 1-2 friendly, natural sentences. Do not write a long lecture.
+            Instructions:
+            - Acknowledge recording these specific preferences warmly in 1-2 direct sentences.
+            - Do NOT offer to search or find restaurants right now.
+            - Do NOT write long lectures.
             """.trimIndent()
         } else {
             """
@@ -308,7 +311,15 @@ class GuruChatEngine(private val context: Context) {
             "steak" to "Steakhouse", "mediterranean" to "Mediterranean", "greek" to "Greek",
             "french" to "French", "cuban" to "Cuban", "vietnamese" to "Vietnamese",
             "pho" to "Vietnamese", "korean" to "Korean", "dim sum" to "Chinese", "taco" to "Mexican",
-            "tacos" to "Mexican", "spicy" to "Spicy"
+            "tacos" to "Mexican", "spicy" to "Spicy",
+            "american cheese" to "American Cheese", "cheese" to "Cheese",
+            "broccoli" to "Broccoli", "cauliflower" to "Cauliflower",
+            "olive oil" to "Olive Oil", "extra virgin olive oil" to "Olive Oil",
+            "protein shake" to "Protein Shakes", "protein shakes" to "Protein Shakes",
+            "shake" to "Protein Shakes", "smoothie" to "Protein Shakes",
+            "egg" to "Eggs", "eggs" to "Eggs", "chicken" to "Chicken",
+            "salad" to "Salad & Greens", "salads" to "Salad & Greens",
+            "potato" to "Potatoes", "potatoes" to "Potatoes"
         )
 
         val dietaryMap = mapOf(
@@ -345,8 +356,11 @@ class GuruChatEngine(private val context: Context) {
 
             val isClauseNegative = currentSentimentIsNegative
 
-            // 1. Cuisines
+            // 1. Cuisines & Food Items (Context-Aware for Compound Terms like American Cheese)
             for ((key, value) in cuisineMap) {
+                if (key == "american" && (clauseLower.contains("american cheese") || clauseLower.contains("american slice"))) {
+                    continue // Skip mapping American cuisine when the user specifically mentioned American Cheese
+                }
                 val keyRegex = Regex("\\b${key}s?\\b", RegexOption.IGNORE_CASE)
                 if (keyRegex.containsMatchIn(clauseLower)) {
                     val predicate = if (isClauseNegative) "dislikes_cuisine" else "likes_cuisine"
@@ -459,21 +473,28 @@ class GuruChatEngine(private val context: Context) {
     private fun extractSubjectFromText(userMessage: String): String {
         val lowerMessage = userMessage.lowercase().trim()
 
-        val isFirstPerson = lowerMessage.startsWith("i ") || lowerMessage.startsWith("i'm ") ||
-                lowerMessage.startsWith("im ") || lowerMessage.startsWith("my ") ||
-                lowerMessage.startsWith("we ") || lowerMessage.startsWith("our ") ||
-                lowerMessage.contains("i like") || lowerMessage.contains("i love") ||
-                lowerMessage.contains("i hate") || lowerMessage.contains("i want") ||
-                lowerMessage.contains("i prefer") || lowerMessage.contains("my zip")
+        val mentionsFriendThirdPerson = lowerMessage.contains("my friend ") || lowerMessage.contains("my buddy ") ||
+                lowerMessage.contains("my pal ") || lowerMessage.contains("my roommate ") ||
+                lowerMessage.contains("my coworker ") || lowerMessage.contains("for ")
 
-        if (isFirstPerson) {
-            return "local_user"
+        if (!mentionsFriendThirdPerson) {
+            val isFirstPerson = lowerMessage.startsWith("i ") || lowerMessage.startsWith("i'm ") ||
+                    lowerMessage.startsWith("im ") || lowerMessage.startsWith("my ") ||
+                    lowerMessage.startsWith("we ") || lowerMessage.startsWith("our ") ||
+                    lowerMessage.contains("i like") || lowerMessage.contains("i love") ||
+                    lowerMessage.contains("i hate") || lowerMessage.contains("i want") ||
+                    lowerMessage.contains("i prefer") || lowerMessage.contains("my zip")
+
+            if (isFirstPerson) {
+                return "local_user"
+            }
         }
 
         val nonPersonWords = setOf(
             "i", "me", "my", "mine", "we", "our", "us", "you", "your", "yours", "he", "him", "his",
             "she", "her", "hers", "they", "them", "their", "this", "that", "these", "those",
             "hello", "hi", "hey", "plansguru", "guru", "thanks", "thank", "ok", "okay",
+            "friend", "buddy", "pal", "roommate", "coworker", "guy", "girl", "person",
             "taco", "tacos", "pizza", "pizzas", "burger", "burgers", "sushi", "ramen",
             "italian", "mexican", "japanese", "thai", "chinese", "indian", "american", "french",
             "cuban", "vietnamese", "korean", "pho", "bbq", "barbecue", "steak", "steakhouse",
@@ -481,7 +502,8 @@ class GuruChatEngine(private val context: Context) {
             "restaurant", "restaurants", "place", "places", "zip", "code", "mile", "miles",
             "minute", "minutes", "min", "mins", "hour", "hours", "drive", "travel", "distance",
             "quiet", "loud", "crowd", "crowds", "vibe", "spicy", "vegan", "vegetarian", "gluten",
-            "dairy", "halal", "kosher", "peanut", "nut", "allergy", "allergies", "pescatarian"
+            "dairy", "halal", "kosher", "peanut", "nut", "allergy", "allergies", "pescatarian",
+            "potato", "potatoes"
         )
 
         val words = userMessage.split(" ", ",", ".", "!", "?", "\n")
