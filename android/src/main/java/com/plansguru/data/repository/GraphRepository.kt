@@ -43,6 +43,26 @@ class GraphRepository(context: Context) {
         }
     }
 
+    fun getPersonByPublicKey(publicKey: String): Person? {
+        val db = dbHelper.getReadableEncryptedDatabase()
+        val cursor = db.query("persons", null, "publicIdentityKey = ?", arrayOf(publicKey), null, null, null)
+        return cursor.use {
+            if (it.moveToFirst()) {
+                val zipIdx = it.getColumnIndex("locationZip")
+                val zip = if (zipIdx != -1) it.getString(zipIdx) else "90210"
+                Person(
+                    localPersonId = it.getString(it.getColumnIndexOrThrow("localPersonId")),
+                    displayName = it.getString(it.getColumnIndexOrThrow("displayName")),
+                    publicIdentityKey = it.getString(it.getColumnIndexOrThrow("publicIdentityKey")),
+                    creationTimestamp = it.getLong(it.getColumnIndexOrThrow("creationTimestamp")),
+                    locationZip = zip ?: "90210"
+                )
+            } else {
+                null
+            }
+        }
+    }
+
     fun getAllPersons(): List<Person> {
         val db = dbHelper.getReadableEncryptedDatabase()
         val list = mutableListOf<Person>()

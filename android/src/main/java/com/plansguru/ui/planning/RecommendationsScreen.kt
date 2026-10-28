@@ -219,7 +219,25 @@ fun RecommendationsScreen(
             }
 
             Button(
-                onClick = onFinish,
+                onClick = {
+                    val topRec = recommendations.firstOrNull()
+                    if (topRec != null) {
+                        val planId = "plan_${System.currentTimeMillis()}"
+                        val participants = listOf(myName) + chatMessages.map { it.sender }.distinct().filter { it != myName }
+                        repository.savePlanRecord(
+                            planId = planId,
+                            title = "Group Dinner Consensus",
+                            restaurantName = topRec.restaurant.name,
+                            cuisine = topRec.restaurant.cuisine,
+                            price = topRec.restaurant.priceRange,
+                            participants = participants,
+                            consensusScore = "${(topRec.minSatisfaction * 100).toInt()}% Match",
+                            date = "Active Now",
+                            isUpcoming = true
+                        )
+                    }
+                    onFinish()
+                },
                 modifier = Modifier.fillMaxWidth(),
                 shape = CircleShape
             ) {

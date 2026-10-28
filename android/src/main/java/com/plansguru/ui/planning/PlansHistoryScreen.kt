@@ -240,9 +240,19 @@ fun PlansHistoryScreen(
                                     text = { Text("💬 Share Plan Link via Messenger") },
                                     onClick = {
                                         showPlanMenu = false
+                                        val userDisplayName = repository.getPerson("local_user")?.displayName?.takeIf { it.isNotBlank() && it != "local_user" } ?: "Me"
                                         val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
                                         val serverUrl = prefs.getString("server_url", "https://smart-lizards-nail.loca.lt")?.trimEnd('/') ?: "https://smart-lizards-nail.loca.lt"
-                                        val deepLink = "$serverUrl/join?inviter=local_user&group=${java.net.URLEncoder.encode(plan.title, "UTF-8")}"
+
+                                        val userId = prefs.getString("user_id", null)
+                                        val publicKey = prefs.getString("public_key", null)
+
+                                        val deepLink = if (!userId.isNullOrBlank() && !publicKey.isNullOrBlank()) {
+                                            "$serverUrl/join?inviter=${java.net.URLEncoder.encode(userId, "UTF-8")}&pubkey=${java.net.URLEncoder.encode(publicKey, "UTF-8")}&name=${java.net.URLEncoder.encode(userDisplayName, "UTF-8")}&group=${java.net.URLEncoder.encode(plan.title, "UTF-8")}"
+                                        } else {
+                                            "$serverUrl/join?inviter=${java.net.URLEncoder.encode(userDisplayName, "UTF-8")}&group=${java.net.URLEncoder.encode(plan.title, "UTF-8")}"
+                                        }
+
                                         val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                                             type = "text/plain"
                                             putExtra(android.content.Intent.EXTRA_TEXT, "Join my PlansGuru dinner plan '${plan.title}': $deepLink")
