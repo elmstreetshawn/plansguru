@@ -1,5 +1,6 @@
 package com.plansguru.ui.people
 
+import kotlinx.coroutines.launch
 import android.Manifest
 import android.content.pm.PackageManager
 import android.provider.ContactsContract
@@ -82,6 +83,7 @@ fun PeopleScreen(
     var showContactPickerModal by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val repository = remember { GraphRepository(context) }
 
     val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
@@ -423,11 +425,17 @@ fun PeopleScreen(
                                     val userDisplayName = repository.getPerson(userId)?.displayName?.takeIf { it.isNotBlank() && it != userId } ?: "Me"
 
                                     val deepLink = "$serverUrl/join?inviter=${java.net.URLEncoder.encode(userId, "UTF-8")}&pubkey=${java.net.URLEncoder.encode(publicKey, "UTF-8")}&name=${java.net.URLEncoder.encode(userDisplayName, "UTF-8")}"
-                                    val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                                        type = "text/plain"
-                                        putExtra(android.content.Intent.EXTRA_TEXT, "Connect with me on PlansGuru: $deepLink")
+                                    coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                        val serverApi = com.plansguru.data.api.ServerApiClient(context)
+                                        val shortUrl = serverApi.createShortInvite(deepLink)
+                                        val shareUrl = shortUrl ?: deepLink
+
+                                        val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                            type = "text/plain"
+                                            putExtra(android.content.Intent.EXTRA_TEXT, "Connect with me on PlansGuru: $shareUrl")
+                                        }
+                                        try { context.startActivity(android.content.Intent.createChooser(shareIntent, "Share Invite Link")) } catch (_: Exception) {}
                                     }
-                                    try { context.startActivity(android.content.Intent.createChooser(shareIntent, "Share Invite Link")) } catch (_: Exception) {}
                                 }
                             )
                             DropdownMenuItem(

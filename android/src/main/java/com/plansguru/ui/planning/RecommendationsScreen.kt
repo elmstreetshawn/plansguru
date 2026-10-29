@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.plansguru.agent.NegotiationEngine
 import com.plansguru.data.crypto.ChannelCryptoHelper
 import com.plansguru.data.crypto.KeyManager
+import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -46,6 +47,7 @@ fun RecommendationsScreen(
     val sessionId = if (planId == "group_discussion_session") "group_discussion_session" else "session_$planId"
     val syncClient = remember { com.plansguru.data.sync.EncryptedSyncClient(context, sessionId) }
 
+    val coroutineScope = rememberCoroutineScope()
     val chatMessages = remember { mutableStateListOf<PlanChatMessage>() }
     var inputMessage by remember { mutableStateOf("") }
 
@@ -255,15 +257,21 @@ fun RecommendationsScreen(
 
                             val deepLink = "$serverUrl/join?inviter=${Uri.encode(userId)}&pubkey=${Uri.encode(publicKey)}&name=${Uri.encode(myName)}&group=${Uri.encode(groupTitle)}&planid=${Uri.encode(pId)}&date=${Uri.encode("Active Now")}&restaurant=${Uri.encode(rName)}&cuisine=${Uri.encode(cName)}&price=${Uri.encode(pPrice)}&score=${Uri.encode(cScore)}&participants=${Uri.encode(pList)}"
 
-                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_SUBJECT, "Join my PlansGuru Dinner Plan")
-                                putExtra(Intent.EXTRA_TEXT, "Hey! Join my PlansGuru dinner plan '$groupTitle' at ${topRec.restaurant.name}! Tap here: $deepLink")
+                            coroutineScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                val serverApi = com.plansguru.data.api.ServerApiClient(context)
+                                val shortUrl = serverApi.createShortInvite(deepLink)
+                                val shareUrl = shortUrl ?: deepLink
+
+                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_SUBJECT, "Join my PlansGuru Dinner Plan")
+                                    putExtra(Intent.EXTRA_TEXT, "Hey! Join my PlansGuru dinner plan '$groupTitle' at ${topRec.restaurant.name}! Tap here: $shareUrl")
+                                }
+                                val chooser = Intent.createChooser(shareIntent, "Share Plan Link via Messenger / SMS")
+                                try {
+                                    context.startActivity(chooser)
+                                } catch (_: Exception) {}
                             }
-                            val chooser = Intent.createChooser(shareIntent, "Share Plan Link via Messenger / SMS")
-                            try {
-                                context.startActivity(chooser)
-                            } catch (_: Exception) {}
                         },
                         modifier = Modifier.weight(1f),
                         shape = CircleShape
