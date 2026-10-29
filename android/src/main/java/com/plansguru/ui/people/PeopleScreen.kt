@@ -89,7 +89,7 @@ fun PeopleScreen(
     var myPersonState by remember { mutableStateOf(repository.getPerson(localUserId)) }
     val myName = myPersonState?.displayName?.takeIf { it.isNotBlank() && it != localUserId } ?: "Me"
     val rawZip = myPersonState?.locationZip
-    val myZip = if (!rawZip.isNullOrBlank() && rawZip != "78626" && rawZip != "90210") rawZip else null
+    val myZip = rawZip?.takeIf { it.isNotBlank() }
     val zipDisplay = if (myZip != null) "📍 Zip: $myZip • Encrypted Profile" else "📍 Zip not set • Encrypted Profile"
     var showEditMyProfileDialog by remember { mutableStateOf(false) }
 
@@ -1048,6 +1048,7 @@ fun PersonProfileAndPreferencesDialog(
                         )
                         friendAssertions = repository.getAssertionsForSubject(personId)
                         customValueInput = ""
+                        onPersonUpdated(nameInput.trim().ifEmpty { currentDisplayName })
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {

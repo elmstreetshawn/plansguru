@@ -168,7 +168,7 @@ fun PreferencesScreen(
                         ) {
                             val subjects = listOf(localUserId) + allPersons.map { it.localPersonId }
                             items(subjects.distinct()) { subj ->
-                                val assertions = allAssertions.filter { it.subjectId.equals(subj, true) }
+                                val assertions = repository.getAssertionsForSubject(subj).filter { it.predicate != "general_preference" }
                                 val personName = if (subj == localUserId) myDisplayName else allPersons.find { it.localPersonId == subj }?.displayName ?: subj
 
                                 Card(

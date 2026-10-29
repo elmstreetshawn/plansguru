@@ -29,13 +29,13 @@ class GraphRepository(context: Context) {
         return cursor.use {
             if (it.moveToFirst()) {
                 val zipIdx = it.getColumnIndex("locationZip")
-                val zip = if (zipIdx != -1) it.getString(zipIdx) else "90210"
+                val zip = if (zipIdx != -1) it.getString(zipIdx) else ""
                 Person(
                     localPersonId = it.getString(it.getColumnIndexOrThrow("localPersonId")),
                     displayName = it.getString(it.getColumnIndexOrThrow("displayName")),
                     publicIdentityKey = it.getString(it.getColumnIndexOrThrow("publicIdentityKey")),
                     creationTimestamp = it.getLong(it.getColumnIndexOrThrow("creationTimestamp")),
-                    locationZip = zip ?: "90210"
+                    locationZip = zip ?: ""
                 )
             } else {
                 null
@@ -49,13 +49,13 @@ class GraphRepository(context: Context) {
         return cursor.use {
             if (it.moveToFirst()) {
                 val zipIdx = it.getColumnIndex("locationZip")
-                val zip = if (zipIdx != -1) it.getString(zipIdx) else "90210"
+                val zip = if (zipIdx != -1) it.getString(zipIdx) else ""
                 Person(
                     localPersonId = it.getString(it.getColumnIndexOrThrow("localPersonId")),
                     displayName = it.getString(it.getColumnIndexOrThrow("displayName")),
                     publicIdentityKey = it.getString(it.getColumnIndexOrThrow("publicIdentityKey")),
                     creationTimestamp = it.getLong(it.getColumnIndexOrThrow("creationTimestamp")),
-                    locationZip = zip ?: "90210"
+                    locationZip = zip ?: ""
                 )
             } else {
                 null
