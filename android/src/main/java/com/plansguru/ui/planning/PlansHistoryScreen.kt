@@ -42,6 +42,8 @@ fun PlansHistoryScreen(
 ) {
     val context = LocalContext.current
     val repository = remember { com.plansguru.data.repository.GraphRepository(context) }
+    val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
+    val localUserId = prefs.getString("user_id", "local_user") ?: "local_user"
     val allPlans = remember { mutableStateListOf<PlanRecord>() }
 
     fun refreshPlansFromDb() {
@@ -248,7 +250,23 @@ fun PlansHistoryScreen(
                                         Icon(Icons.Default.Place, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                         Text("${plan.restaurantName} (${plan.cuisine} • ${plan.price})", style = MaterialTheme.typography.bodyMedium)
                                     }
-                                    Text("Participants: ${plan.participants.joinToString(", ")}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    val formattedParticipants = plan.participants.map { p ->
+                                        val trimmed = p.trim()
+                                        if (trimmed.equals("Me", ignoreCase = true) || trimmed.equals(localUserId, ignoreCase = true)) {
+                                            "Me (You)"
+                                        } else {
+                                            val person = repository.getPerson(trimmed) ?: repository.getAllPersons().find { it.displayName.equals(trimmed, ignoreCase = true) }
+                                            if (person != null) {
+                                                val rel = repository.getRelationship(localUserId, person.localPersonId)
+                                                val circleTag = rel?.relationshipType ?: "Friend"
+                                                "$trimmed ($circleTag)"
+                                            } else {
+                                                "$trimmed (Friend-of-Friend 🛡️)"
+                                            }
+                                        }
+                                    }.joinToString(", ")
+
+                                    Text("Participants: $formattedParticipants", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     Text("Status: ${plan.date}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
                                 }
                             }
@@ -351,7 +369,22 @@ fun PlansHistoryScreen(
                                     Icon(Icons.Default.Place, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                     Text("${plan.restaurantName} (${plan.cuisine} • ${plan.price})", style = MaterialTheme.typography.bodyMedium)
                                 }
-                                Text("Participants: ${plan.participants.joinToString(", ")}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                val formattedPastParticipants = plan.participants.map { p ->
+                                    val trimmed = p.trim()
+                                    if (trimmed.equals("Me", ignoreCase = true) || trimmed.equals(localUserId, ignoreCase = true)) {
+                                        "Me (You)"
+                                    } else {
+                                        val person = repository.getPerson(trimmed) ?: repository.getAllPersons().find { it.displayName.equals(trimmed, ignoreCase = true) }
+                                        if (person != null) {
+                                            val rel = repository.getRelationship(localUserId, person.localPersonId)
+                                            val circleTag = rel?.relationshipType ?: "Friend"
+                                            "$trimmed ($circleTag)"
+                                        } else {
+                                            "$trimmed (Friend-of-Friend 🛡️)"
+                                        }
+                                    }
+                                }.joinToString(", ")
+                                Text("Participants: $formattedPastParticipants", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text("Completed: ${plan.date}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
                             }
                         }
