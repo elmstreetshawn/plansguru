@@ -636,6 +636,15 @@ fun PeopleScreen(
                             creationTimestamp = System.currentTimeMillis()
                         )
                     )
+                    repository.saveRelationship(
+                        com.plansguru.data.model.Relationship(
+                            ownerId = localUserId,
+                            relatedPersonId = personId,
+                            relationshipType = "FRIEND",
+                            trustState = "VERIFIED",
+                            sharingPermissions = "ALL"
+                        )
+                    )
                     android.widget.Toast.makeText(context, "✨ Connected with $friendName via QR Scan!", android.widget.Toast.LENGTH_SHORT).show()
                 }
             }

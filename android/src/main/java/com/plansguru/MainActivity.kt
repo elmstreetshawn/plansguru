@@ -82,6 +82,18 @@ class MainActivity : ComponentActivity() {
                 )
                 repository.savePerson(person)
 
+                val prefs = getSharedPreferences("plansguru_prefs", MODE_PRIVATE)
+                val localUserId = prefs.getString("user_id", "local_user") ?: "local_user"
+                repository.saveRelationship(
+                    com.plansguru.data.model.Relationship(
+                        ownerId = localUserId,
+                        relatedPersonId = personId,
+                        relationshipType = "FRIEND",
+                        trustState = "VERIFIED",
+                        sharingPermissions = "ALL"
+                    )
+                )
+
                 val planId = if (!rawPlanId.isNullOrBlank()) rawPlanId else "plan_dl_${System.currentTimeMillis()}"
                 repository.savePlanRecord(
                     planId = planId,
@@ -95,7 +107,6 @@ class MainActivity : ComponentActivity() {
                     isUpcoming = true
                 )
 
-                val prefs = getSharedPreferences("plansguru_prefs", MODE_PRIVATE)
                 prefs.edit().putBoolean("pending_navigate_to_plans", true).apply()
 
                 Toast.makeText(this, "✨ Joined '$group' with $displayName!", Toast.LENGTH_LONG).show()
