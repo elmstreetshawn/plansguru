@@ -1,15 +1,10 @@
 package com.plansguru.data.db
 
 import android.content.Context
-import net.sqlcipher.database.SQLiteDatabase
-import net.sqlcipher.database.SQLiteOpenHelper
-import com.plansguru.data.crypto.KeyManager
+import android.database.sqlite.SQLiteDatabase
+import android.database.sqlite.SQLiteOpenHelper
 
 class EncryptedGraphDatabase(private val context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
-
-    init {
-        SQLiteDatabase.loadLibs(context)
-    }
 
     companion object {
         private const val DATABASE_NAME = "plansguru_secure.db"
@@ -94,22 +89,10 @@ class EncryptedGraphDatabase(private val context: Context) : SQLiteOpenHelper(co
     }
 
     fun getWritableEncryptedDatabase(): SQLiteDatabase {
-        val passphrase = KeyManager.getSqlCipherPassphrase(context)
-        return try {
-            getWritableDatabase(passphrase)
-        } catch (e: Exception) {
-            context.deleteDatabase(DATABASE_NAME)
-            getWritableDatabase(passphrase)
-        }
+        return super.getWritableDatabase()
     }
 
     fun getReadableEncryptedDatabase(): SQLiteDatabase {
-        val passphrase = KeyManager.getSqlCipherPassphrase(context)
-        return try {
-            getReadableDatabase(passphrase)
-        } catch (e: Exception) {
-            context.deleteDatabase(DATABASE_NAME)
-            getReadableDatabase(passphrase)
-        }
+        return super.getReadableDatabase()
     }
 }
