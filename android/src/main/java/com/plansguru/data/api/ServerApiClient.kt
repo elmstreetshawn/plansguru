@@ -24,6 +24,12 @@ data class RegisterUserResponse(
     val message: String? = null
 )
 
+@Serializable
+data class ShortenRequest(val longUrl: String)
+
+@Serializable
+data class ShortenResponse(val code: String, val shortCode: String)
+
 class ServerApiClient(private val context: Context) {
     private val client = OkHttpClient()
     private val json = Json { ignoreUnknownKeys = true }
@@ -92,6 +98,35 @@ class ServerApiClient(private val context: Context) {
         } catch (e: Exception) {
             Log.e("ServerApiClient", "Error getting public key: ${e.message}", e)
             Result.failure(e)
+        }
+    }
+
+    suspend fun createShortInvite(longUrl: String): String? {
+        return try {
+            val request = ShortenRequest(longUrl)
+            val requestBody = json.encodeToString(request)
+                .toRequestBody("application/json".toMediaType())
+
+            val httpRequest = Request.Builder()
+                .url("${getServerUrl()}/api/shorten")
+                .post(requestBody)
+                .addHeader("Content-Type", "application/json")
+                .addHeader("Bypass-Tunnel-Reminder", "true")
+                .addHeader("Bypass-Tunnel-Remainder", "true")
+                .addHeader("ngrok-skip-browser-warning", "true")
+                .addHeader("User-Agent", "PlansGuruApp/1.0")
+                .build()
+
+            val response = client.newCall(httpRequest).execute()
+            if (response.isSuccessful) {
+                val body = response.body?.string() ?: "{}"
+                val parsed = json.decodeFromString<ShortenResponse>(body)
+                "${getServerUrl()}/i/${parsed.code}"
+            } else {
+                null
+            }
+        } catch (_: Exception) {
+            null
         }
     }
 }

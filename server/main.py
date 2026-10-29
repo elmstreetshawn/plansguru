@@ -12,10 +12,14 @@ app = FastAPI(title="PlansGuru Relay & Distribution Server", version="1.2.3")
 active_sessions: Dict[str, Set[WebSocket]] = {}
 active_invitations: Dict[str, dict] = {}
 registered_users: Dict[str, dict] = {}  # userId -> {publicKey, displayName, createdAt}
+short_urls: Dict[str, str] = {}  # shortCode -> longUrl
 
 class InvitationCreate(BaseModel):
     inviter_name: str
     inviter_pub_key: str
+
+class ShortenRequest(BaseModel):
+    longUrl: str
 
 class RegisterUserRequest(BaseModel):
     userId: str
@@ -231,6 +235,57 @@ def download_apk():
         raise HTTPException(status_code=404, detail="APK file not found on server. Please build 'android:assembleDebug' first.")
 
     return FileResponse(found_apk, media_type="application/vnd.android.package-archive", filename="PlansGuru.apk")
+
+@app.post("/api/shorten")
+def shorten_url(payload: ShortenRequest):
+    """Shorten a long deep link URL into a 6-character code."""
+    code = str(uuid.uuid4())[:6].upper()
+    short_urls[code] = payload.longUrl.strip()
+    return {"code": code, "shortCode": code}
+
+@app.get("/i/{code}", response_class=HTMLResponse)
+def handle_short_invite(code: str):
+    """Handle short invite link redirect into app."""
+    code_clean = code.strip().upper()
+    long_url = short_urls.get(code_clean)
+
+    if not long_url:
+        app_deep_link = "plansguru://plan/join?group=Dinner%20Plan"
+    else:
+        if "/join?" in long_url:
+            query_part = long_url.split("/join?")[1]
+            app_deep_link = f"plansguru://plan/join?{query_part}"
+        else:
+            app_deep_link = long_url
+
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>Joining PlansGuru...</title>
+        <script>
+            window.location.href = "{app_deep_link}";
+            setTimeout(function() {{
+                window.location.href = "/api/apk/download";
+            }}, 2500);
+        </script>
+        <style>
+            body {{ font-family: sans-serif; background: #121016; color: #E6E1E5; text-align: center; padding: 40px; }}
+            .card {{ background: #1D1B20; padding: 24px; border-radius: 16px; display: inline-block; border: 1px solid #49454F; }}
+            a {{ color: #D0BCFF; font-weight: bold; }}
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <h2>Opening PlansGuru App...</h2>
+            <p>Joining dinner plan via short invite link (<b>{code_clean}</b>)...</p>
+            <p><a href="{app_deep_link}">Tap here to open PlansGuru App</a></p>
+        </div>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html_content)
 
 @app.post("/api/invitations")
 def create_invitation(payload: InvitationCreate):
