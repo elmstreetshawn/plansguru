@@ -318,10 +318,20 @@ async def websocket_relay(websocket: WebSocket, session_id: str):
         while True:
             data = await websocket.receive_text()
             if session_id in active_sessions:
-                for client in active_sessions[session_id]:
+                disconnected_clients = set()
+                for client in list(active_sessions[session_id]):
                     if client != websocket:
-                        await client.send_text(data)
+                        try:
+                            await client.send_text(data)
+                        except Exception:
+                            disconnected_clients.add(client)
+                for dead_client in disconnected_clients:
+                    active_sessions[session_id].discard(dead_client)
     except WebSocketDisconnect:
+        pass
+    except Exception:
+        pass
+    finally:
         if session_id in active_sessions:
             active_sessions[session_id].discard(websocket)
             if not active_sessions[session_id]:
