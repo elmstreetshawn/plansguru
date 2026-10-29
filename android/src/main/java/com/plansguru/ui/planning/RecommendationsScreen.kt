@@ -152,8 +152,9 @@ fun RecommendationsScreen(
                                 prefs.edit().putString("public_key", publicKey).apply()
                             }
                             val groupTitle = "Dinner Plan"
+                            val pId = if (planId == "group_discussion_session") "plan_${System.currentTimeMillis()}" else planId
 
-                            val deepLink = "$serverUrl/join?inviter=${Uri.encode(userId)}&pubkey=${Uri.encode(publicKey)}&name=${Uri.encode(myName)}&group=${Uri.encode(groupTitle)}"
+                            val deepLink = "$serverUrl/join?inviter=${Uri.encode(userId)}&pubkey=${Uri.encode(publicKey)}&name=${Uri.encode(myName)}&group=${Uri.encode(groupTitle)}&planid=${Uri.encode(pId)}&date=${Uri.encode("Active Now")}"
 
                             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                 type = "text/plain"

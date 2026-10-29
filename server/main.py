@@ -64,11 +64,13 @@ def landing_page():
     return HTMLResponse(content=html_content)
 
 @app.get("/join", response_class=HTMLResponse)
-def join_redirect(inviter: str = "Friend", pubkey: Optional[str] = None, name: Optional[str] = None, group: str = "Dinner Plan"):
+def join_redirect(inviter: str = "Friend", pubkey: Optional[str] = None, name: Optional[str] = None, group: str = "Dinner Plan", planid: Optional[str] = None, date: Optional[str] = None):
     """Handle plan join deep link redirects with support for UUID-based identity."""
     # Use name parameter if provided (display name), fallback to inviter
     display_name = name or inviter
-    app_deep_link = f"plansguru://plan/join?inviter={inviter}&pubkey={pubkey or ''}&name={display_name}&group={group}"
+    p_id = planid or ""
+    p_date = date or "Active Now"
+    app_deep_link = f"plansguru://plan/join?inviter={inviter}&pubkey={pubkey or ''}&name={display_name}&group={group}&planid={p_id}&date={p_date}"
 
     html_content = f"""
     <!DOCTYPE html>

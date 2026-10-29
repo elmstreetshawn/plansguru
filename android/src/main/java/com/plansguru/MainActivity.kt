@@ -44,6 +44,8 @@ class MainActivity : ComponentActivity() {
             val inviterId = uri.getQueryParameter("inviter")  // UUID
             val inviterPubKey = uri.getQueryParameter("pubkey")  // Public key
             val group = uri.getQueryParameter("group") ?: "Dinner Plan"
+            val rawPlanId = uri.getQueryParameter("planid")
+            val planDate = uri.getQueryParameter("date") ?: "Active Now"
 
             // Fallback to old format for backwards compatibility
             val displayName = uri.getQueryParameter("name") ?: inviterId ?: "Friend"
@@ -69,7 +71,7 @@ class MainActivity : ComponentActivity() {
                 )
                 repository.savePerson(person)
 
-                val planId = "plan_dl_${System.currentTimeMillis()}"
+                val planId = if (!rawPlanId.isNullOrBlank()) rawPlanId else "plan_dl_${System.currentTimeMillis()}"
                 repository.savePlanRecord(
                     planId = planId,
                     title = group,
@@ -78,7 +80,7 @@ class MainActivity : ComponentActivity() {
                     price = "$$$",
                     participants = listOf("Me", displayName),
                     consensusScore = "98% Match",
-                    date = "Active Now",
+                    date = planDate,
                     isUpcoming = true
                 )
 
