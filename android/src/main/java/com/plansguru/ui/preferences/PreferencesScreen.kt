@@ -310,20 +310,23 @@ fun PreferencesScreen(
                                             repository.savePerson(currentPerson.copy(locationZip = valText))
                                         }
 
-                                        repository.saveAssertion(
-                                            Assertion(
-                                                assertionId = java.util.UUID.randomUUID().toString(),
-                                                observerId = localUserId,
-                                                subjectId = targetSubj,
-                                                predicate = selectedPredicate,
-                                                value = valText,
-                                                source = "MANUAL_UI_CRUD",
-                                                confidence = 1.0f,
-                                                validityTimestampStart = System.currentTimeMillis(),
-                                                validityTimestampEnd = null,
-                                                visibilityPolicy = "PRIVATE"
-                                            )
+                                        val newAssertion = Assertion(
+                                            assertionId = java.util.UUID.randomUUID().toString(),
+                                            observerId = localUserId,
+                                            subjectId = targetSubj,
+                                            predicate = selectedPredicate,
+                                            value = valText,
+                                            source = "MANUAL_UI_CRUD",
+                                            confidence = 1.0f,
+                                            validityTimestampStart = System.currentTimeMillis(),
+                                            validityTimestampEnd = null,
+                                            visibilityPolicy = "PRIVATE"
                                         )
+                                        repository.saveAssertion(newAssertion)
+
+                                        val syncClient = com.plansguru.data.sync.EncryptedSyncClient(context)
+                                        val friendsList = (repository.getAllPersons().map { it.localPersonId } + repository.getAllPersons().map { it.displayName }).distinct()
+                                        syncClient.broadcastGraphUpdate(friendsList, newAssertion)
 
                                         refreshGraphData()
                                         targetSubjectForNewAssertion = null

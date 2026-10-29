@@ -94,6 +94,24 @@ fun PlansHistoryScreen(
 
                     refreshPlansFromDb()
                 } catch (_: Exception) {}
+            } else if (msg.type == "GRAPH_UPDATE") {
+                try {
+                    val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+                    val payload = json.decodeFromString<Map<String, String>>(msg.payload)
+                    val assertion = com.plansguru.data.model.Assertion(
+                        assertionId = payload["assertionId"] ?: java.util.UUID.randomUUID().toString(),
+                        observerId = msg.senderId,
+                        subjectId = payload["subjectId"] ?: msg.senderId,
+                        predicate = payload["predicate"] ?: "general_preference",
+                        value = payload["value"] ?: "",
+                        source = "E2E_PEER_SYNC",
+                        confidence = payload["confidence"]?.toFloatOrNull() ?: 1.0f,
+                        validityTimestampStart = System.currentTimeMillis(),
+                        validityTimestampEnd = null,
+                        visibilityPolicy = payload["visibilityPolicy"] ?: "AUTHORIZED_PEERS"
+                    )
+                    repository.saveAssertion(assertion)
+                } catch (_: Exception) {}
             }
         }
     }
