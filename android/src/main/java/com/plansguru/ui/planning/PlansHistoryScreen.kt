@@ -114,7 +114,7 @@ fun PlansHistoryScreen(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Dinner Plans & History", style = MaterialTheme.typography.titleLarge)
                         Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
-                            Text("v1.2.1", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
+                            Text("v1.2.2", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 },

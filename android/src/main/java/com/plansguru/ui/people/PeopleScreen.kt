@@ -147,7 +147,7 @@ fun PeopleScreen(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("People", style = MaterialTheme.typography.headlineMedium)
                         Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
-                            Text("v1.2.1", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
+                            Text("v1.2.2", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 },
@@ -407,8 +407,21 @@ fun PeopleScreen(
                                     showContextMenu = false
                                     val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
                                     val serverUrl = prefs.getString("server_url", "https://fluffy-snakes-warn.loca.lt")?.trimEnd('/') ?: "https://fluffy-snakes-warn.loca.lt"
-                                    val userId = prefs.getString("user_id", "local_user") ?: "local_user"
-                                    val deepLink = "$serverUrl/join?inviter=$userId"
+                                    
+                                    var userId = prefs.getString("user_id", null)
+                                    if (userId.isNullOrBlank() || userId == "local_user") {
+                                        userId = java.util.UUID.randomUUID().toString()
+                                        prefs.edit().putString("user_id", userId).apply()
+                                    }
+                                    var publicKey = prefs.getString("public_key", null)
+                                    if (publicKey.isNullOrBlank()) {
+                                        val keyPair = com.plansguru.data.crypto.KeyManager.getOrCreateIdentityKeyPair(context)
+                                        publicKey = keyPair.public.encoded.joinToString("") { "%02x".format(it) }
+                                        prefs.edit().putString("public_key", publicKey).apply()
+                                    }
+                                    val userDisplayName = repository.getPerson(userId)?.displayName?.takeIf { it.isNotBlank() && it != userId } ?: "Me"
+
+                                    val deepLink = "$serverUrl/join?inviter=${java.net.URLEncoder.encode(userId, "UTF-8")}&pubkey=${java.net.URLEncoder.encode(publicKey, "UTF-8")}&name=${java.net.URLEncoder.encode(userDisplayName, "UTF-8")}"
                                     val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                                         type = "text/plain"
                                         putExtra(android.content.Intent.EXTRA_TEXT, "Connect with me on PlansGuru: $deepLink")
