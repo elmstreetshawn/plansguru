@@ -171,6 +171,30 @@ class GraphRepository(context: Context) {
         db.insertWithOnConflict("relationships", null, values, SQLiteDatabase.CONFLICT_REPLACE)
     }
 
+    fun getRelationship(ownerId: String, relatedPersonId: String): Relationship? {
+        val db = dbHelper.getReadableEncryptedDatabase()
+        try {
+            val cursor = db.query(
+                "relationships", null,
+                "ownerId = ? AND relatedPersonId = ?",
+                arrayOf(ownerId, relatedPersonId),
+                null, null, null
+            )
+            cursor.use {
+                if (it.moveToFirst()) {
+                    return Relationship(
+                        ownerId = it.getString(it.getColumnIndexOrThrow("ownerId")),
+                        relatedPersonId = it.getString(it.getColumnIndexOrThrow("relatedPersonId")),
+                        relationshipType = it.getString(it.getColumnIndexOrThrow("relationshipType")),
+                        trustState = it.getString(it.getColumnIndexOrThrow("trustState")),
+                        sharingPermissions = it.getString(it.getColumnIndexOrThrow("sharingPermissions"))
+                    )
+                }
+            }
+        } catch (_: Exception) {}
+        return null
+    }
+
     fun deleteGeneralPreferences() {
         val db = dbHelper.getWritableEncryptedDatabase()
         db.delete("assertions", "predicate = ?", arrayOf("general_preference"))

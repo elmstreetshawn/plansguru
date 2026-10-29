@@ -869,6 +869,49 @@ fun PersonProfileAndPreferencesDialog(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.verticalScroll(rememberScrollState())
             ) {
+                if (!isLocalUser) {
+                    var assignedCircle by remember {
+                        val rel = repository.getRelationship(localUserId, personId)
+                        mutableStateOf(rel?.relationshipType ?: "Circle 1")
+                    }
+
+                    Text("Assign Dining Circle / Privacy Level:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        FilterChip(
+                            selected = assignedCircle == "Circle 1",
+                            onClick = {
+                                assignedCircle = "Circle 1"
+                                repository.saveRelationship(com.plansguru.data.model.Relationship(localUserId, personId, "Circle 1", "VERIFIED", "ALL"))
+                                onPersonUpdated(currentDisplayName)
+                            },
+                            label = { Text("Circle 1") }
+                        )
+                        FilterChip(
+                            selected = assignedCircle == "Circle 2",
+                            onClick = {
+                                assignedCircle = "Circle 2"
+                                repository.saveRelationship(com.plansguru.data.model.Relationship(localUserId, personId, "Circle 2", "VERIFIED", "ALL"))
+                                onPersonUpdated(currentDisplayName)
+                            },
+                            label = { Text("Circle 2") }
+                        )
+                        FilterChip(
+                            selected = assignedCircle == "Work Circle",
+                            onClick = {
+                                assignedCircle = "Work Circle"
+                                repository.saveRelationship(com.plansguru.data.model.Relationship(localUserId, personId, "Work Circle", "VERIFIED", "ALL"))
+                                onPersonUpdated(currentDisplayName)
+                            },
+                            label = { Text("Work Circle") }
+                        )
+                    }
+
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                }
+
                 Text("Edit Display Name:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                 Row(
                     modifier = Modifier.fillMaxWidth(),

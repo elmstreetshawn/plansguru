@@ -51,6 +51,19 @@ fun MainScreen(
     var showGlobalChatSheet by remember { mutableStateOf(initialShowChat) }
     val context = androidx.compose.ui.platform.LocalContext.current
 
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    androidx.activity.compose.BackHandler(enabled = currentRoute != BottomTab.People.route && currentRoute != null) {
+        navController.navigate(BottomTab.People.route) {
+            popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+            }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
     LaunchedEffect(Unit) {
         val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
         if (prefs.getBoolean("pending_navigate_to_plans", false)) {
