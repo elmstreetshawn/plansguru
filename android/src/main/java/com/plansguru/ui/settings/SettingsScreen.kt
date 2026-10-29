@@ -196,6 +196,7 @@ fun SettingsScreen(
     val attributeOptions = listOf(
         "likes_cuisine" to "🍕 Cuisines",
         "dietary_restriction" to "🥗 Dietary / Allergies",
+        "budget" to "💰 Budget / Price ($ - $$$$)",
         "max_distance" to "🚗 Travel Distance",
         "noise_preference" to "🤫 Noise & Crowd Vibe",
         "locationZip" to "📍 Zip Code"

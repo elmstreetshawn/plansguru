@@ -267,6 +267,7 @@ fun PreferencesScreen(
                                         "likes_cuisine" to "Likes Cuisine",
                                         "dislikes_cuisine" to "Dislikes Cuisine",
                                         "dietary_restriction" to "Dietary Restriction",
+                                        "budget" to "Budget / Price ($ - $$$$)",
                                         "max_travel_time" to "Max Travel Time",
                                         "noise_preference" to "Noise Preference",
                                         "locationZip" to "Zip Code"
@@ -590,6 +591,7 @@ fun PreferencesScreen(
                     val categories = listOf(
                         Triple("Cuisine Affinities", "likes_cuisine", allAssertions.filter { it.predicate.contains("cuisine") }),
                         Triple("Dietary Restrictions", "dietary_restriction", allAssertions.filter { it.predicate.contains("dietary") }),
+                        Triple("Budget & Price Range", "budget", allAssertions.filter { it.predicate == "budget" || it.predicate == "price" }),
                         Triple("Travel Distance", "max_distance", allAssertions.filter { it.predicate == "max_distance" }),
                         Triple("Noise & Crowds", "noise_preference", allAssertions.filter { it.predicate == "noise_preference" })
                     )

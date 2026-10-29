@@ -488,6 +488,24 @@ class GuruChatEngine(private val context: Context) {
                 }
             }
 
+            // 3C. Budget & Price Tier Parsing ($ to $$$$, cheap, budget, under $15)
+            val mentionsCheap = clauseLower.contains("cheap") || clauseLower.contains("budget") ||
+                    clauseLower.contains("under $15") || clauseLower.contains("inexpensive") ||
+                    clauseLower.contains("affordable") || clauseLower.contains("frugal")
+
+            if (mentionsCheap || clauseLower.contains("$")) {
+                val budgetVal = when {
+                    clauseLower.contains("$$$$") -> "$$$$"
+                    clauseLower.contains("$$$") -> "$$$"
+                    clauseLower.contains("$$") -> "$$"
+                    else -> "$"
+                }
+                val exists = results.any { it.subject == clauseSubject && (it.predicate == "budget" || it.predicate == "price") }
+                if (!exists) {
+                    results.add(StructuredAssertion(clauseSubject, "budget", budgetVal))
+                }
+            }
+
             // 4. Noise & Crowd Preference
             if (clauseLower.contains("loud") || clauseLower.contains("crowd") || clauseLower.contains("quiet") ||
                 clauseLower.contains("noise") || clauseLower.contains("vibe") || clauseLower.contains("busy") ||
