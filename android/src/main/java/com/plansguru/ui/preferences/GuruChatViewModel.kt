@@ -140,6 +140,64 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
                 }
             }
 
+            val isPlanCreationIntent = (lower.contains("set up") || lower.contains("plan") || lower.contains("organize") || lower.contains("schedule") || lower.contains("create")) && (lower.contains("dinner") || lower.contains("lunch") || lower.contains("food") || lower.contains("meal") || lower.contains("taco") || lower.contains("restaurant"))
+
+            if (isPlanCreationIntent) {
+                val allPersons = repository.getAllPersons()
+                val myPerson = repository.getPerson(localUserId)
+                val myDisplayName = myPerson?.displayName?.takeIf { it.isNotBlank() && it != localUserId } ?: "Me"
+
+                // Extract mentioned participants from social graph
+                val mentionedParticipants = allPersons.filter { p ->
+                    lower.contains(p.displayName.lowercase()) || lower.contains(p.localPersonId.lowercase())
+                }.map { it.displayName }.distinct()
+
+                val participants = (listOf(myDisplayName) + mentionedParticipants).distinct()
+
+                // Gather assertions for participants
+                val participantAssertions = mutableMapOf<String, List<Assertion>>()
+                for (pName in participants) {
+                    val pObj = allPersons.find { it.displayName.equals(pName, ignoreCase = true) }
+                    val pId = pObj?.localPersonId ?: pName
+                    participantAssertions[pName] = repository.getAssertionsForSubject(pId)
+                }
+
+                val sampleRestaurants = listOf(
+                    com.plansguru.data.model.Restaurant("1", "Suerte", "Interior Mexican", "$$$", true, listOf("Vegan", "Gluten-Free"), "Moderate", "Busy", "East Austin", "5:00 PM - 10:00 PM", listOf("Wheelchair Accessible"), zipCode = "78702"),
+                    com.plansguru.data.model.Restaurant("2", "Loro", "Asian Smokehouse", "$$", true, listOf("Gluten-Free"), "Lively", "Busy", "South Lamar", "11:00 AM - 10:00 PM", listOf("Wheelchair Accessible"), zipCode = "78704"),
+                    com.plansguru.data.model.Restaurant("3", "Uchi", "Japanese", "$$$$", true, listOf("Gluten-Free"), "Quiet", "Moderate", "South Lamar", "4:00 PM - 11:00 PM", listOf("Wheelchair Accessible"), zipCode = "78704"),
+                    com.plansguru.data.model.Restaurant("4", "Arlo's Vegan Curbside", "Vegan Burgers", "$", true, listOf("100% Vegan"), "Moderate", "Moderate", "East Austin", "12:00 PM - 12:00 AM", listOf("Wheelchair Accessible"), zipCode = "78702")
+                )
+                val engine = com.plansguru.agent.NegotiationEngine()
+                val results = engine.evaluateCandidates(sampleRestaurants, participantAssertions)
+                val topRec = results.firstOrNull()
+
+                if (topRec != null) {
+                    val pId = "plan_${System.currentTimeMillis()}"
+                    val planTitle = if (mentionedParticipants.isNotEmpty()) "Dinner with ${mentionedParticipants.joinToString(", ")}" else "Group Dinner Plan"
+
+                    repository.savePlanRecord(
+                        planId = pId,
+                        title = planTitle,
+                        restaurantName = topRec.restaurant.name,
+                        cuisine = topRec.restaurant.cuisine,
+                        price = topRec.restaurant.priceRange,
+                        participants = participants,
+                        consensusScore = "${(topRec.minSatisfaction * 100).toInt()}% Match",
+                        date = "Active Now",
+                        isUpcoming = true
+                    )
+
+                    val confirmationMsg = ChatMessage(
+                        UUID.randomUUID().toString(),
+                        "✨ I set up your dinner plan '$planTitle' at ${topRec.restaurant.name} (${topRec.restaurant.cuisine} · ${topRec.restaurant.priceRange})!\n\n• Participants: ${participants.joinToString(", ")}\n• Consensus Score: ${(topRec.minSatisfaction * 100).toInt()}% Match\n\nI've saved this plan to your Plans tab!",
+                        false
+                    )
+                    _messages.value = _messages.value + confirmationMsg
+                    return@launch
+                }
+            }
+
             val (replyText, structuredAssertions) = chatEngine.generateStructuredResponse(text)
 
             val newFriendSubject = structuredAssertions.map { it.subject }.firstOrNull { it != localUserId && repository.getPerson(it) == null }
