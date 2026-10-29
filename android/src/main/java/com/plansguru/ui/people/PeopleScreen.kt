@@ -83,9 +83,13 @@ fun PeopleScreen(
     val context = LocalContext.current
     val repository = remember { GraphRepository(context) }
 
-    var myPersonState by remember { mutableStateOf(repository.getPerson("local_user")) }
-    val myName = myPersonState?.displayName?.takeIf { it.isNotBlank() && it != "local_user" } ?: "Me"
-    val myZip = myPersonState?.locationZip ?: "78626"
+    val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
+    val localUserId = prefs.getString("user_id", "local_user") ?: "local_user"
+    var myPersonState by remember { mutableStateOf(repository.getPerson(localUserId)) }
+    val myName = myPersonState?.displayName?.takeIf { it.isNotBlank() && it != localUserId } ?: "Me"
+    val rawZip = myPersonState?.locationZip
+    val myZip = if (!rawZip.isNullOrBlank() && rawZip != "78626" && rawZip != "90210") rawZip else null
+    val zipDisplay = if (myZip != null) "📍 Zip: $myZip • Encrypted Profile" else "📍 Zip not set • Encrypted Profile"
     var showEditMyProfileDialog by remember { mutableStateOf(false) }
 
     val defaultFriends = listOf(
@@ -104,11 +108,11 @@ fun PeopleScreen(
 
     LaunchedEffect(Unit) {
         try {
-            myPersonState = repository.getPerson("local_user")
+            myPersonState = repository.getPerson(localUserId)
             val dbPersons = repository.getAllPersons()
             val existingNames = friends.map { it.name }
             for (person in dbPersons) {
-                if (person.localPersonId == "local_user" || person.displayName == "local_user" || person.displayName == "Me") continue
+                if (person.localPersonId == localUserId || person.displayName == localUserId || person.displayName == "Me") continue
                 if (!existingNames.contains(person.displayName) && !existingNames.contains(person.localPersonId)) {
                     val name = person.displayName
                     val initials = name.take(2).uppercase()
@@ -143,7 +147,7 @@ fun PeopleScreen(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("People", style = MaterialTheme.typography.headlineMedium)
                         Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
-                            Text("v1.1.1", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
+                            Text("v1.2.0", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 },
@@ -234,7 +238,7 @@ fun PeopleScreen(
                                     Text("YOU", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.onPrimary)
                                 }
                             }
-                            Text("📍 Zip: $myZip • Encrypted Profile", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(zipDisplay, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
 
@@ -402,8 +406,9 @@ fun PeopleScreen(
                                 onClick = {
                                     showContextMenu = false
                                     val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
-                                    val serverUrl = prefs.getString("server_url", "https://smart-lizards-nail.loca.lt")?.trimEnd('/') ?: "https://smart-lizards-nail.loca.lt"
-                                    val deepLink = "$serverUrl/join?inviter=local_user"
+                                    val serverUrl = prefs.getString("server_url", "https://fluffy-snakes-warn.loca.lt")?.trimEnd('/') ?: "https://fluffy-snakes-warn.loca.lt"
+                                    val userId = prefs.getString("user_id", "local_user") ?: "local_user"
+                                    val deepLink = "$serverUrl/join?inviter=$userId"
                                     val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                                         type = "text/plain"
                                         putExtra(android.content.Intent.EXTRA_TEXT, "Connect with me on PlansGuru: $deepLink")
@@ -427,6 +432,7 @@ fun PeopleScreen(
                             personId = friend.name,
                             currentDisplayName = friend.name,
                             isLocalUser = false,
+                            localUserId = myPersonState?.localPersonId ?: "local_user",
                             repository = repository,
                             onDismissRequest = { showPreferencesDialog = false },
                             onPersonUpdated = { updatedName ->
@@ -446,13 +452,14 @@ fun PeopleScreen(
     // Modal for YOU Card
     if (showEditMyProfileDialog) {
         PersonProfileAndPreferencesDialog(
-            personId = "local_user",
+            personId = localUserId,
             currentDisplayName = myName,
             isLocalUser = true,
+            localUserId = localUserId,
             repository = repository,
             onDismissRequest = { showEditMyProfileDialog = false },
             onPersonUpdated = { updatedName ->
-                myPersonState = repository.getPerson("local_user")
+                myPersonState = repository.getPerson(localUserId)
             }
         )
     }
@@ -620,7 +627,9 @@ fun PeopleScreen(
     }
 
     if (showMyQrDialog) {
-        val inviteLink = "https://plansguru.app/join?inviter=Me&pubkey=pub_key_local_user"
+        val userId = prefs.getString("user_id", "local_user") ?: "local_user"
+        val publicKey = prefs.getString("public_key", "pub_key_local_user") ?: "pub_key_local_user"
+        val inviteLink = "https://plansguru.app/join?inviter=Me&pubkey=$publicKey&userid=$userId"
         val qrBitmap = remember(inviteLink) { com.plansguru.ui.common.QrCodeHelper.generateQrCodeBitmap(inviteLink) }
 
         AlertDialog(
@@ -785,6 +794,7 @@ fun PersonProfileAndPreferencesDialog(
     personId: String,
     currentDisplayName: String,
     isLocalUser: Boolean,
+    localUserId: String,
     repository: GraphRepository,
     onDismissRequest: () -> Unit,
     onPersonUpdated: (String) -> Unit
@@ -940,10 +950,11 @@ fun PersonProfileAndPreferencesDialog(
                             repository.savePerson(currentPerson.copy(locationZip = valText))
                         }
 
+                        val observerIdToUse = localUserId
                         repository.saveAssertion(
                             com.plansguru.data.model.Assertion(
                                 assertionId = java.util.UUID.randomUUID().toString(),
-                                observerId = "local_user",
+                                observerId = observerIdToUse,
                                 subjectId = personId,
                                 predicate = selectedPredicate,
                                 value = valText,

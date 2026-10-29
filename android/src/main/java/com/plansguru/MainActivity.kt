@@ -82,6 +82,9 @@ class MainActivity : ComponentActivity() {
                     isUpcoming = true
                 )
 
+                val prefs = getSharedPreferences("plansguru_prefs", MODE_PRIVATE)
+                prefs.edit().putBoolean("pending_navigate_to_plans", true).apply()
+
                 Toast.makeText(this, "✨ Joined '$group' with $displayName!", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 Toast.makeText(this, "Error joining plan: ${e.message}", Toast.LENGTH_LONG).show()

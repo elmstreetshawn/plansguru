@@ -36,6 +36,7 @@ data class PlanRecord(
 @Composable
 fun PlansHistoryScreen(
     onCreateNewPlan: () -> Unit,
+    onOpenPlanChat: (String, String) -> Unit = { _, _ -> },
     onOpenGuruChat: () -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -43,8 +44,12 @@ fun PlansHistoryScreen(
     val allPlans = remember { mutableStateListOf<PlanRecord>() }
 
     fun refreshPlansFromDb() {
+        val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
+        val seeded = prefs.getBoolean("default_plans_seeded", false)
         val dbPlans = repository.getAllPlanRecords()
-        if (dbPlans.isEmpty()) {
+
+        if (dbPlans.isEmpty() && !seeded) {
+            prefs.edit().putBoolean("default_plans_seeded", true).apply()
             val defaultSample1 = PlanRecord("1", "Friday Taco Crew Night", "Suerte", "Interior Mexican", "$$$", listOf("Maya", "Jo", "Priya"), "98% Match", "Active Now", isUpcoming = true)
             val defaultSample2 = PlanRecord("2", "Sunday Salad Friends Brunch", "Green Leaf Bistro", "Vegetarian / Vegan", "$$", listOf("Lena", "Sam"), "95% Match", "Oct 24, 11:30 AM", isUpcoming = false)
             val defaultSample3 = PlanRecord("3", "Friday Night Italian Dinner", "Trattoria Bella", "Italian", "$$$", listOf("Maya", "Jo", "Priya", "Sam"), "92% Match", "Oct 18, 8:00 PM", isUpcoming = false)
@@ -93,6 +98,10 @@ fun PlansHistoryScreen(
         }
     }
 
+    SideEffect {
+        refreshPlansFromDb()
+    }
+
     var selectedPlan by remember { mutableStateOf<PlanRecord?>(null) }
 
     val upcomingPlans = allPlans.filter { it.isUpcoming }
@@ -105,7 +114,7 @@ fun PlansHistoryScreen(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Dinner Plans & History", style = MaterialTheme.typography.titleLarge)
                         Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
-                            Text("v1.1.1", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
+                            Text("v1.2.0", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 },
@@ -240,18 +249,24 @@ fun PlansHistoryScreen(
                                     text = { Text("💬 Share Plan Link via Messenger") },
                                     onClick = {
                                         showPlanMenu = false
-                                        val userDisplayName = repository.getPerson("local_user")?.displayName?.takeIf { it.isNotBlank() && it != "local_user" } ?: "Me"
                                         val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
-                                        val serverUrl = prefs.getString("server_url", "https://smart-lizards-nail.loca.lt")?.trimEnd('/') ?: "https://smart-lizards-nail.loca.lt"
+                                        val localUserId = prefs.getString("user_id", "local_user") ?: "local_user"
+                                        val userDisplayName = repository.getPerson(localUserId)?.displayName?.takeIf { it.isNotBlank() && it != localUserId } ?: "Me"
+                                        val serverUrl = prefs.getString("server_url", "https://fluffy-snakes-warn.loca.lt")?.trimEnd('/') ?: "https://fluffy-snakes-warn.loca.lt"
 
-                                        val userId = prefs.getString("user_id", null)
-                                        val publicKey = prefs.getString("public_key", null)
-
-                                        val deepLink = if (!userId.isNullOrBlank() && !publicKey.isNullOrBlank()) {
-                                            "$serverUrl/join?inviter=${java.net.URLEncoder.encode(userId, "UTF-8")}&pubkey=${java.net.URLEncoder.encode(publicKey, "UTF-8")}&name=${java.net.URLEncoder.encode(userDisplayName, "UTF-8")}&group=${java.net.URLEncoder.encode(plan.title, "UTF-8")}"
-                                        } else {
-                                            "$serverUrl/join?inviter=${java.net.URLEncoder.encode(userDisplayName, "UTF-8")}&group=${java.net.URLEncoder.encode(plan.title, "UTF-8")}"
+                                        var userId = prefs.getString("user_id", null)
+                                        if (userId.isNullOrBlank() || userId == "local_user") {
+                                            userId = java.util.UUID.randomUUID().toString()
+                                            prefs.edit().putString("user_id", userId).apply()
                                         }
+                                        var publicKey = prefs.getString("public_key", null)
+                                        if (publicKey.isNullOrBlank()) {
+                                            val keyPair = com.plansguru.data.crypto.KeyManager.getOrCreateIdentityKeyPair(context)
+                                            publicKey = keyPair.public.encoded.joinToString("") { "%02x".format(it) }
+                                            prefs.edit().putString("public_key", publicKey).apply()
+                                        }
+
+                                        val deepLink = "$serverUrl/join?inviter=${java.net.URLEncoder.encode(userId, "UTF-8")}&pubkey=${java.net.URLEncoder.encode(publicKey, "UTF-8")}&name=${java.net.URLEncoder.encode(userDisplayName, "UTF-8")}&group=${java.net.URLEncoder.encode(plan.title, "UTF-8")}"
 
                                         val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                                             type = "text/plain"
@@ -265,6 +280,7 @@ fun PlansHistoryScreen(
                                     onClick = {
                                         showPlanMenu = false
                                         repository.deletePlanRecord(plan.id)
+                                        refreshPlansFromDb()
                                     }
                                 )
                             }
@@ -344,6 +360,20 @@ fun PlansHistoryScreen(
                     Text("Restaurant: ${selectedPlan!!.restaurantName} (${selectedPlan!!.cuisine} • ${selectedPlan!!.price})", style = MaterialTheme.typography.bodyMedium)
                     Text("Participants: ${selectedPlan!!.participants.joinToString(", ")}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text("Consensus: ${selectedPlan!!.consensusScore}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Button(
+                        onClick = {
+                            val p = selectedPlan!!
+                            selectedPlan = null
+                            onOpenPlanChat(p.id, p.title)
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+                        shape = CircleShape,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("💬 Open Live E2E Group Chat")
+                    }
 
                     Spacer(modifier = Modifier.height(4.dp))
                     TextButton(

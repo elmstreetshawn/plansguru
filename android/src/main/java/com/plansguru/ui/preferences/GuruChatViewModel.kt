@@ -28,7 +28,9 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
     private var pendingAssertionText: String? = null
 
     private var wizardStep = 0
-    private var wizardSubject = "local_user"
+    private val localUserId: String
+        get() = getApplication<Application>().getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE).getString("user_id", "localUserId") ?: "localUserId"
+    private var wizardSubject = localUserId
 
     private val _messages = MutableStateFlow<List<ChatMessage>>(
         listOf(
@@ -57,10 +59,10 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun startGuidedProfileWizard(subject: String = "local_user") {
-        wizardSubject = subject
+    fun startGuidedProfileWizard(subject: String? = null) {
+        wizardSubject = subject ?: localUserId
         wizardStep = 1
-        val subjName = if (subject == "local_user") "your" else "$subject's"
+        val subjName = if (wizardSubject == localUserId) "your" else "${wizardSubject}'s"
         val firstPrompt = "🧙‍♂️ Let me guide you through setting up $subjName profile step-by-step!\n\nStep 1 of 5: What foods or cuisines do you love? (e.g. Tacos, Italian, Pizza, Sushi, Steak, Burgers)"
         val botMsg = ChatMessage(UUID.randomUUID().toString(), firstPrompt, false)
         _messages.value = _messages.value + botMsg
@@ -95,7 +97,7 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
                     )
                     repository.saveRelationship(
                         Relationship(
-                            ownerId = "local_user",
+                            ownerId = localUserId,
                             relatedPersonId = friendName,
                             relationshipType = "FRIEND",
                             trustState = "VERIFIED",
@@ -112,7 +114,7 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
                             repository.saveAssertion(
                                 Assertion(
                                     assertionId = UUID.randomUUID().toString(),
-                                    observerId = "local_user",
+                                    observerId = localUserId,
                                     subjectId = friendName,
                                     predicate = sa.predicate,
                                     value = sa.value,
@@ -140,7 +142,7 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
 
             val (replyText, structuredAssertions) = chatEngine.generateStructuredResponse(text)
 
-            val newFriendSubject = structuredAssertions.map { it.subject }.firstOrNull { it != "local_user" && repository.getPerson(it) == null }
+            val newFriendSubject = structuredAssertions.map { it.subject }.firstOrNull { it != localUserId && repository.getPerson(it) == null }
 
             if (newFriendSubject != null) {
                 pendingFriendName = newFriendSubject
@@ -155,10 +157,10 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
 
             for (sa in structuredAssertions) {
                 if (sa.predicate == "locationZip") {
-                    val currentMe = repository.getPerson("local_user") ?: Person(
-                        localPersonId = "local_user",
+                    val currentMe = repository.getPerson(localUserId) ?: Person(
+                        localPersonId = localUserId,
                         displayName = "Me",
-                        publicIdentityKey = "pub_key_local_user",
+                        publicIdentityKey = getApplication<Application>().getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE).getString("public_key", "pub_key_local_user") ?: "pub_key_local_user",
                         creationTimestamp = System.currentTimeMillis(),
                         locationZip = sa.value
                     )
@@ -168,7 +170,7 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
                 repository.saveAssertion(
                     Assertion(
                         assertionId = UUID.randomUUID().toString(),
-                        observerId = "local_user",
+                        observerId = localUserId,
                         subjectId = sa.subject,
                         predicate = sa.predicate,
                         value = sa.value,
@@ -195,7 +197,7 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
                 if (sa.predicate == "locationZip") {
                     val currentMe = repository.getPerson(finalSubj) ?: Person(
                         localPersonId = finalSubj,
-                        displayName = if (finalSubj == "local_user") "Me" else finalSubj,
+                        displayName = if (finalSubj == localUserId) "Me" else finalSubj,
                         publicIdentityKey = "pub_key_$finalSubj",
                         creationTimestamp = System.currentTimeMillis(),
                         locationZip = sa.value
@@ -206,7 +208,7 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
                 repository.saveAssertion(
                     Assertion(
                         assertionId = UUID.randomUUID().toString(),
-                        observerId = "local_user",
+                        observerId = localUserId,
                         subjectId = finalSubj,
                         predicate = sa.predicate,
                         value = sa.value,
@@ -227,7 +229,7 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
                 5 -> "Final Step 5 of 5: Do you prefer quiet, cozy spots or lively, vibrant atmospheres?"
                 else -> {
                     wizardStep = 0
-                    val targetName = if (wizardSubject == "local_user") "Your" else "$wizardSubject's"
+                    val targetName = if (wizardSubject == localUserId) "Your" else "$wizardSubject's"
                     "✨ $targetName profile setup is complete! All preferences have been structured and saved into your encrypted social graph database."
                 }
             }

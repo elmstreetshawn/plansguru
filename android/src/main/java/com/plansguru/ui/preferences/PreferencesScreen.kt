@@ -49,6 +49,10 @@ fun PreferencesScreen(
     val messages by viewModel.messages.collectAsState()
     var inputMessage by remember { mutableStateOf("") }
 
+    val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
+    val localUserId = prefs.getString("user_id", "local_user") ?: "local_user"
+    val pubKeyLocalUser = prefs.getString("public_key", "pub_key_local_user") ?: "pub_key_local_user"
+
     var allPersons by remember { mutableStateOf<List<Person>>(emptyList()) }
     var allAssertions by remember { mutableStateOf<List<Assertion>>(emptyList()) }
 
@@ -64,7 +68,7 @@ fun PreferencesScreen(
         try {
             repository.deleteGeneralPreferences()
             allPersons = repository.getAllPersons()
-            val subjects = listOf("local_user") + allPersons.map { it.localPersonId } + allPersons.map { it.displayName }
+            val subjects = listOf(localUserId) + allPersons.map { it.localPersonId } + allPersons.map { it.displayName }
             val combined = mutableListOf<Assertion>()
             for (subj in subjects.distinct()) {
                 combined.addAll(repository.getAssertionsForSubject(subj).filter { it.predicate != "general_preference" })
@@ -81,7 +85,7 @@ fun PreferencesScreen(
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text("Preferences Hub", style = MaterialTheme.typography.titleLarge)
                             Surface(shape = CircleShape, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f)) {
-                                Text("v1.1.1 (Build 12)", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                Text("v1.2.0 (Build 15)", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.onPrimaryContainer)
                             }
                         }
                     },
@@ -141,7 +145,7 @@ fun PreferencesScreen(
                         try {
                             repository.deleteGeneralPreferences()
                             allPersons = repository.getAllPersons()
-                            val subjects = listOf("local_user") + allPersons.map { it.localPersonId }
+                            val subjects = listOf(localUserId) + allPersons.map { it.localPersonId }
                             val combined = mutableListOf<Assertion>()
                             for (subj in subjects.distinct()) {
                                 combined.addAll(repository.getAssertionsForSubject(subj).filter { it.predicate != "general_preference" })
@@ -150,8 +154,8 @@ fun PreferencesScreen(
                         } catch (_: Exception) {}
                     }
 
-                    val myPerson = repository.getPerson("local_user")
-                    val myDisplayName = myPerson?.displayName?.takeIf { it.isNotBlank() && it != "local_user" } ?: "You (Local User)"
+                    val myPerson = repository.getPerson(localUserId)
+                    val myDisplayName = myPerson?.displayName?.takeIf { it.isNotBlank() && it != localUserId } ?: "You (Local User)"
 
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text("Encrypted Social Graph • People & Preference Assertions", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
@@ -161,10 +165,10 @@ fun PreferencesScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            val subjects = listOf("local_user") + allPersons.map { it.localPersonId }
+                            val subjects = listOf(localUserId) + allPersons.map { it.localPersonId }
                             items(subjects.distinct()) { subj ->
                                 val assertions = allAssertions.filter { it.subjectId.equals(subj, true) }
-                                val personName = if (subj == "local_user") myDisplayName else allPersons.find { it.localPersonId == subj }?.displayName ?: subj
+                                val personName = if (subj == localUserId) myDisplayName else allPersons.find { it.localPersonId == subj }?.displayName ?: subj
 
                                 Card(
                                     modifier = Modifier.fillMaxWidth(),
@@ -186,7 +190,7 @@ fun PreferencesScreen(
                                                 }
                                                 Text(personName, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
 
-                                                if (subj == "local_user") {
+                                                if (subj == localUserId) {
                                                     IconButton(onClick = { showEditMyNameDialog = true }, modifier = Modifier.size(24.dp)) {
                                                         Icon(Icons.Default.Edit, contentDescription = "Edit My Name", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
                                                     }
@@ -204,7 +208,7 @@ fun PreferencesScreen(
                                                     Text("Add Preference", style = MaterialTheme.typography.labelMedium)
                                                 }
 
-                                                if (subj != "local_user") {
+                                                if (subj != localUserId) {
                                                     IconButton(onClick = {
                                                         repository.deletePerson(subj)
                                                         refreshGraphData()
@@ -248,7 +252,7 @@ fun PreferencesScreen(
                     // Dialog to Add/CRUD Assertion Directly
                     if (targetSubjectForNewAssertion != null) {
                         val targetSubj = targetSubjectForNewAssertion!!
-                        val targetName = if (targetSubj == "local_user") "You (Local User)" else allPersons.find { it.localPersonId == targetSubj }?.displayName ?: targetSubj
+                        val targetName = if (targetSubj == localUserId) "You (Local User)" else allPersons.find { it.localPersonId == targetSubj }?.displayName ?: targetSubj
 
                         AlertDialog(
                             onDismissRequest = { targetSubjectForNewAssertion = null },
@@ -298,7 +302,7 @@ fun PreferencesScreen(
                                         if (selectedPredicate == "locationZip") {
                                             val currentPerson = repository.getPerson(targetSubj) ?: Person(
                                                 localPersonId = targetSubj,
-                                                displayName = if (targetSubj == "local_user") "Me" else targetSubj,
+                                                displayName = if (targetSubj == localUserId) "Me" else targetSubj,
                                                 publicIdentityKey = "pub_key_$targetSubj",
                                                 creationTimestamp = System.currentTimeMillis(),
                                                 locationZip = valText
@@ -309,7 +313,7 @@ fun PreferencesScreen(
                                         repository.saveAssertion(
                                             Assertion(
                                                 assertionId = java.util.UUID.randomUUID().toString(),
-                                                observerId = "local_user",
+                                                observerId = localUserId,
                                                 subjectId = targetSubj,
                                                 predicate = selectedPredicate,
                                                 value = valText,
@@ -337,7 +341,7 @@ fun PreferencesScreen(
                     }
 
                     if (showEditMyNameDialog) {
-                        var newNameInput by remember { mutableStateOf(myPerson?.displayName?.takeIf { it != "local_user" } ?: "") }
+                        var newNameInput by remember { mutableStateOf(myPerson?.displayName?.takeIf { it != localUserId } ?: "") }
                         AlertDialog(
                             onDismissRequest = { showEditMyNameDialog = false },
                             title = { Text("Set Profile Display Name") },
@@ -359,9 +363,9 @@ fun PreferencesScreen(
                                     enabled = newNameInput.isNotBlank(),
                                     onClick = {
                                         val updated = (myPerson ?: Person(
-                                            localPersonId = "local_user",
+                                            localPersonId = localUserId,
                                             displayName = newNameInput.trim(),
-                                            publicIdentityKey = "pub_key_local_user",
+                                            publicIdentityKey = pubKeyLocalUser,
                                             creationTimestamp = System.currentTimeMillis()
                                         )).copy(displayName = newNameInput.trim())
 
@@ -633,13 +637,13 @@ fun PreferencesScreen(
                                                 Text("• ${assertion.value}", style = MaterialTheme.typography.bodyMedium)
                                                 TextButton(onClick = {
                                                     val dbHelper = com.plansguru.data.db.EncryptedGraphDatabase(context)
-                                                    val writable = dbHelper.writableDatabase
+                                                    val writable = dbHelper.getWritableEncryptedDatabase()
                                                     writable.delete("assertions", "assertionId = ?", arrayOf(assertion.assertionId))
 
                                                     // Refresh assertions
                                                     try {
                                                         allPersons = repository.getAllPersons()
-                                                        val subjects = listOf("local_user") + allPersons.map { it.localPersonId }
+                                                        val subjects = listOf(localUserId) + allPersons.map { it.localPersonId }
                                                         val combined = mutableListOf<Assertion>()
                                                         for (subj in subjects.distinct()) {
                                                             combined.addAll(repository.getAssertionsForSubject(subj))
@@ -667,8 +671,8 @@ fun PreferencesScreen(
                                                 repository.saveAssertion(
                                                     Assertion(
                                                         assertionId = java.util.UUID.randomUUID().toString(),
-                                                        observerId = "local_user",
-                                                        subjectId = "local_user",
+                                                        observerId = localUserId,
+                                                        subjectId = localUserId,
                                                         predicate = predicateName,
                                                         value = newTagInput.trim(),
                                                         source = "MANUAL_TAG_EDIT",
@@ -680,7 +684,7 @@ fun PreferencesScreen(
                                                 )
                                                 try {
                                                     allPersons = repository.getAllPersons()
-                                                    val subjects = listOf("local_user") + allPersons.map { it.localPersonId }
+                                                    val subjects = listOf(localUserId) + allPersons.map { it.localPersonId }
                                                     val combined = mutableListOf<Assertion>()
                                                     for (subj in subjects.distinct()) {
                                                         combined.addAll(repository.getAssertionsForSubject(subj))
@@ -738,8 +742,8 @@ fun PreferencesScreen(
                                             repository.saveAssertion(
                                                 Assertion(
                                                     assertionId = java.util.UUID.randomUUID().toString(),
-                                                    observerId = "local_user",
-                                                    subjectId = "local_user",
+                                                    observerId = localUserId,
+                                                    subjectId = localUserId,
                                                     predicate = customPredicate.trim(),
                                                     value = customValue.trim(),
                                                     source = "CUSTOM_TAGS_HUB",
@@ -751,7 +755,7 @@ fun PreferencesScreen(
                                             )
                                             try {
                                                 allPersons = repository.getAllPersons()
-                                                val subjects = listOf("local_user") + allPersons.map { it.localPersonId }
+                                                val subjects = listOf(localUserId) + allPersons.map { it.localPersonId }
                                                 val combined = mutableListOf<Assertion>()
                                                 for (subj in subjects.distinct()) {
                                                     combined.addAll(repository.getAssertionsForSubject(subj))

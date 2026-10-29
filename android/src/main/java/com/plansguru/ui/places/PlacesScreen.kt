@@ -121,7 +121,9 @@ fun PlacesScreen(
 
     LaunchedEffect(Unit) {
         try {
-            val userPerson = repository.getPerson("local_user")
+            val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
+            val userId = prefs.getString("user_id", "local_user") ?: "local_user"
+            val userPerson = repository.getPerson(userId)
             if (userPerson != null && userPerson.locationZip.isNotBlank()) {
                 userZip = userPerson.locationZip
             }
@@ -163,7 +165,7 @@ fun PlacesScreen(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Places", style = MaterialTheme.typography.headlineMedium)
                         Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
-                            Text("v1.1.1", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
+                            Text("v1.2.0", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 },

@@ -25,8 +25,8 @@ fun SettingsScreen(
 ) {
     val circles = remember {
         mutableStateListOf(
-            CirclePolicy("1", "Circle 1 (Taco Crew)", "Authorized Peers", "Cuisines, Dietary Restrictions, General Vibe"),
-            CirclePolicy("2", "Circle 2 (Salad Friends)", "Selected Peers Only", "Dietary Restrictions Only"),
+            CirclePolicy("1", "Circle 1", "Authorized Peers", "Cuisines, Dietary Restrictions, General Vibe"),
+            CirclePolicy("2", "Circle 2", "Selected Peers Only", "Dietary Restrictions Only"),
             CirclePolicy("3", "Work Circle", "Private / Strict", "None (Isolated)")
         )
     }
@@ -177,7 +177,7 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("PlansGuru v1.1.1 (Build 12)", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    Text("PlansGuru v1.2.0 (Build 15)", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                     Text("Greater Austin, TX • On-Device Gemma 3 AI", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }

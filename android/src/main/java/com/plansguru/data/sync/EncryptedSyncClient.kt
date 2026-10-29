@@ -18,13 +18,14 @@ class EncryptedSyncClient(
 
     fun connect(onMessageReceived: (String) -> Unit = {}) {
         val prefs = context.getSharedPreferences("plansguru_prefs", Context.MODE_PRIVATE)
-        val httpUrl = prefs.getString("server_url", "https://smart-lizards-nail.loca.lt")?.trimEnd('/') ?: "https://smart-lizards-nail.loca.lt"
+        val httpUrl = prefs.getString("server_url", "https://fluffy-snakes-warn.loca.lt")?.trimEnd('/') ?: "https://fluffy-snakes-warn.loca.lt"
         val wsUrl = httpUrl.replace("https://", "wss://").replace("http://", "ws://") + "/ws/session/$sessionId"
 
         Log.d("EncryptedSyncClient", "Connecting WebSocket relay to: $wsUrl")
 
         val request = Request.Builder()
             .url(wsUrl)
+            .addHeader("Bypass-Tunnel-Reminder", "true")
             .addHeader("Bypass-Tunnel-Remainder", "true")
             .addHeader("ngrok-skip-browser-warning", "true")
             .addHeader("User-Agent", "PlansGuruApp/1.0")
@@ -48,14 +49,16 @@ class EncryptedSyncClient(
 
     fun listenOnFriendChannels(friendsList: List<String>, onProtocolMessageReceived: (ProtocolMessage) -> Unit) {
         val prefs = context.getSharedPreferences("plansguru_prefs", Context.MODE_PRIVATE)
-        val httpUrl = prefs.getString("server_url", "https://smart-lizards-nail.loca.lt")?.trimEnd('/') ?: "https://smart-lizards-nail.loca.lt"
+        val httpUrl = prefs.getString("server_url", "https://fluffy-snakes-warn.loca.lt")?.trimEnd('/') ?: "https://fluffy-snakes-warn.loca.lt"
+        val userId = prefs.getString("user_id", "local_user") ?: "local_user"
 
         for (friend in friendsList) {
-            val channelTopic = ChannelCryptoHelper.computeChannelTopic("local_user", friend)
+            val channelTopic = ChannelCryptoHelper.computeChannelTopic(userId, friend)
             val wsUrl = httpUrl.replace("https://", "wss://").replace("http://", "ws://") + "/ws/session/$channelTopic"
 
             val request = Request.Builder()
                 .url(wsUrl)
+                .addHeader("Bypass-Tunnel-Reminder", "true")
                 .addHeader("Bypass-Tunnel-Remainder", "true")
                 .addHeader("ngrok-skip-browser-warning", "true")
                 .addHeader("User-Agent", "PlansGuruApp/1.0")
@@ -65,8 +68,10 @@ class EncryptedSyncClient(
                 override fun onMessage(webSocket: WebSocket, text: String) {
                     try {
                         val msg = json.decodeFromString<ProtocolMessage>(text)
-                        if (msg.senderId != "local_user") {
-                            onProtocolMessageReceived(msg)
+                        if (msg.senderId != userId) {
+                            val decryptedPayload = ChannelCryptoHelper.decrypt(msg.payload, userId, friend)
+                            val decryptedMsg = msg.copy(payload = decryptedPayload)
+                            onProtocolMessageReceived(decryptedMsg)
                         }
                     } catch (e: Exception) {
                         Log.w("EncryptedSyncClient", "Error parsing channel message: ${e.message}")
@@ -78,24 +83,30 @@ class EncryptedSyncClient(
 
     fun broadcastPlanRequest(groupTitle: String, participants: List<String>) {
         val prefs = context.getSharedPreferences("plansguru_prefs", Context.MODE_PRIVATE)
-        val httpUrl = prefs.getString("server_url", "https://smart-lizards-nail.loca.lt")?.trimEnd('/') ?: "https://smart-lizards-nail.loca.lt"
+        val httpUrl = prefs.getString("server_url", "https://fluffy-snakes-warn.loca.lt")?.trimEnd('/') ?: "https://fluffy-snakes-warn.loca.lt"
+        val userId = prefs.getString("user_id", "local_user") ?: "local_user"
 
         for (p in participants) {
-            if (p == "local_user") continue
-            val channelTopic = ChannelCryptoHelper.computeChannelTopic("local_user", p)
+            if (p == userId) continue
+            val channelTopic = ChannelCryptoHelper.computeChannelTopic(userId, p)
             val wsUrl = httpUrl.replace("https://", "wss://").replace("http://", "ws://") + "/ws/session/$channelTopic"
+
+            val rawPayload = json.encodeToString(mapOf("groupTitle" to groupTitle, "participants" to participants.joinToString(",")))
+            val encryptedPayload = ChannelCryptoHelper.encrypt(rawPayload, userId, p)
+            val signature = com.plansguru.data.crypto.KeyManager.sign(context, encryptedPayload)
 
             val message = ProtocolMessage(
                 type = "PLAN_REQUEST",
-                senderId = "local_user",
+                senderId = userId,
                 sessionId = channelTopic,
-                payload = json.encodeToString(mapOf("groupTitle" to groupTitle, "participants" to participants.joinToString(","))),
-                signature = "sig_local_user",
+                payload = encryptedPayload,
+                signature = signature,
                 timestamp = System.currentTimeMillis()
             )
 
             val request = Request.Builder()
                 .url(wsUrl)
+                .addHeader("Bypass-Tunnel-Reminder", "true")
                 .addHeader("Bypass-Tunnel-Remainder", "true")
                 .addHeader("ngrok-skip-browser-warning", "true")
                 .addHeader("User-Agent", "PlansGuruApp/1.0")

@@ -16,25 +16,28 @@ class FriendsViewModel(application: Application) : AndroidViewModel(application)
     private val _friendsState = MutableStateFlow<List<Relationship>>(emptyList())
     val friendsState: StateFlow<List<Relationship>> = _friendsState.asStateFlow()
 
+    private val localUserId: String
+        get() = getApplication<Application>().getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE).getString("user_id", "local_user") ?: "local_user"
+
     init {
         loadFriends()
     }
 
     fun loadFriends() {
         viewModelScope.launch {
-            // For POC, load relationships for local_user
+            // For POC, load relationships for localUserId
             // In full app, queried from SQLCipher
             _friendsState.value = listOf(
-                Relationship("local_user", "friend_mike", "FRIEND", "VERIFIED", "ALL"),
-                Relationship("local_user", "friend_sarah", "FRIEND", "VERIFIED", "ALL"),
-                Relationship("local_user", "friend_jen", "FRIEND", "VERIFIED", "ALL")
+                Relationship(localUserId, "friend_mike", "FRIEND", "VERIFIED", "ALL"),
+                Relationship(localUserId, "friend_sarah", "FRIEND", "VERIFIED", "ALL"),
+                Relationship(localUserId, "friend_jen", "FRIEND", "VERIFIED", "ALL")
             )
         }
     }
 
     fun addFriend(friendName: String) {
         val rel = Relationship(
-            ownerId = "local_user",
+            ownerId = localUserId,
             relatedPersonId = "friend_${System.currentTimeMillis()}",
             relationshipType = "FRIEND",
             trustState = "VERIFIED",

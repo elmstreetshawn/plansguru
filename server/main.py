@@ -6,7 +6,7 @@ import time
 import uuid
 import os
 
-app = FastAPI(title="PlansGuru Relay & Distribution Server", version="1.0.0")
+app = FastAPI(title="PlansGuru Relay & Distribution Server", version="1.2.0")
 
 # In-memory storage with ephemeral expiration (No persistent DB)
 active_sessions: Dict[str, Set[WebSocket]] = {}
@@ -51,11 +51,11 @@ def landing_page():
             <h1>🌮 PlansGuru</h1>
             <p>Privacy-First On-Device AI Dinner Coordination & Encrypted Social Graph for Greater Austin, TX.</p>
 
-            <a href="/api/apk/download" class="btn">📲 Download PlansGuru APK (v1.1.1)</a>
+            <a href="/api/apk/download" class="btn">📲 Download PlansGuru APK (v1.2.0)</a>
             <a href="/api/model/gemma" class="btn" style="background: #E8DEF8; color: #1D192B;">🤖 Download Gemma 3 Model (584 MB)</a>
 
             <div class="badge">
-                ⚡ Version 1.1.1 (Build 12) • Server Online
+                ⚡ Version 1.2.0 (Build 15) • Server Online
             </div>
         </div>
     </body>

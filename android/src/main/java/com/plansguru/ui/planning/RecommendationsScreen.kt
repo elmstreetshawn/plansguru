@@ -15,6 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.plansguru.agent.NegotiationEngine
+import com.plansguru.data.crypto.ChannelCryptoHelper
+import com.plansguru.data.crypto.KeyManager
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -29,13 +31,19 @@ data class PlanChatMessage(
 @Composable
 fun RecommendationsScreen(
     viewModel: PlanningViewModel,
+    planId: String = "group_discussion_session",
+    groupTitle: String = "Dinner Plan",
     onFinish: () -> Unit
 ) {
     val recommendations by viewModel.recommendations.collectAsState()
     val context = LocalContext.current
     val repository = remember { com.plansguru.data.repository.GraphRepository(context) }
-    val myName = remember { repository.getPerson("local_user")?.displayName?.takeIf { it.isNotBlank() && it != "local_user" } ?: "Me" }
-    val syncClient = remember { com.plansguru.data.sync.EncryptedSyncClient(context, "group_discussion_session") }
+    val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
+    val localUserId = prefs.getString("user_id", "local_user") ?: "local_user"
+    val myName = remember { repository.getPerson(localUserId)?.displayName?.takeIf { it.isNotBlank() && it != localUserId } ?: "Me" }
+    
+    val sessionId = if (planId == "group_discussion_session") "group_discussion_session" else "session_$planId"
+    val syncClient = remember { com.plansguru.data.sync.EncryptedSyncClient(context, sessionId) }
 
     val chatMessages = remember { mutableStateListOf<PlanChatMessage>() }
     var inputMessage by remember { mutableStateOf("") }
@@ -46,7 +54,8 @@ fun RecommendationsScreen(
                 val jsonParser = Json { ignoreUnknownKeys = true }
                 val msg = jsonParser.decodeFromString<com.plansguru.data.model.ProtocolMessage>(text)
                 if (msg.type == "CHAT_MESSAGE") {
-                    val payload = jsonParser.decodeFromString<Map<String, String>>(msg.payload)
+                    val decryptedPayload = ChannelCryptoHelper.decryptSession(msg.payload, sessionId)
+                    val payload = jsonParser.decodeFromString<Map<String, String>>(decryptedPayload)
                     val senderName = payload["sender"] ?: msg.senderId
                     val content = payload["text"] ?: ""
                     if (content.isNotBlank() && senderName != myName) {
@@ -128,6 +137,49 @@ fun RecommendationsScreen(
                 ) {
                     OutlinedButton(
                         onClick = {
+                            val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
+                            val serverUrl = prefs.getString("server_url", "https://fluffy-snakes-warn.loca.lt")?.trimEnd('/') ?: "https://fluffy-snakes-warn.loca.lt"
+                            
+                            var userId = prefs.getString("user_id", null)
+                            if (userId.isNullOrBlank() || userId == "local_user") {
+                                userId = java.util.UUID.randomUUID().toString()
+                                prefs.edit().putString("user_id", userId).apply()
+                            }
+                            var publicKey = prefs.getString("public_key", null)
+                            if (publicKey.isNullOrBlank()) {
+                                val keyPair = com.plansguru.data.crypto.KeyManager.getOrCreateIdentityKeyPair(context)
+                                publicKey = keyPair.public.encoded.joinToString("") { "%02x".format(it) }
+                                prefs.edit().putString("public_key", publicKey).apply()
+                            }
+                            val groupTitle = "Dinner Plan"
+
+                            val deepLink = "$serverUrl/join?inviter=${Uri.encode(userId)}&pubkey=${Uri.encode(publicKey)}&name=${Uri.encode(myName)}&group=${Uri.encode(groupTitle)}"
+
+                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_SUBJECT, "Join my PlansGuru Dinner Plan")
+                                putExtra(Intent.EXTRA_TEXT, "Hey! Join my PlansGuru dinner plan '$groupTitle' at ${topRec.restaurant.name}! Tap here: $deepLink")
+                            }
+                            val chooser = Intent.createChooser(shareIntent, "Share Plan Link via Messenger / SMS")
+                            try {
+                                context.startActivity(chooser)
+                            } catch (_: Exception) {}
+                        },
+                        modifier = Modifier.weight(1f),
+                        shape = CircleShape
+                    ) {
+                        Text("💬 Share via SMS")
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = {
                             val intent = Intent(Intent.ACTION_VIEW).apply {
                                 data = Uri.parse("geo:0,0?q=${Uri.encode(topRec.restaurant.name + ", " + topRec.restaurant.location)}")
                             }
@@ -200,12 +252,15 @@ fun RecommendationsScreen(
                             chatMessages.add(PlanChatMessage(System.currentTimeMillis().toString(), myName, txt, System.currentTimeMillis()))
 
                             val jsonParser = Json { ignoreUnknownKeys = true }
+                            val rawPayload = jsonParser.encodeToString(mapOf("sender" to myName, "text" to txt))
+                            val encryptedPayload = ChannelCryptoHelper.encryptSession(rawPayload, sessionId)
+                            val signature = KeyManager.sign(context, encryptedPayload)
                             val protoMsg = com.plansguru.data.model.ProtocolMessage(
                                 type = "CHAT_MESSAGE",
-                                senderId = myName,
-                                sessionId = "group_discussion_session",
-                                payload = jsonParser.encodeToString(mapOf("sender" to myName, "text" to txt)),
-                                signature = "msg_${System.currentTimeMillis()}",
+                                senderId = localUserId,
+                                sessionId = sessionId,
+                                payload = encryptedPayload,
+                                signature = signature,
                                 timestamp = System.currentTimeMillis()
                             )
                             syncClient.sendEncryptedPayload(jsonParser.encodeToString(protoMsg))

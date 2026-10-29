@@ -30,8 +30,8 @@ class ServerApiClient(private val context: Context) {
 
     private fun getServerUrl(): String {
         val prefs = context.getSharedPreferences("plansguru_prefs", Context.MODE_PRIVATE)
-        return prefs.getString("server_url", "https://smart-lizards-nail.loca.lt")?.trimEnd('/')
-            ?: "https://smart-lizards-nail.loca.lt"
+        return prefs.getString("server_url", "https://fluffy-snakes-warn.loca.lt")?.trimEnd('/')
+            ?: "https://fluffy-snakes-warn.loca.lt"
     }
 
     suspend fun registerUser(userId: String, publicKey: String, displayName: String): Result<RegisterUserResponse> {
@@ -44,6 +44,10 @@ class ServerApiClient(private val context: Context) {
                 .url("${getServerUrl()}/api/register")
                 .post(requestBody)
                 .addHeader("Content-Type", "application/json")
+                .addHeader("Bypass-Tunnel-Reminder", "true")
+                .addHeader("Bypass-Tunnel-Remainder", "true")
+                .addHeader("ngrok-skip-browser-warning", "true")
+                .addHeader("User-Agent", "PlansGuruApp/1.0")
                 .build()
 
             val response = client.newCall(httpRequest).execute()
@@ -69,6 +73,10 @@ class ServerApiClient(private val context: Context) {
             val httpRequest = Request.Builder()
                 .url("${getServerUrl()}/api/users/$userId/publickey")
                 .get()
+                .addHeader("Bypass-Tunnel-Reminder", "true")
+                .addHeader("Bypass-Tunnel-Remainder", "true")
+                .addHeader("ngrok-skip-browser-warning", "true")
+                .addHeader("User-Agent", "PlansGuruApp/1.0")
                 .build()
 
             val response = client.newCall(httpRequest).execute()

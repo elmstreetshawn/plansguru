@@ -20,9 +20,9 @@ fun WelcomeScreen(
 ) {
     val context = LocalContext.current
     val mascotBitmap = rememberAssetImage("mascot_hero.png")
-    val profileViewModel: androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner = androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner.current
     var showingNameInput by remember { mutableStateOf(false) }
     var displayName by remember { mutableStateOf("") }
+    val pViewModel: com.plansguru.ui.profile.ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -52,8 +52,6 @@ fun WelcomeScreen(
                 Button(
                     enabled = displayName.isNotBlank(),
                     onClick = {
-                        val pViewModel: com.plansguru.ui.profile.ProfileViewModel =
-                            androidx.lifecycle.viewmodel.compose.viewModel(profileViewModel!!)
                         pViewModel.registerNewUser(displayName)
                         val prefs = context.getSharedPreferences("plansguru_prefs", Context.MODE_PRIVATE)
                         prefs.edit().putBoolean("welcomed", true).apply()

@@ -24,7 +24,9 @@ class ProfileViewModel(application: Application) : AndroidViewModel(application)
     val registrationState: StateFlow<RegistrationState> = _registrationState.asStateFlow()
 
     init {
-        loadProfile("local_user")
+        val prefs = application.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
+        val userId = prefs.getString("user_id", "local_user") ?: "local_user"
+        loadProfile(userId)
     }
 
     fun loadProfile(personId: String) {
