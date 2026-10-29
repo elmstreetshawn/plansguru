@@ -211,7 +211,7 @@ fun RecommendationsScreen(
                     OutlinedButton(
                         onClick = {
                             val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
-                            val serverUrl = prefs.getString("server_url", "https://fluffy-snakes-warn.loca.lt")?.trimEnd('/') ?: "https://fluffy-snakes-warn.loca.lt"
+                            val serverUrl = prefs.getString("server_url", "https://petite-cougars-like.loca.lt")?.trimEnd('/') ?: "https://petite-cougars-like.loca.lt"
                             
                             var userId = prefs.getString("user_id", null)
                             if (userId.isNullOrBlank() || userId == "local_user") {

@@ -18,7 +18,7 @@ class EncryptedSyncClient(
 
     fun connect(onMessageReceived: (String) -> Unit = {}) {
         val prefs = context.getSharedPreferences("plansguru_prefs", Context.MODE_PRIVATE)
-        val httpUrl = prefs.getString("server_url", "https://fluffy-snakes-warn.loca.lt")?.trimEnd('/') ?: "https://fluffy-snakes-warn.loca.lt"
+        val httpUrl = prefs.getString("server_url", "https://petite-cougars-like.loca.lt")?.trimEnd('/') ?: "https://petite-cougars-like.loca.lt"
         val wsUrl = httpUrl.replace("https://", "wss://").replace("http://", "ws://") + "/ws/session/$sessionId"
 
         Log.d("EncryptedSyncClient", "Connecting WebSocket relay to: $wsUrl")
@@ -49,7 +49,7 @@ class EncryptedSyncClient(
 
     fun listenOnFriendChannels(friendsList: List<String>, onProtocolMessageReceived: (ProtocolMessage) -> Unit) {
         val prefs = context.getSharedPreferences("plansguru_prefs", Context.MODE_PRIVATE)
-        val httpUrl = prefs.getString("server_url", "https://fluffy-snakes-warn.loca.lt")?.trimEnd('/') ?: "https://fluffy-snakes-warn.loca.lt"
+        val httpUrl = prefs.getString("server_url", "https://petite-cougars-like.loca.lt")?.trimEnd('/') ?: "https://petite-cougars-like.loca.lt"
         val userId = prefs.getString("user_id", "local_user") ?: "local_user"
 
         for (friend in friendsList) {
@@ -83,7 +83,7 @@ class EncryptedSyncClient(
 
     fun broadcastPlanRequest(groupTitle: String, participants: List<String>) {
         val prefs = context.getSharedPreferences("plansguru_prefs", Context.MODE_PRIVATE)
-        val httpUrl = prefs.getString("server_url", "https://fluffy-snakes-warn.loca.lt")?.trimEnd('/') ?: "https://fluffy-snakes-warn.loca.lt"
+        val httpUrl = prefs.getString("server_url", "https://petite-cougars-like.loca.lt")?.trimEnd('/') ?: "https://petite-cougars-like.loca.lt"
         val userId = prefs.getString("user_id", "local_user") ?: "local_user"
 
         for (p in participants) {
