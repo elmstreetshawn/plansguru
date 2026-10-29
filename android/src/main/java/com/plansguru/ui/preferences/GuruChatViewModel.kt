@@ -100,7 +100,12 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
             if (pendingFriendName != null) {
                 if (lower.contains("yes") || lower.contains("sure") || lower.contains("create") || text.length > 2) {
                     val friendName = pendingFriendName!!
-                    val fullName = if (text.lowercase().contains(friendName.lowercase())) text else "$friendName $text"
+                    val cleanInput = text.trim()
+                    val fullName = if (cleanInput.length > 2 && !cleanInput.equals("yes", ignoreCase = true) && !cleanInput.equals("sure", ignoreCase = true) && !cleanInput.equals("create", ignoreCase = true) && !cleanInput.equals("yep", ignoreCase = true) && !cleanInput.equals("yeah", ignoreCase = true)) {
+                        if (cleanInput.lowercase().contains(friendName.lowercase())) cleanInput else "$friendName $cleanInput"
+                    } else {
+                        friendName
+                    }
 
                     repository.savePerson(
                         Person(
