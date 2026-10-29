@@ -150,7 +150,7 @@ fun PeopleScreen(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("People", style = MaterialTheme.typography.headlineMedium)
                         Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
-                            Text("v1.2.5", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
+                            Text("v1.2.6", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 },
@@ -277,7 +277,7 @@ fun PeopleScreen(
                     }
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Create Profile using Guru", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
-                        Text("Interactive 5-step guided setup with your on-device AI", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f))
+                        Text("Interactive 7-step guided setup with your on-device AI", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f))
                     }
                     Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondary) {
                         Text("Guided Setup", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), color = MaterialTheme.colorScheme.onSecondary)

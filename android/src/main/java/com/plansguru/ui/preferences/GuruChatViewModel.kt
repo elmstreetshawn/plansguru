@@ -12,8 +12,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.util.UUID
 
+@Serializable
 data class ChatMessage(
     val id: String,
     val text: String,
@@ -40,6 +44,17 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
     val messages: StateFlow<List<ChatMessage>> = _messages.asStateFlow()
 
     init {
+        val history = loadHistory()
+        if (history.isNotEmpty()) {
+            _messages.value = history
+        }
+
+        viewModelScope.launch {
+            _messages.collect { msgs ->
+                saveHistory(msgs)
+            }
+        }
+
         viewModelScope.launch {
             if (!chatEngine.isModelLoaded) {
                 val statusMsgId = UUID.randomUUID().toString()
@@ -251,7 +266,7 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
         _messages.value = _messages.value + userMsg
 
         viewModelScope.launch {
-            val (_, assertions) = chatEngine.generateStructuredResponse(text)
+            val assertions = chatEngine.parseLlmSemanticOutput(text)
 
             for (sa in assertions) {
                 val finalSubj = wizardSubject
@@ -293,12 +308,36 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
                 else -> {
                     wizardStep = 0
                     val targetName = if (wizardSubject == localUserId) "Your" else "$wizardSubject's"
-                    "✨ $targetName profile setup is complete! All preferences (cuisines, dietary restrictions, budget, preferred dining times, drive radius, and vibe) have been structured and saved into your encrypted social graph database."
+                    "✨ $targetName profile setup is complete! All preferences (cuisines, dietary restrictions, budget, preferred dining times, drive radius, and vibe) have been saved privately on your phone."
                 }
             }
 
             val botMsg = ChatMessage(UUID.randomUUID().toString(), nextPrompt, false)
             _messages.value = _messages.value + botMsg
+        }
+    }
+
+    private fun saveHistory(list: List<ChatMessage>) {
+        try {
+            val json = Json { ignoreUnknownKeys = true }
+            val cleanList = list.filter { !it.text.contains("Checking on-device") && !it.text.contains("Downloaded") }.takeLast(40)
+            val prefs = getApplication<Application>().getSharedPreferences("plansguru_chat_history", android.content.Context.MODE_PRIVATE)
+            prefs.edit().putString("chat_json", json.encodeToString(cleanList)).apply()
+        } catch (_: Exception) {}
+    }
+
+    private fun loadHistory(): List<ChatMessage> {
+        return try {
+            val prefs = getApplication<Application>().getSharedPreferences("plansguru_chat_history", android.content.Context.MODE_PRIVATE)
+            val jsonStr = prefs.getString("chat_json", null)
+            if (!jsonStr.isNullOrBlank()) {
+                val json = Json { ignoreUnknownKeys = true }
+                json.decodeFromString<List<ChatMessage>>(jsonStr)
+            } else {
+                emptyList()
+            }
+        } catch (_: Exception) {
+            emptyList()
         }
     }
 }

@@ -303,7 +303,7 @@ class GuruChatEngine(private val context: Context) {
         return if (sb.isEmpty()) "No preferences logged in social graph yet." else sb.toString().trim()
     }
 
-    private fun parseLlmSemanticOutput(userMessage: String, defaultSubject: String = localUserId): List<StructuredAssertion> {
+    fun parseLlmSemanticOutput(userMessage: String, defaultSubject: String = localUserId): List<StructuredAssertion> {
         val results = mutableListOf<StructuredAssertion>()
         val globalSubject = extractSubjectFromText(userMessage)
 
