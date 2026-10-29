@@ -80,6 +80,7 @@ dependencies {
     // Security
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
     implementation("androidx.sqlite:sqlite-ktx:2.4.0")
+    implementation("net.zetetic:android-database-sqlcipher:4.5.4")
 
     // Network (OkHttp)
     implementation("com.squareup.okhttp3:okhttp:4.12.0")

@@ -1,10 +1,15 @@
 package com.plansguru.data.db
 
 import android.content.Context
-import android.database.sqlite.SQLiteDatabase
-import android.database.sqlite.SQLiteOpenHelper
+import net.sqlcipher.database.SQLiteDatabase
+import net.sqlcipher.database.SQLiteOpenHelper
+import com.plansguru.data.crypto.KeyManager
 
 class EncryptedGraphDatabase(private val context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+
+    init {
+        SQLiteDatabase.loadLibs(context)
+    }
 
     companion object {
         private const val DATABASE_NAME = "plansguru_secure.db"
@@ -18,7 +23,7 @@ class EncryptedGraphDatabase(private val context: Context) : SQLiteOpenHelper(co
                 displayName TEXT NOT NULL,
                 publicIdentityKey TEXT NOT NULL,
                 creationTimestamp INTEGER NOT NULL,
-                locationZip TEXT DEFAULT '90210'
+                locationZip TEXT
             )
         """)
 
@@ -66,7 +71,7 @@ class EncryptedGraphDatabase(private val context: Context) : SQLiteOpenHelper(co
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         if (oldVersion < 2) {
             try {
-                db.execSQL("ALTER TABLE persons ADD COLUMN locationZip TEXT DEFAULT '90210'")
+                db.execSQL("ALTER TABLE persons ADD COLUMN locationZip TEXT")
             } catch (_: Exception) {}
         }
         if (oldVersion < 3) {
@@ -89,10 +94,22 @@ class EncryptedGraphDatabase(private val context: Context) : SQLiteOpenHelper(co
     }
 
     fun getWritableEncryptedDatabase(): SQLiteDatabase {
-        return super.getWritableDatabase()
+        val passphrase = KeyManager.getSqlCipherPassphrase(context)
+        return try {
+            getWritableDatabase(passphrase)
+        } catch (e: Exception) {
+            context.deleteDatabase(DATABASE_NAME)
+            getWritableDatabase(passphrase)
+        }
     }
 
     fun getReadableEncryptedDatabase(): SQLiteDatabase {
-        return super.getReadableDatabase()
+        val passphrase = KeyManager.getSqlCipherPassphrase(context)
+        return try {
+            getReadableDatabase(passphrase)
+        } catch (e: Exception) {
+            context.deleteDatabase(DATABASE_NAME)
+            getReadableDatabase(passphrase)
+        }
     }
 }

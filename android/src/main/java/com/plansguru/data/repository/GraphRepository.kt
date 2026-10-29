@@ -2,7 +2,7 @@ package com.plansguru.data.repository
 
 import android.content.ContentValues
 import android.content.Context
-import android.database.sqlite.SQLiteDatabase
+import net.sqlcipher.database.SQLiteDatabase
 import com.plansguru.data.db.EncryptedGraphDatabase
 import com.plansguru.data.model.Assertion
 import com.plansguru.data.model.Person
