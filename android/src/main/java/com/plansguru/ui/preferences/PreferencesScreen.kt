@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
@@ -114,8 +115,8 @@ fun PreferencesScreen(
                     Tab(
                         selected = selectedTab == 2,
                         onClick = { selectedTab = 2 },
-                        icon = { Icon(Icons.Default.Star, contentDescription = null) },
-                        text = { Text("Tags & Taxonomy") }
+                        icon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                        text = { Text("Circles & Tags") }
                     )
                     Tab(
                         selected = selectedTab == 3,
