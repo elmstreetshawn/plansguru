@@ -51,6 +51,19 @@ fun MainScreen(
     var showGlobalChatSheet by remember { mutableStateOf(initialShowChat) }
     val context = androidx.compose.ui.platform.LocalContext.current
 
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    androidx.activity.compose.BackHandler(enabled = currentRoute != BottomTab.People.route && currentRoute != null) {
+        navController.navigate(BottomTab.People.route) {
+            popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+            }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
     LaunchedEffect(Unit) {
         val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
         if (prefs.getBoolean("pending_navigate_to_plans", false)) {
@@ -107,12 +120,14 @@ fun MainScreen(
                         val membersParam = members.joinToString(",")
                         navController.navigate("group_setup?members=$membersParam")
                     },
-                    onOpenGuruChat = { showGlobalChatSheet = true }
+                    onOpenGuruChat = { showGlobalChatSheet = true },
+                    onOpenSettings = { navController.navigate("settings") }
                 )
             }
             composable(BottomTab.Places.route) {
                 PlacesScreen(
-                    onOpenGuruChat = { showGlobalChatSheet = true }
+                    onOpenGuruChat = { showGlobalChatSheet = true },
+                    onOpenSettings = { navController.navigate("settings") }
                 )
             }
             composable("group_setup?members={members}") { backStackEntry ->
@@ -154,7 +169,14 @@ fun MainScreen(
                     onOpenPlanChat = { planId, title ->
                         navController.navigate("recommendations?planId=$planId&title=$title")
                     },
-                    onOpenGuruChat = { showGlobalChatSheet = true }
+                    onOpenGuruChat = { showGlobalChatSheet = true },
+                    onOpenSettings = { navController.navigate("settings") }
+                )
+            }
+            composable("settings") {
+                com.plansguru.ui.settings.SettingsScreen(
+                    onBack = { navController.popBackStack() },
+                    onNavigateChat = { showGlobalChatSheet = true }
                 )
             }
             composable("recommendations?planId={planId}&title={title}") { backStackEntry ->

@@ -113,7 +113,8 @@ data class RestaurantDatasetRoot(
 @Composable
 fun PlacesScreen(
     viewModel: PlacesViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
-    onOpenGuruChat: () -> Unit = {}
+    onOpenGuruChat: () -> Unit = {},
+    onOpenSettings: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val repository = remember { GraphRepository(context) }
@@ -165,12 +166,12 @@ fun PlacesScreen(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Places", style = MaterialTheme.typography.headlineMedium)
                         Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
-                            Text("v1.2.0", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
+                            Text("v1.2.3", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 },
                 actions = {
-                    com.plansguru.ui.common.GuruTopBarAction(onOpenGuruChat)
+                    com.plansguru.ui.common.GuruTopBarAction(onOpenGuruChat, onOpenSettings)
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,

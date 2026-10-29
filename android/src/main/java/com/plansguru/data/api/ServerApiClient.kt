@@ -30,8 +30,8 @@ class ServerApiClient(private val context: Context) {
 
     private fun getServerUrl(): String {
         val prefs = context.getSharedPreferences("plansguru_prefs", Context.MODE_PRIVATE)
-        return prefs.getString("server_url", "https://fluffy-snakes-warn.loca.lt")?.trimEnd('/')
-            ?: "https://fluffy-snakes-warn.loca.lt"
+        return prefs.getString("server_url", "https://plansguru-austin.loca.lt")?.trimEnd('/')
+            ?: "https://plansguru-austin.loca.lt"
     }
 
     suspend fun registerUser(userId: String, publicKey: String, displayName: String): Result<RegisterUserResponse> {

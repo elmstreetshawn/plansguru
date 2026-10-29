@@ -72,7 +72,8 @@ fun fetchDeviceContacts(context: android.content.Context): List<ContactEntry> {
 @Composable
 fun PeopleScreen(
     onProceedToGroup: (List<String>) -> Unit,
-    onOpenGuruChat: () -> Unit = {}
+    onOpenGuruChat: () -> Unit = {},
+    onOpenSettings: () -> Unit = {}
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var showAddDialog by remember { mutableStateOf(false) }
@@ -88,7 +89,7 @@ fun PeopleScreen(
     var myPersonState by remember { mutableStateOf(repository.getPerson(localUserId)) }
     val myName = myPersonState?.displayName?.takeIf { it.isNotBlank() && it != localUserId } ?: "Me"
     val rawZip = myPersonState?.locationZip
-    val myZip = if (!rawZip.isNullOrBlank() && rawZip != "78626" && rawZip != "90210") rawZip else null
+    val myZip = rawZip?.takeIf { it.isNotBlank() }
     val zipDisplay = if (myZip != null) "📍 Zip: $myZip • Encrypted Profile" else "📍 Zip not set • Encrypted Profile"
     var showEditMyProfileDialog by remember { mutableStateOf(false) }
 
@@ -147,12 +148,12 @@ fun PeopleScreen(
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("People", style = MaterialTheme.typography.headlineMedium)
                         Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer) {
-                            Text("v1.2.0", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
+                            Text("v1.2.3", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 },
                 actions = {
-                    com.plansguru.ui.common.GuruTopBarAction(onOpenGuruChat)
+                    com.plansguru.ui.common.GuruTopBarAction(onOpenGuruChat, onOpenSettings)
                 }
             )
         },
@@ -406,9 +407,22 @@ fun PeopleScreen(
                                 onClick = {
                                     showContextMenu = false
                                     val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
-                                    val serverUrl = prefs.getString("server_url", "https://fluffy-snakes-warn.loca.lt")?.trimEnd('/') ?: "https://fluffy-snakes-warn.loca.lt"
-                                    val userId = prefs.getString("user_id", "local_user") ?: "local_user"
-                                    val deepLink = "$serverUrl/join?inviter=$userId"
+                                    val serverUrl = prefs.getString("server_url", "https://plansguru-austin.loca.lt")?.trimEnd('/') ?: "https://plansguru-austin.loca.lt"
+                                    
+                                    var userId = prefs.getString("user_id", null)
+                                    if (userId.isNullOrBlank() || userId == "local_user") {
+                                        userId = java.util.UUID.randomUUID().toString()
+                                        prefs.edit().putString("user_id", userId).apply()
+                                    }
+                                    var publicKey = prefs.getString("public_key", null)
+                                    if (publicKey.isNullOrBlank()) {
+                                        val keyPair = com.plansguru.data.crypto.KeyManager.getOrCreateIdentityKeyPair(context)
+                                        publicKey = keyPair.public.encoded.joinToString("") { "%02x".format(it) }
+                                        prefs.edit().putString("public_key", publicKey).apply()
+                                    }
+                                    val userDisplayName = repository.getPerson(userId)?.displayName?.takeIf { it.isNotBlank() && it != userId } ?: "Me"
+
+                                    val deepLink = "$serverUrl/join?inviter=${java.net.URLEncoder.encode(userId, "UTF-8")}&pubkey=${java.net.URLEncoder.encode(publicKey, "UTF-8")}&name=${java.net.URLEncoder.encode(userDisplayName, "UTF-8")}"
                                     val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                                         type = "text/plain"
                                         putExtra(android.content.Intent.EXTRA_TEXT, "Connect with me on PlansGuru: $deepLink")
@@ -600,36 +614,60 @@ fun PeopleScreen(
             onDismissRequest = { showQrScannerDialog = false },
             onQrCodeScanned = { scannedUri ->
                 val uri = android.net.Uri.parse(scannedUri)
-                val inviter = uri.getQueryParameter("inviter") ?: uri.getQueryParameter("coordinator") ?: "Scanned Friend"
-                val initials = inviter.take(2).uppercase()
-                if (friends.none { f -> f.name.equals(inviter, ignoreCase = true) }) {
+                val inviterId = uri.getQueryParameter("inviter")
+                val inviterPubKey = uri.getQueryParameter("pubkey")
+                val friendName = uri.getQueryParameter("name") ?: inviterId ?: "Scanned Friend"
+                val personId = inviterId ?: "qr_${System.currentTimeMillis()}"
+
+                if (friends.none { f -> f.name.equals(friendName, ignoreCase = true) }) {
                     friends.add(
                         FriendItem(
-                            id = "qr_${System.currentTimeMillis()}",
-                            name = inviter,
-                            initials = initials,
+                            id = personId,
+                            name = friendName,
+                            initials = friendName.take(2).uppercase(),
                             tags = listOf("QR Scan", "Encrypted Graph"),
                             isSelected = false
                         )
                     )
                     repository.savePerson(
                         com.plansguru.data.model.Person(
-                            localPersonId = inviter,
-                            displayName = inviter,
-                            publicIdentityKey = "pub_key_$inviter",
+                            localPersonId = personId,
+                            displayName = friendName,
+                            publicIdentityKey = inviterPubKey ?: "pub_key_$friendName",
                             creationTimestamp = System.currentTimeMillis()
                         )
                     )
-                    android.widget.Toast.makeText(context, "✨ Connected with $inviter via QR Scan!", android.widget.Toast.LENGTH_SHORT).show()
+                    repository.saveRelationship(
+                        com.plansguru.data.model.Relationship(
+                            ownerId = localUserId,
+                            relatedPersonId = personId,
+                            relationshipType = "FRIEND",
+                            trustState = "VERIFIED",
+                            sharingPermissions = "ALL"
+                        )
+                    )
+                    android.widget.Toast.makeText(context, "✨ Connected with $friendName via QR Scan!", android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
         )
     }
 
     if (showMyQrDialog) {
-        val userId = prefs.getString("user_id", "local_user") ?: "local_user"
-        val publicKey = prefs.getString("public_key", "pub_key_local_user") ?: "pub_key_local_user"
-        val inviteLink = "https://plansguru.app/join?inviter=Me&pubkey=$publicKey&userid=$userId"
+        val serverUrl = prefs.getString("server_url", "https://fluffy-snakes-warn.loca.lt")?.trimEnd('/') ?: "https://fluffy-snakes-warn.loca.lt"
+        var userId = prefs.getString("user_id", null)
+        if (userId.isNullOrBlank() || userId == "local_user") {
+            userId = java.util.UUID.randomUUID().toString()
+            prefs.edit().putString("user_id", userId).apply()
+        }
+        var publicKey = prefs.getString("public_key", null)
+        if (publicKey.isNullOrBlank()) {
+            val keyPair = com.plansguru.data.crypto.KeyManager.getOrCreateIdentityKeyPair(context)
+            publicKey = keyPair.public.encoded.joinToString("") { "%02x".format(it) }
+            prefs.edit().putString("public_key", publicKey).apply()
+        }
+        val userDisplayName = repository.getPerson(userId)?.displayName?.takeIf { it.isNotBlank() && it != userId } ?: "Me"
+
+        val inviteLink = "$serverUrl/join?inviter=${java.net.URLEncoder.encode(userId, "UTF-8")}&pubkey=${java.net.URLEncoder.encode(publicKey, "UTF-8")}&name=${java.net.URLEncoder.encode(userDisplayName, "UTF-8")}"
         val qrBitmap = remember(inviteLink) { com.plansguru.ui.common.QrCodeHelper.generateQrCodeBitmap(inviteLink) }
 
         AlertDialog(
@@ -808,6 +846,7 @@ fun PersonProfileAndPreferencesDialog(
         "likes_cuisine" to "🍕 Likes Cuisine",
         "dislikes_cuisine" to "🚫 Dislikes Cuisine",
         "dietary_restriction" to "🥗 Dietary / Allergy",
+        "budget" to "💰 Budget / Price ($ - $$$$)",
         "max_travel_time" to "🚗 Travel Distance / Drive",
         "noise_preference" to "🤫 Noise / Crowd Level",
         "locationZip" to "📍 Zip Code"
@@ -817,10 +856,11 @@ fun PersonProfileAndPreferencesDialog(
         "likes_cuisine" -> listOf("Italian", "Mexican", "Sushi", "Thai", "Pizza", "BBQ", "Japanese", "Chinese")
         "dislikes_cuisine" -> listOf("Spicy", "Fast Food", "Seafood", "Indian", "BBQ")
         "dietary_restriction" -> listOf("Vegan", "Gluten-Free", "Vegetarian", "Dairy-Free", "Halal", "Kosher", "Peanut Allergy")
+        "budget" -> listOf("$ (Cheap / Under $15)", "$$ (Moderate / $15-$30)", "$$$ (Fine Dining)", "$$$$ (Luxury)")
         "max_travel_time" -> listOf("10 min", "15 min", "20 min", "30 min")
         "noise_preference" -> listOf("Quiet / Low Crowds", "Moderate", "Vibrant / Loud")
         "locationZip" -> listOf("78626", "78681", "78701", "78704", "78652", "78748")
-        else -> listOf("Italian", "Vegan", "15 min")
+        else -> listOf("Italian", "Vegan", "$ (Cheap / Under $15)")
     }
 
     AlertDialog(
@@ -831,6 +871,49 @@ fun PersonProfileAndPreferencesDialog(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.verticalScroll(rememberScrollState())
             ) {
+                if (!isLocalUser) {
+                    var assignedCircle by remember {
+                        val rel = repository.getRelationship(localUserId, personId)
+                        mutableStateOf(rel?.relationshipType ?: "Circle 1")
+                    }
+
+                    Text("Assign Dining Circle / Privacy Level:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        FilterChip(
+                            selected = assignedCircle == "Circle 1",
+                            onClick = {
+                                assignedCircle = "Circle 1"
+                                repository.saveRelationship(com.plansguru.data.model.Relationship(localUserId, personId, "Circle 1", "VERIFIED", "ALL"))
+                                onPersonUpdated(currentDisplayName)
+                            },
+                            label = { Text("Circle 1") }
+                        )
+                        FilterChip(
+                            selected = assignedCircle == "Circle 2",
+                            onClick = {
+                                assignedCircle = "Circle 2"
+                                repository.saveRelationship(com.plansguru.data.model.Relationship(localUserId, personId, "Circle 2", "VERIFIED", "ALL"))
+                                onPersonUpdated(currentDisplayName)
+                            },
+                            label = { Text("Circle 2") }
+                        )
+                        FilterChip(
+                            selected = assignedCircle == "Work Circle",
+                            onClick = {
+                                assignedCircle = "Work Circle"
+                                repository.saveRelationship(com.plansguru.data.model.Relationship(localUserId, personId, "Work Circle", "VERIFIED", "ALL"))
+                                onPersonUpdated(currentDisplayName)
+                            },
+                            label = { Text("Work Circle") }
+                        )
+                    }
+
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                }
+
                 Text("Edit Display Name:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -967,6 +1050,7 @@ fun PersonProfileAndPreferencesDialog(
                         )
                         friendAssertions = repository.getAssertionsForSubject(personId)
                         customValueInput = ""
+                        onPersonUpdated(nameInput.trim().ifEmpty { currentDisplayName })
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {

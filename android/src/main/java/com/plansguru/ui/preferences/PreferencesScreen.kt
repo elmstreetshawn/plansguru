@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
@@ -85,7 +86,7 @@ fun PreferencesScreen(
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text("Preferences Hub", style = MaterialTheme.typography.titleLarge)
                             Surface(shape = CircleShape, color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f)) {
-                                Text("v1.2.0 (Build 15)", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.onPrimaryContainer)
+                                Text("v1.2.3 (Build 18)", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.onPrimaryContainer)
                             }
                         }
                     },
@@ -114,8 +115,8 @@ fun PreferencesScreen(
                     Tab(
                         selected = selectedTab == 2,
                         onClick = { selectedTab = 2 },
-                        icon = { Icon(Icons.Default.Star, contentDescription = null) },
-                        text = { Text("Tags & Taxonomy") }
+                        icon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                        text = { Text("Circles & Tags") }
                     )
                     Tab(
                         selected = selectedTab == 3,
@@ -167,7 +168,7 @@ fun PreferencesScreen(
                         ) {
                             val subjects = listOf(localUserId) + allPersons.map { it.localPersonId }
                             items(subjects.distinct()) { subj ->
-                                val assertions = allAssertions.filter { it.subjectId.equals(subj, true) }
+                                val assertions = repository.getAssertionsForSubject(subj).filter { it.predicate != "general_preference" }
                                 val personName = if (subj == localUserId) myDisplayName else allPersons.find { it.localPersonId == subj }?.displayName ?: subj
 
                                 Card(
@@ -254,6 +255,8 @@ fun PreferencesScreen(
                         val targetSubj = targetSubjectForNewAssertion!!
                         val targetName = if (targetSubj == localUserId) "You (Local User)" else allPersons.find { it.localPersonId == targetSubj }?.displayName ?: targetSubj
 
+                        var selectedVisibilityPolicy by remember { mutableStateOf("CIRCLE_1") }
+
                         AlertDialog(
                             onDismissRequest = { targetSubjectForNewAssertion = null },
                             title = { Text("Add Preference for $targetName") },
@@ -264,6 +267,7 @@ fun PreferencesScreen(
                                         "likes_cuisine" to "Likes Cuisine",
                                         "dislikes_cuisine" to "Dislikes Cuisine",
                                         "dietary_restriction" to "Dietary Restriction",
+                                        "budget" to "Budget / Price ($ - $$$$)",
                                         "max_travel_time" to "Max Travel Time",
                                         "noise_preference" to "Noise Preference",
                                         "locationZip" to "Zip Code"
@@ -292,6 +296,28 @@ fun PreferencesScreen(
                                         modifier = Modifier.fillMaxWidth(),
                                         singleLine = true
                                     )
+
+                                    Text("Sharing Circle / Privacy Level:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        FilterChip(
+                                            selected = selectedVisibilityPolicy == "CIRCLE_1",
+                                            onClick = { selectedVisibilityPolicy = "CIRCLE_1" },
+                                            label = { Text("Circle 1") }
+                                        )
+                                        FilterChip(
+                                            selected = selectedVisibilityPolicy == "CIRCLE_2",
+                                            onClick = { selectedVisibilityPolicy = "CIRCLE_2" },
+                                            label = { Text("Circle 2") }
+                                        )
+                                        FilterChip(
+                                            selected = selectedVisibilityPolicy == "PRIVATE",
+                                            onClick = { selectedVisibilityPolicy = "PRIVATE" },
+                                            label = { Text("🔒 Private") }
+                                        )
+                                    }
                                 }
                             },
                             confirmButton = {
@@ -310,20 +336,23 @@ fun PreferencesScreen(
                                             repository.savePerson(currentPerson.copy(locationZip = valText))
                                         }
 
-                                        repository.saveAssertion(
-                                            Assertion(
-                                                assertionId = java.util.UUID.randomUUID().toString(),
-                                                observerId = localUserId,
-                                                subjectId = targetSubj,
-                                                predicate = selectedPredicate,
-                                                value = valText,
-                                                source = "MANUAL_UI_CRUD",
-                                                confidence = 1.0f,
-                                                validityTimestampStart = System.currentTimeMillis(),
-                                                validityTimestampEnd = null,
-                                                visibilityPolicy = "PRIVATE"
-                                            )
+                                        val newAssertion = Assertion(
+                                            assertionId = java.util.UUID.randomUUID().toString(),
+                                            observerId = localUserId,
+                                            subjectId = targetSubj,
+                                            predicate = selectedPredicate,
+                                            value = valText,
+                                            source = "MANUAL_UI_CRUD",
+                                            confidence = 1.0f,
+                                            validityTimestampStart = System.currentTimeMillis(),
+                                            validityTimestampEnd = null,
+                                            visibilityPolicy = selectedVisibilityPolicy
                                         )
+                                        repository.saveAssertion(newAssertion)
+
+                                        val syncClient = com.plansguru.data.sync.EncryptedSyncClient(context)
+                                        val friendsList = (repository.getAllPersons().map { it.localPersonId } + repository.getAllPersons().map { it.displayName }).distinct()
+                                        syncClient.broadcastGraphUpdate(friendsList, newAssertion)
 
                                         refreshGraphData()
                                         targetSubjectForNewAssertion = null
@@ -562,6 +591,7 @@ fun PreferencesScreen(
                     val categories = listOf(
                         Triple("Cuisine Affinities", "likes_cuisine", allAssertions.filter { it.predicate.contains("cuisine") }),
                         Triple("Dietary Restrictions", "dietary_restriction", allAssertions.filter { it.predicate.contains("dietary") }),
+                        Triple("Budget & Price Range", "budget", allAssertions.filter { it.predicate == "budget" || it.predicate == "price" }),
                         Triple("Travel Distance", "max_distance", allAssertions.filter { it.predicate == "max_distance" }),
                         Triple("Noise & Crowds", "noise_preference", allAssertions.filter { it.predicate == "noise_preference" })
                     )

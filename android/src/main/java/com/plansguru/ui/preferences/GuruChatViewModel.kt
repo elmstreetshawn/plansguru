@@ -167,20 +167,23 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
                     repository.savePerson(currentMe.copy(locationZip = sa.value))
                 }
 
-                repository.saveAssertion(
-                    Assertion(
-                        assertionId = UUID.randomUUID().toString(),
-                        observerId = localUserId,
-                        subjectId = sa.subject,
-                        predicate = sa.predicate,
-                        value = sa.value,
-                        source = "LLM_STRUCTURED_PARSER",
-                        confidence = sa.confidence,
-                        validityTimestampStart = System.currentTimeMillis(),
-                        validityTimestampEnd = null,
-                        visibilityPolicy = "PRIVATE"
-                    )
+                val newAssertion = Assertion(
+                    assertionId = UUID.randomUUID().toString(),
+                    observerId = localUserId,
+                    subjectId = sa.subject,
+                    predicate = sa.predicate,
+                    value = sa.value,
+                    source = "LLM_STRUCTURED_PARSER",
+                    confidence = sa.confidence,
+                    validityTimestampStart = System.currentTimeMillis(),
+                    validityTimestampEnd = null,
+                    visibilityPolicy = "PRIVATE"
                 )
+                repository.saveAssertion(newAssertion)
+
+                val syncClient = com.plansguru.data.sync.EncryptedSyncClient(getApplication())
+                val friendsList = (repository.getAllPersons().map { it.localPersonId } + repository.getAllPersons().map { it.displayName }).distinct()
+                syncClient.broadcastGraphUpdate(friendsList, newAssertion)
             }
         }
     }

@@ -44,9 +44,22 @@ class MainActivity : ComponentActivity() {
             val inviterId = uri.getQueryParameter("inviter")  // UUID
             val inviterPubKey = uri.getQueryParameter("pubkey")  // Public key
             val group = uri.getQueryParameter("group") ?: "Dinner Plan"
+            val rawPlanId = uri.getQueryParameter("planid")
+            val planDate = uri.getQueryParameter("date") ?: "Active Now"
+            val restaurant = uri.getQueryParameter("restaurant")?.takeIf { it.isNotBlank() } ?: "Suerte"
+            val cuisine = uri.getQueryParameter("cuisine")?.takeIf { it.isNotBlank() } ?: "Interior Mexican"
+            val price = uri.getQueryParameter("price")?.takeIf { it.isNotBlank() } ?: "$$$"
+            val score = uri.getQueryParameter("score")?.takeIf { it.isNotBlank() } ?: "98% Match"
+            val rawParticipants = uri.getQueryParameter("participants")
 
             // Fallback to old format for backwards compatibility
             val displayName = uri.getQueryParameter("name") ?: inviterId ?: "Friend"
+
+            val participantsList = if (!rawParticipants.isNullOrBlank()) {
+                (listOf("Me") + rawParticipants.split(",")).distinct()
+            } else {
+                listOf("Me", displayName)
+            }
 
             try {
                 val repository = GraphRepository(this)
@@ -69,20 +82,31 @@ class MainActivity : ComponentActivity() {
                 )
                 repository.savePerson(person)
 
-                val planId = "plan_dl_${System.currentTimeMillis()}"
+                val prefs = getSharedPreferences("plansguru_prefs", MODE_PRIVATE)
+                val localUserId = prefs.getString("user_id", "local_user") ?: "local_user"
+                repository.saveRelationship(
+                    com.plansguru.data.model.Relationship(
+                        ownerId = localUserId,
+                        relatedPersonId = personId,
+                        relationshipType = "FRIEND",
+                        trustState = "VERIFIED",
+                        sharingPermissions = "ALL"
+                    )
+                )
+
+                val planId = if (!rawPlanId.isNullOrBlank()) rawPlanId else "plan_dl_${System.currentTimeMillis()}"
                 repository.savePlanRecord(
                     planId = planId,
                     title = group,
-                    restaurantName = "Suerte",
-                    cuisine = "Interior Mexican",
-                    price = "$$$",
-                    participants = listOf("Me", displayName),
-                    consensusScore = "98% Match",
-                    date = "Active Now",
+                    restaurantName = restaurant,
+                    cuisine = cuisine,
+                    price = price,
+                    participants = participantsList,
+                    consensusScore = score,
+                    date = planDate,
                     isUpcoming = true
                 )
 
-                val prefs = getSharedPreferences("plansguru_prefs", MODE_PRIVATE)
                 prefs.edit().putBoolean("pending_navigate_to_plans", true).apply()
 
                 Toast.makeText(this, "✨ Joined '$group' with $displayName!", Toast.LENGTH_LONG).show()

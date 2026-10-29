@@ -18,7 +18,7 @@ class EncryptedGraphDatabase(private val context: Context) : SQLiteOpenHelper(co
                 displayName TEXT NOT NULL,
                 publicIdentityKey TEXT NOT NULL,
                 creationTimestamp INTEGER NOT NULL,
-                locationZip TEXT DEFAULT '90210'
+                locationZip TEXT
             )
         """)
 
@@ -66,7 +66,7 @@ class EncryptedGraphDatabase(private val context: Context) : SQLiteOpenHelper(co
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         if (oldVersion < 2) {
             try {
-                db.execSQL("ALTER TABLE persons ADD COLUMN locationZip TEXT DEFAULT '90210'")
+                db.execSQL("ALTER TABLE persons ADD COLUMN locationZip TEXT")
             } catch (_: Exception) {}
         }
         if (oldVersion < 3) {

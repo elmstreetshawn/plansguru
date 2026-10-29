@@ -29,13 +29,13 @@ class GraphRepository(context: Context) {
         return cursor.use {
             if (it.moveToFirst()) {
                 val zipIdx = it.getColumnIndex("locationZip")
-                val zip = if (zipIdx != -1) it.getString(zipIdx) else "90210"
+                val zip = if (zipIdx != -1) it.getString(zipIdx) else ""
                 Person(
                     localPersonId = it.getString(it.getColumnIndexOrThrow("localPersonId")),
                     displayName = it.getString(it.getColumnIndexOrThrow("displayName")),
                     publicIdentityKey = it.getString(it.getColumnIndexOrThrow("publicIdentityKey")),
                     creationTimestamp = it.getLong(it.getColumnIndexOrThrow("creationTimestamp")),
-                    locationZip = zip ?: "90210"
+                    locationZip = zip ?: ""
                 )
             } else {
                 null
@@ -49,13 +49,13 @@ class GraphRepository(context: Context) {
         return cursor.use {
             if (it.moveToFirst()) {
                 val zipIdx = it.getColumnIndex("locationZip")
-                val zip = if (zipIdx != -1) it.getString(zipIdx) else "90210"
+                val zip = if (zipIdx != -1) it.getString(zipIdx) else ""
                 Person(
                     localPersonId = it.getString(it.getColumnIndexOrThrow("localPersonId")),
                     displayName = it.getString(it.getColumnIndexOrThrow("displayName")),
                     publicIdentityKey = it.getString(it.getColumnIndexOrThrow("publicIdentityKey")),
                     creationTimestamp = it.getLong(it.getColumnIndexOrThrow("creationTimestamp")),
-                    locationZip = zip ?: "90210"
+                    locationZip = zip ?: ""
                 )
             } else {
                 null
@@ -105,7 +105,38 @@ class GraphRepository(context: Context) {
     fun getAssertionsForSubject(subjectId: String): List<Assertion> {
         val db = dbHelper.getReadableEncryptedDatabase()
         val list = mutableListOf<Assertion>()
-        val cursor = db.query("assertions", null, "subjectId = ?", arrayOf(subjectId), null, null, null)
+
+        val targetIds = mutableSetOf(subjectId, subjectId.trim().lowercase())
+        if (subjectId.equals("Me", ignoreCase = true) || subjectId.equals("local_user", ignoreCase = true)) {
+            targetIds.add("local_user")
+            targetIds.add("Me")
+        }
+
+        try {
+            val personCursor = db.query(
+                "persons", null,
+                "localPersonId = ? OR LOWER(displayName) = ?",
+                arrayOf(subjectId, subjectId.trim().lowercase()),
+                null, null, null
+            )
+            personCursor.use {
+                while (it.moveToNext()) {
+                    val pId = it.getString(it.getColumnIndexOrThrow("localPersonId"))
+                    val pName = it.getString(it.getColumnIndexOrThrow("displayName"))
+                    targetIds.add(pId)
+                    targetIds.add(pName)
+                    targetIds.add(pName.lowercase())
+                }
+            }
+        } catch (_: Exception) {}
+
+        val argsList = targetIds.flatMap { listOf(it, it.lowercase()) }.toTypedArray()
+        val placeholders = targetIds.joinToString(",") { "?" }
+        val cursor = db.query(
+            "assertions", null,
+            "subjectId IN ($placeholders) OR LOWER(subjectId) IN ($placeholders)",
+            argsList, null, null, null
+        )
         cursor.use {
             while (it.moveToNext()) {
                 val end = it.getLong(it.getColumnIndexOrThrow("validityTimestampEnd"))
@@ -125,7 +156,7 @@ class GraphRepository(context: Context) {
                 )
             }
         }
-        return list
+        return list.distinctBy { "${it.predicate}::${it.value}" }
     }
 
     fun saveRelationship(relationship: Relationship) {
@@ -138,6 +169,30 @@ class GraphRepository(context: Context) {
             put("sharingPermissions", relationship.sharingPermissions)
         }
         db.insertWithOnConflict("relationships", null, values, SQLiteDatabase.CONFLICT_REPLACE)
+    }
+
+    fun getRelationship(ownerId: String, relatedPersonId: String): Relationship? {
+        val db = dbHelper.getReadableEncryptedDatabase()
+        try {
+            val cursor = db.query(
+                "relationships", null,
+                "ownerId = ? AND relatedPersonId = ?",
+                arrayOf(ownerId, relatedPersonId),
+                null, null, null
+            )
+            cursor.use {
+                if (it.moveToFirst()) {
+                    return Relationship(
+                        ownerId = it.getString(it.getColumnIndexOrThrow("ownerId")),
+                        relatedPersonId = it.getString(it.getColumnIndexOrThrow("relatedPersonId")),
+                        relationshipType = it.getString(it.getColumnIndexOrThrow("relationshipType")),
+                        trustState = it.getString(it.getColumnIndexOrThrow("trustState")),
+                        sharingPermissions = it.getString(it.getColumnIndexOrThrow("sharingPermissions"))
+                    )
+                }
+            }
+        } catch (_: Exception) {}
+        return null
     }
 
     fun deleteGeneralPreferences() {
@@ -199,6 +254,10 @@ class GraphRepository(context: Context) {
             }
         } catch (_: Exception) {}
         return list
+    }
+
+    fun getPlanRecord(planId: String): com.plansguru.ui.planning.PlanRecord? {
+        return getAllPlanRecords().find { it.id == planId }
     }
 
     fun deletePlanRecord(planId: String) {

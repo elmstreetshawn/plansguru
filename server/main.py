@@ -6,7 +6,7 @@ import time
 import uuid
 import os
 
-app = FastAPI(title="PlansGuru Relay & Distribution Server", version="1.2.0")
+app = FastAPI(title="PlansGuru Relay & Distribution Server", version="1.2.3")
 
 # In-memory storage with ephemeral expiration (No persistent DB)
 active_sessions: Dict[str, Set[WebSocket]] = {}
@@ -51,11 +51,11 @@ def landing_page():
             <h1>🌮 PlansGuru</h1>
             <p>Privacy-First On-Device AI Dinner Coordination & Encrypted Social Graph for Greater Austin, TX.</p>
 
-            <a href="/api/apk/download" class="btn">📲 Download PlansGuru APK (v1.2.0)</a>
+            <a href="/api/apk/download" class="btn">📲 Download PlansGuru APK (v1.2.3)</a>
             <a href="/api/model/gemma" class="btn" style="background: #E8DEF8; color: #1D192B;">🤖 Download Gemma 3 Model (584 MB)</a>
 
             <div class="badge">
-                ⚡ Version 1.2.0 (Build 15) • Server Online
+                ⚡ Version 1.2.3 (Build 18) • Server Online
             </div>
         </div>
     </body>
@@ -64,11 +64,31 @@ def landing_page():
     return HTMLResponse(content=html_content)
 
 @app.get("/join", response_class=HTMLResponse)
-def join_redirect(inviter: str = "Friend", pubkey: Optional[str] = None, name: Optional[str] = None, group: str = "Dinner Plan"):
+def join_redirect(
+    inviter: str = "Friend",
+    pubkey: Optional[str] = None,
+    name: Optional[str] = None,
+    group: str = "Dinner Plan",
+    planid: Optional[str] = None,
+    date: Optional[str] = None,
+    restaurant: Optional[str] = None,
+    cuisine: Optional[str] = None,
+    price: Optional[str] = None,
+    score: Optional[str] = None,
+    participants: Optional[str] = None
+):
     """Handle plan join deep link redirects with support for UUID-based identity."""
     # Use name parameter if provided (display name), fallback to inviter
     display_name = name or inviter
-    app_deep_link = f"plansguru://plan/join?inviter={inviter}&pubkey={pubkey or ''}&name={display_name}&group={group}"
+    p_id = planid or ""
+    p_date = date or "Active Now"
+    p_rest = restaurant or ""
+    p_cuis = cuisine or ""
+    p_price = price or ""
+    p_score = score or ""
+    p_parts = participants or ""
+
+    app_deep_link = f"plansguru://plan/join?inviter={inviter}&pubkey={pubkey or ''}&name={display_name}&group={group}&planid={p_id}&date={p_date}&restaurant={p_rest}&cuisine={p_cuis}&price={p_price}&score={p_score}&participants={p_parts}"
 
     html_content = f"""
     <!DOCTYPE html>

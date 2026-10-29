@@ -87,9 +87,22 @@ class NegotiationEngine {
                     score += 0.10f
                 }
 
-                // Budget / Price Tier Matching (+0.10)
+                // Budget / Price Tier Constraint & Score
                 val budgetPrefs = assertions.filter { it.predicate == "budget" || it.predicate == "price" }
-                if (budgetPrefs.any { restaurant.priceRange.contains(it.value) } || restaurant.priceRange == "$$") {
+                if (budgetPrefs.isNotEmpty()) {
+                    for (bPref in budgetPrefs) {
+                        val bVal = bPref.value.trim()
+                        if (bVal == "$" && (restaurant.priceRange == "$$$" || restaurant.priceRange == "$$$$")) {
+                            hardPassed = false // Exceeds budget hard constraint!
+                        } else if (bVal == "$$" && restaurant.priceRange == "$$$$") {
+                            hardPassed = false
+                        } else if (restaurant.priceRange == bVal || restaurant.priceRange.contains(bVal)) {
+                            score += 0.25f
+                        } else {
+                            score += 0.05f
+                        }
+                    }
+                } else {
                     score += 0.10f
                 }
 

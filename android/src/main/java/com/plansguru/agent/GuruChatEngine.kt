@@ -25,7 +25,7 @@ data class FaqItem(
     val answer: String
 )
 
-const val SERVER_BASE_URL = "https://fluffy-snakes-warn.loca.lt"
+const val SERVER_BASE_URL = "https://plansguru-austin.loca.lt"
 
 class GuruChatEngine(private val context: Context) {
     private val repository = GraphRepository(context)
@@ -485,6 +485,24 @@ class GuruChatEngine(private val context: Context) {
                             results.add(StructuredAssertion(clauseSubject, "max_travel_time", normVal))
                         }
                     }
+                }
+            }
+
+            // 3C. Budget & Price Tier Parsing ($ to $$$$, cheap, budget, under $15)
+            val mentionsCheap = clauseLower.contains("cheap") || clauseLower.contains("budget") ||
+                    clauseLower.contains("under $15") || clauseLower.contains("inexpensive") ||
+                    clauseLower.contains("affordable") || clauseLower.contains("frugal")
+
+            if (mentionsCheap || clauseLower.contains("$")) {
+                val budgetVal = when {
+                    clauseLower.contains("$$$$") -> "$$$$"
+                    clauseLower.contains("$$$") -> "$$$"
+                    clauseLower.contains("$$") -> "$$"
+                    else -> "$"
+                }
+                val exists = results.any { it.subject == clauseSubject && (it.predicate == "budget" || it.predicate == "price") }
+                if (!exists) {
+                    results.add(StructuredAssertion(clauseSubject, "budget", budgetVal))
                 }
             }
 
