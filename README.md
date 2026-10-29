@@ -33,24 +33,4 @@ AI should serve as a private concierge, not an intrusive tracker. Guru acts as a
 
 ---
 
-## 🌐 Website Agent Brief / Landing Page Blueprint
-*This section is formatted specifically for AI website-building agents to generate the official marketing landing page for PlansGuru.*
 
-### 🚀 Hero Section
-- **Headline:** *Dinner planning without compromise. And without the cloud.*
-- **Subheadline:** *PlansGuru is the 100% on-device social graph and AI negotiation engine that coordinates group dinners while keeping your private data strictly in your pocket.*
-- **Primary CTA:** *Download for Android* | **Secondary CTA:** *Explore the Open Architecture*
-
-### ✨ Core Value Propositions (3-Column Grid)
-1. **🔒 100% Local & Encrypted:** Powered by SQLCipher and Android Keystore. Your social graph never touches a remote server.
-2. **🤖 On-Device AI Agent:** Chat naturally with Guru to log dietary needs, favorite cuisines, and drive time limits. Zero cloud overhead.
-3. **🤝 Zero-Compromise Consensus:** Multi-variable negotiation algorithms balance dietary hard constraints and group preferences so everyone leaves happy.
-
-### 🗺️ Feature Showcase
-- **Encrypted Social Graph:** Add friends, organize them into dining circles, and control attribute sharing per circle.
-- **Smart Place Discovery & Editing:** Browse local restaurant datasets, filter by noise level and cuisine, and add custom spots.
-- **Autonomous Negotiation:** Watch your on-device agent evaluate participants' free times, tastes, and travel zip codes in real-time.
-
-### 💬 Footer & Trust Badge
-- *"Your notes, your tastes, your social graph—stay 100% on your phone."*
-- Open Architecture • Privacy-First Manifesto • MIT License
