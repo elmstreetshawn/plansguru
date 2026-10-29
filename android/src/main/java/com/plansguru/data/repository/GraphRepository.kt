@@ -105,7 +105,38 @@ class GraphRepository(context: Context) {
     fun getAssertionsForSubject(subjectId: String): List<Assertion> {
         val db = dbHelper.getReadableEncryptedDatabase()
         val list = mutableListOf<Assertion>()
-        val cursor = db.query("assertions", null, "subjectId = ?", arrayOf(subjectId), null, null, null)
+
+        val targetIds = mutableSetOf(subjectId, subjectId.trim().lowercase())
+        if (subjectId.equals("Me", ignoreCase = true) || subjectId.equals("local_user", ignoreCase = true)) {
+            targetIds.add("local_user")
+            targetIds.add("Me")
+        }
+
+        try {
+            val personCursor = db.query(
+                "persons", null,
+                "localPersonId = ? OR LOWER(displayName) = ?",
+                arrayOf(subjectId, subjectId.trim().lowercase()),
+                null, null, null
+            )
+            personCursor.use {
+                while (it.moveToNext()) {
+                    val pId = it.getString(it.getColumnIndexOrThrow("localPersonId"))
+                    val pName = it.getString(it.getColumnIndexOrThrow("displayName"))
+                    targetIds.add(pId)
+                    targetIds.add(pName)
+                    targetIds.add(pName.lowercase())
+                }
+            }
+        } catch (_: Exception) {}
+
+        val argsList = targetIds.flatMap { listOf(it, it.lowercase()) }.toTypedArray()
+        val placeholders = targetIds.joinToString(",") { "?" }
+        val cursor = db.query(
+            "assertions", null,
+            "subjectId IN ($placeholders) OR LOWER(subjectId) IN ($placeholders)",
+            argsList, null, null, null
+        )
         cursor.use {
             while (it.moveToNext()) {
                 val end = it.getLong(it.getColumnIndexOrThrow("validityTimestampEnd"))
@@ -125,7 +156,7 @@ class GraphRepository(context: Context) {
                 )
             }
         }
-        return list
+        return list.distinctBy { "${it.predicate}::${it.value}" }
     }
 
     fun saveRelationship(relationship: Relationship) {
