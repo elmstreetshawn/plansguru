@@ -232,6 +232,10 @@ class GraphRepository(context: Context) {
         return list
     }
 
+    fun getPlanRecord(planId: String): com.plansguru.ui.planning.PlanRecord? {
+        return getAllPlanRecords().find { it.id == planId }
+    }
+
     fun deletePlanRecord(planId: String) {
         val db = dbHelper.getWritableEncryptedDatabase()
         try {

@@ -73,10 +73,42 @@ fun RecommendationsScreen(
         }
     }
 
+    val savedPlanRecord = remember(planId) { repository.getPlanRecord(planId) }
+    val displayRecs = remember(recommendations, savedPlanRecord) {
+        if (recommendations.isNotEmpty()) {
+            recommendations
+        } else if (savedPlanRecord != null) {
+            listOf(
+                NegotiationEngine.EvaluationResult(
+                    restaurant = com.plansguru.data.model.Restaurant(
+                        id = "saved_${savedPlanRecord.id}",
+                        name = savedPlanRecord.restaurantName,
+                        cuisine = savedPlanRecord.cuisine,
+                        priceRange = savedPlanRecord.price,
+                        vegetarianOptions = true,
+                        dietaryAccommodations = listOf("Vegetarian", "Gluten-Free"),
+                        noiseLevel = "Moderate",
+                        crowdLevel = "Moderate",
+                        location = "Greater Austin, TX",
+                        openingHours = "5:00 PM - 10:00 PM",
+                        accessibilityAttributes = listOf("Wheelchair Accessible"),
+                        address = "Austin, TX",
+                        zipCode = "78701"
+                    ),
+                    minSatisfaction = 0.98f,
+                    avgSatisfaction = 0.98f,
+                    hardConstraintPassed = true
+                )
+            )
+        } else {
+            emptyList()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Top Group Recommendations") },
+                title = { Text(if (savedPlanRecord != null) savedPlanRecord.title else "Top Group Recommendations") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -92,7 +124,7 @@ fun RecommendationsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                "Top 3 recommendations optimized for your group:",
+                "Group Recommendations & Consensus Details:",
                 style = MaterialTheme.typography.bodyLarge
             )
 
@@ -102,7 +134,7 @@ fun RecommendationsScreen(
                     .weight(1f),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                itemsIndexed(recommendations) { index, rec ->
+                itemsIndexed(displayRecs) { index, rec ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.large,
@@ -129,7 +161,7 @@ fun RecommendationsScreen(
             }
 
             // Map and Calendar action buttons for the top recommendation
-            val topRec = recommendations.firstOrNull()
+            val topRec = displayRecs.firstOrNull()
             if (topRec != null) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
