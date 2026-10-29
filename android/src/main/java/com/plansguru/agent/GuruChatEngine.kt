@@ -25,7 +25,7 @@ data class FaqItem(
     val answer: String
 )
 
-const val SERVER_BASE_URL = "https://petite-cougars-like.loca.lt"
+const val SERVER_BASE_URL = "https://plansguru-austin.loca.lt"
 
 class GuruChatEngine(private val context: Context) {
     private val repository = GraphRepository(context)
