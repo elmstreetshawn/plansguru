@@ -1,9 +1,11 @@
 package com.plansguru.ui.common
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -29,17 +31,27 @@ fun rememberAssetImage(fileName: String): ImageBitmap? {
 }
 
 @Composable
-fun GuruTopBarAction(onOpenGuruChat: () -> Unit) {
+fun GuruTopBarAction(
+    onOpenGuruChat: () -> Unit,
+    onOpenSettings: (() -> Unit)? = null
+) {
     val mascotBitmap = rememberAssetImage("expression_happy.png")
-    IconButton(onClick = onOpenGuruChat) {
-        if (mascotBitmap != null) {
-            Image(
-                bitmap = mascotBitmap,
-                contentDescription = "Ask Guru",
-                modifier = Modifier.size(32.dp)
-            )
-        } else {
-            Icon(Icons.Default.Favorite, contentDescription = "Ask Guru")
+    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+        IconButton(onClick = onOpenGuruChat) {
+            if (mascotBitmap != null) {
+                Image(
+                    bitmap = mascotBitmap,
+                    contentDescription = "Ask Guru",
+                    modifier = Modifier.size(32.dp)
+                )
+            } else {
+                Icon(Icons.Default.Favorite, contentDescription = "Ask Guru")
+            }
+        }
+        if (onOpenSettings != null) {
+            IconButton(onClick = onOpenSettings) {
+                Icon(androidx.compose.material.icons.Icons.Default.Settings, contentDescription = "Settings & Circles")
+            }
         }
     }
 }

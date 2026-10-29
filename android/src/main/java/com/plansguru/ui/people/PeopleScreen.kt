@@ -72,7 +72,8 @@ fun fetchDeviceContacts(context: android.content.Context): List<ContactEntry> {
 @Composable
 fun PeopleScreen(
     onProceedToGroup: (List<String>) -> Unit,
-    onOpenGuruChat: () -> Unit = {}
+    onOpenGuruChat: () -> Unit = {},
+    onOpenSettings: () -> Unit = {}
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var showAddDialog by remember { mutableStateOf(false) }
@@ -152,7 +153,7 @@ fun PeopleScreen(
                     }
                 },
                 actions = {
-                    com.plansguru.ui.common.GuruTopBarAction(onOpenGuruChat)
+                    com.plansguru.ui.common.GuruTopBarAction(onOpenGuruChat, onOpenSettings)
                 }
             )
         },

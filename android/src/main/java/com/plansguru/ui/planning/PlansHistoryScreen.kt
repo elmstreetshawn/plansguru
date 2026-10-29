@@ -37,7 +37,8 @@ data class PlanRecord(
 fun PlansHistoryScreen(
     onCreateNewPlan: () -> Unit,
     onOpenPlanChat: (String, String) -> Unit = { _, _ -> },
-    onOpenGuruChat: () -> Unit = {}
+    onOpenGuruChat: () -> Unit = {},
+    onOpenSettings: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val repository = remember { com.plansguru.data.repository.GraphRepository(context) }
@@ -137,7 +138,7 @@ fun PlansHistoryScreen(
                     }
                 },
                 actions = {
-                    com.plansguru.ui.common.GuruTopBarAction(onOpenGuruChat)
+                    com.plansguru.ui.common.GuruTopBarAction(onOpenGuruChat, onOpenSettings)
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,

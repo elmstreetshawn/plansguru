@@ -107,12 +107,14 @@ fun MainScreen(
                         val membersParam = members.joinToString(",")
                         navController.navigate("group_setup?members=$membersParam")
                     },
-                    onOpenGuruChat = { showGlobalChatSheet = true }
+                    onOpenGuruChat = { showGlobalChatSheet = true },
+                    onOpenSettings = { navController.navigate("settings") }
                 )
             }
             composable(BottomTab.Places.route) {
                 PlacesScreen(
-                    onOpenGuruChat = { showGlobalChatSheet = true }
+                    onOpenGuruChat = { showGlobalChatSheet = true },
+                    onOpenSettings = { navController.navigate("settings") }
                 )
             }
             composable("group_setup?members={members}") { backStackEntry ->
@@ -154,7 +156,14 @@ fun MainScreen(
                     onOpenPlanChat = { planId, title ->
                         navController.navigate("recommendations?planId=$planId&title=$title")
                     },
-                    onOpenGuruChat = { showGlobalChatSheet = true }
+                    onOpenGuruChat = { showGlobalChatSheet = true },
+                    onOpenSettings = { navController.navigate("settings") }
+                )
+            }
+            composable("settings") {
+                com.plansguru.ui.settings.SettingsScreen(
+                    onBack = { navController.popBackStack() },
+                    onNavigateChat = { showGlobalChatSheet = true }
                 )
             }
             composable("recommendations?planId={planId}&title={title}") { backStackEntry ->
