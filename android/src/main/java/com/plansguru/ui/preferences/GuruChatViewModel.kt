@@ -98,19 +98,15 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
             val lower = text.lowercase()
 
             if (pendingFriendName != null) {
-                if (lower.contains("yes") || lower.contains("sure") || lower.contains("create") || text.length > 2) {
+                val isAgreement = isAffirmativeSentiment(text)
+                if (isAgreement) {
                     val friendName = pendingFriendName!!
-                    val cleanInput = text.trim()
-                    val fullName = if (cleanInput.length > 2 && !cleanInput.equals("yes", ignoreCase = true) && !cleanInput.equals("sure", ignoreCase = true) && !cleanInput.equals("create", ignoreCase = true) && !cleanInput.equals("yep", ignoreCase = true) && !cleanInput.equals("yeah", ignoreCase = true)) {
-                        if (cleanInput.lowercase().contains(friendName.lowercase())) cleanInput else "$friendName $cleanInput"
-                    } else {
-                        friendName
-                    }
+                    val finalDisplayName = extractCustomDisplayName(text, friendName)
 
                     repository.savePerson(
                         Person(
                             localPersonId = friendName,
-                            displayName = fullName,
+                            displayName = finalDisplayName,
                             publicIdentityKey = "pub_key_$friendName",
                             creationTimestamp = System.currentTimeMillis()
                         )
@@ -125,12 +121,12 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
                         )
                     )
 
-                    val confirmationMsg = ChatMessage(UUID.randomUUID().toString(), "Created profile for $fullName and added them to your social graph!", false)
+                    val confirmationMsg = ChatMessage(UUID.randomUUID().toString(), "Created profile for $finalDisplayName and added them to your social graph!", false)
                     _messages.value = _messages.value + confirmationMsg
 
                     pendingAssertionText?.let { pending ->
-                        val (_, structuredAssertions) = chatEngine.generateStructuredResponse(pending)
-                        for (sa in structuredAssertions) {
+                        val assertions = chatEngine.parseLlmSemanticOutput(pending)
+                        for (sa in assertions) {
                             repository.saveAssertion(
                                 Assertion(
                                     assertionId = UUID.randomUUID().toString(),
@@ -151,7 +147,7 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
                     pendingFriendName = null
                     pendingAssertionText = null
                     return@launch
-                } else if (lower.contains("no") || lower.contains("cancel")) {
+                } else {
                     val cancelMsg = ChatMessage(UUID.randomUUID().toString(), "Okay, I won't add $pendingFriendName.", false)
                     _messages.value = _messages.value + cancelMsg
                     pendingFriendName = null
@@ -344,5 +340,36 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
         } catch (_: Exception) {
             emptyList()
         }
+    }
+
+    private fun isAffirmativeSentiment(text: String): Boolean {
+        val lower = text.lowercase().trim()
+        val negativePatterns = listOf("no", "don't", "dont", "do not", "cancel", "never", "stop", "decline", "negative", "nah", "nix")
+        if (negativePatterns.any { lower == it || lower.startsWith("$it ") || lower.endsWith(" $it") || lower.contains(" $it ") }) {
+            return false
+        }
+
+        val affirmativePatterns = listOf("yes", "yeah", "yep", "sure", "ok", "okay", "sounds good", "please", "go ahead", "create", "add", "do it", "absolutely", "definitely", "of course", "correct", "that works", "yup", "aye")
+        if (affirmativePatterns.any { lower.contains(it) }) {
+            return true
+        }
+
+        return text.trim().length <= 15
+    }
+
+    private fun extractCustomDisplayName(text: String, fallbackName: String): String {
+        val trimmed = text.trim()
+        val nameMatch = Regex("(?:name (?:her|him)?|it's|is) ([A-Za-z\\s]+)", RegexOption.IGNORE_CASE).find(trimmed)
+        if (nameMatch != null) {
+            val extracted = nameMatch.groupValues[1].trim()
+            if (extracted.length >= 2) return extracted
+        }
+
+        val words = trimmed.split(Regex("\\s+"))
+        if (words.size == 2 && words.all { it.firstOrNull()?.isUpperCase() == true }) {
+            return trimmed
+        }
+
+        return fallbackName
     }
 }
