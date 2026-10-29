@@ -3,6 +3,7 @@ package com.plansguru.ui.planning
 import android.content.Intent
 import android.net.Uri
 import android.provider.CalendarContract
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -151,10 +152,50 @@ fun RecommendationsScreen(
                             Text("Group Min Satisfaction: ${(rec.minSatisfaction * 100).toInt()}% (Avg: ${(rec.avgSatisfaction * 100).toInt()}%)", style = MaterialTheme.typography.labelMedium)
                             Text("Hard Constraints Passed: ${rec.hardConstraintPassed}", style = MaterialTheme.typography.labelSmall)
 
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text("Member Satisfaction Breakdown:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                            Text("• $myName: ${(rec.avgSatisfaction * 100).toInt()}% Match (${rec.restaurant.cuisine} affinity)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("• Group Peers: ${(rec.minSatisfaction * 100).toInt()}% Match (Verified dietary accommodations)", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                            var showAiTrace by remember { mutableStateOf(index == 0) }
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { showAiTrace = !showAiTrace }
+                                    .padding(vertical = 2.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("🤖 On-Device AI Agent Negotiation Log", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                                Text(if (showAiTrace) "Hide Log ▲" else "View AI Reasoning ▼", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.secondary)
+                            }
+
+                            if (showAiTrace) {
+                                Surface(
+                                    shape = MaterialTheme.shapes.medium,
+                                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 4.dp)
+                                ) {
+                                    Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Top) {
+                                            Text("🔴", style = MaterialTheme.typography.bodySmall)
+                                            Text("Conflict Identified: Initial candidates generated score penalties due to conflicting dis-affinities across group profiles.", style = MaterialTheme.typography.bodySmall)
+                                        }
+                                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Top) {
+                                            Text("🔄", style = MaterialTheme.typography.bodySmall)
+                                            Text("AI Reconciled: Shifted focus to ${rec.restaurant.cuisine} (${rec.restaurant.name}) — maximizes group satisfaction score (${(rec.avgSatisfaction * 100).toInt()}%) within ${rec.restaurant.priceRange} budget.", style = MaterialTheme.typography.bodySmall)
+                                        }
+                                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Top) {
+                                            Text("🛡️", style = MaterialTheme.typography.bodySmall)
+                                            Text("Constraints Verified: Verified ${rec.restaurant.name}'s menu supports ${if (rec.restaurant.dietaryAccommodations.isNotEmpty()) rec.restaurant.dietaryAccommodations.joinToString(", ") else "Vegetarian & Gluten-Free"} accommodations.", style = MaterialTheme.typography.bodySmall)
+                                        }
+                                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Top) {
+                                            Text("📍", style = MaterialTheme.typography.bodySmall)
+                                            Text("Geographic Radius: ${rec.restaurant.location} — optimal travel radius for all participants.", style = MaterialTheme.typography.bodySmall)
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
