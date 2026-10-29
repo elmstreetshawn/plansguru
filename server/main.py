@@ -243,6 +243,15 @@ def shorten_url(payload: ShortenRequest):
     short_urls[code] = payload.longUrl.strip()
     return {"code": code, "shortCode": code}
 
+@app.get("/api/shorten/resolve/{code}")
+def resolve_short_code(code: str):
+    """Resolve a 6-character short invite code to its full long URL."""
+    code_clean = code.strip().upper()
+    long_url = short_urls.get(code_clean)
+    if not long_url:
+        raise HTTPException(status_code=404, detail="Short code not found or expired")
+    return {"code": code_clean, "longUrl": long_url}
+
 @app.get("/i/{code}", response_class=HTMLResponse)
 def handle_short_invite(code: str):
     """Handle short invite link redirect into app."""
