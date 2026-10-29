@@ -613,36 +613,51 @@ fun PeopleScreen(
             onDismissRequest = { showQrScannerDialog = false },
             onQrCodeScanned = { scannedUri ->
                 val uri = android.net.Uri.parse(scannedUri)
-                val inviter = uri.getQueryParameter("inviter") ?: uri.getQueryParameter("coordinator") ?: "Scanned Friend"
-                val initials = inviter.take(2).uppercase()
-                if (friends.none { f -> f.name.equals(inviter, ignoreCase = true) }) {
+                val inviterId = uri.getQueryParameter("inviter")
+                val inviterPubKey = uri.getQueryParameter("pubkey")
+                val friendName = uri.getQueryParameter("name") ?: inviterId ?: "Scanned Friend"
+                val personId = inviterId ?: "qr_${System.currentTimeMillis()}"
+
+                if (friends.none { f -> f.name.equals(friendName, ignoreCase = true) }) {
                     friends.add(
                         FriendItem(
-                            id = "qr_${System.currentTimeMillis()}",
-                            name = inviter,
-                            initials = initials,
+                            id = personId,
+                            name = friendName,
+                            initials = friendName.take(2).uppercase(),
                             tags = listOf("QR Scan", "Encrypted Graph"),
                             isSelected = false
                         )
                     )
                     repository.savePerson(
                         com.plansguru.data.model.Person(
-                            localPersonId = inviter,
-                            displayName = inviter,
-                            publicIdentityKey = "pub_key_$inviter",
+                            localPersonId = personId,
+                            displayName = friendName,
+                            publicIdentityKey = inviterPubKey ?: "pub_key_$friendName",
                             creationTimestamp = System.currentTimeMillis()
                         )
                     )
-                    android.widget.Toast.makeText(context, "✨ Connected with $inviter via QR Scan!", android.widget.Toast.LENGTH_SHORT).show()
+                    android.widget.Toast.makeText(context, "✨ Connected with $friendName via QR Scan!", android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
         )
     }
 
     if (showMyQrDialog) {
-        val userId = prefs.getString("user_id", "local_user") ?: "local_user"
-        val publicKey = prefs.getString("public_key", "pub_key_local_user") ?: "pub_key_local_user"
-        val inviteLink = "https://plansguru.app/join?inviter=Me&pubkey=$publicKey&userid=$userId"
+        val serverUrl = prefs.getString("server_url", "https://fluffy-snakes-warn.loca.lt")?.trimEnd('/') ?: "https://fluffy-snakes-warn.loca.lt"
+        var userId = prefs.getString("user_id", null)
+        if (userId.isNullOrBlank() || userId == "local_user") {
+            userId = java.util.UUID.randomUUID().toString()
+            prefs.edit().putString("user_id", userId).apply()
+        }
+        var publicKey = prefs.getString("public_key", null)
+        if (publicKey.isNullOrBlank()) {
+            val keyPair = com.plansguru.data.crypto.KeyManager.getOrCreateIdentityKeyPair(context)
+            publicKey = keyPair.public.encoded.joinToString("") { "%02x".format(it) }
+            prefs.edit().putString("public_key", publicKey).apply()
+        }
+        val userDisplayName = repository.getPerson(userId)?.displayName?.takeIf { it.isNotBlank() && it != userId } ?: "Me"
+
+        val inviteLink = "$serverUrl/join?inviter=${java.net.URLEncoder.encode(userId, "UTF-8")}&pubkey=${java.net.URLEncoder.encode(publicKey, "UTF-8")}&name=${java.net.URLEncoder.encode(userDisplayName, "UTF-8")}"
         val qrBitmap = remember(inviteLink) { com.plansguru.ui.common.QrCodeHelper.generateQrCodeBitmap(inviteLink) }
 
         AlertDialog(
