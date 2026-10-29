@@ -252,7 +252,7 @@ fun PlansHistoryScreen(
                                         val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
                                         val localUserId = prefs.getString("user_id", "local_user") ?: "local_user"
                                         val userDisplayName = repository.getPerson(localUserId)?.displayName?.takeIf { it.isNotBlank() && it != localUserId } ?: "Me"
-                                        val serverUrl = prefs.getString("server_url", "https://smart-lizards-nail.loca.lt")?.trimEnd('/') ?: "https://smart-lizards-nail.loca.lt"
+                                        val serverUrl = prefs.getString("server_url", "https://fluffy-snakes-warn.loca.lt")?.trimEnd('/') ?: "https://fluffy-snakes-warn.loca.lt"
 
                                         var userId = prefs.getString("user_id", null)
                                         if (userId.isNullOrBlank() || userId == "local_user") {

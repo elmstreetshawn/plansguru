@@ -87,7 +87,9 @@ fun PeopleScreen(
     val localUserId = prefs.getString("user_id", "local_user") ?: "local_user"
     var myPersonState by remember { mutableStateOf(repository.getPerson(localUserId)) }
     val myName = myPersonState?.displayName?.takeIf { it.isNotBlank() && it != localUserId } ?: "Me"
-    val myZip = myPersonState?.locationZip ?: "78626"
+    val rawZip = myPersonState?.locationZip
+    val myZip = if (!rawZip.isNullOrBlank() && rawZip != "78626" && rawZip != "90210") rawZip else null
+    val zipDisplay = if (myZip != null) "📍 Zip: $myZip • Encrypted Profile" else "📍 Zip not set • Encrypted Profile"
     var showEditMyProfileDialog by remember { mutableStateOf(false) }
 
     val defaultFriends = listOf(
@@ -236,7 +238,7 @@ fun PeopleScreen(
                                     Text("YOU", style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.onPrimary)
                                 }
                             }
-                            Text("📍 Zip: $myZip • Encrypted Profile", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(zipDisplay, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
 
@@ -404,7 +406,7 @@ fun PeopleScreen(
                                 onClick = {
                                     showContextMenu = false
                                     val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
-                                    val serverUrl = prefs.getString("server_url", "https://smart-lizards-nail.loca.lt")?.trimEnd('/') ?: "https://smart-lizards-nail.loca.lt"
+                                    val serverUrl = prefs.getString("server_url", "https://fluffy-snakes-warn.loca.lt")?.trimEnd('/') ?: "https://fluffy-snakes-warn.loca.lt"
                                     val userId = prefs.getString("user_id", "local_user") ?: "local_user"
                                     val deepLink = "$serverUrl/join?inviter=$userId"
                                     val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
