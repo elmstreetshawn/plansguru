@@ -254,6 +254,8 @@ fun PreferencesScreen(
                         val targetSubj = targetSubjectForNewAssertion!!
                         val targetName = if (targetSubj == localUserId) "You (Local User)" else allPersons.find { it.localPersonId == targetSubj }?.displayName ?: targetSubj
 
+                        var selectedVisibilityPolicy by remember { mutableStateOf("CIRCLE_1") }
+
                         AlertDialog(
                             onDismissRequest = { targetSubjectForNewAssertion = null },
                             title = { Text("Add Preference for $targetName") },
@@ -292,6 +294,28 @@ fun PreferencesScreen(
                                         modifier = Modifier.fillMaxWidth(),
                                         singleLine = true
                                     )
+
+                                    Text("Sharing Circle / Privacy Level:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        FilterChip(
+                                            selected = selectedVisibilityPolicy == "CIRCLE_1",
+                                            onClick = { selectedVisibilityPolicy = "CIRCLE_1" },
+                                            label = { Text("Circle 1") }
+                                        )
+                                        FilterChip(
+                                            selected = selectedVisibilityPolicy == "CIRCLE_2",
+                                            onClick = { selectedVisibilityPolicy = "CIRCLE_2" },
+                                            label = { Text("Circle 2") }
+                                        )
+                                        FilterChip(
+                                            selected = selectedVisibilityPolicy == "PRIVATE",
+                                            onClick = { selectedVisibilityPolicy = "PRIVATE" },
+                                            label = { Text("🔒 Private") }
+                                        )
+                                    }
                                 }
                             },
                             confirmButton = {
@@ -320,7 +344,7 @@ fun PreferencesScreen(
                                             confidence = 1.0f,
                                             validityTimestampStart = System.currentTimeMillis(),
                                             validityTimestampEnd = null,
-                                            visibilityPolicy = "PRIVATE"
+                                            visibilityPolicy = selectedVisibilityPolicy
                                         )
                                         repository.saveAssertion(newAssertion)
 

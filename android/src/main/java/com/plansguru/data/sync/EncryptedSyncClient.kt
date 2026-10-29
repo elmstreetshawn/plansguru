@@ -122,6 +122,11 @@ class EncryptedSyncClient(
     }
 
     fun broadcastGraphUpdate(friendsList: List<String>, assertion: com.plansguru.data.model.Assertion) {
+        if (assertion.visibilityPolicy.equals("PRIVATE", ignoreCase = true)) {
+            Log.d("EncryptedSyncClient", "Assertion ${assertion.predicate}=${assertion.value} is marked PRIVATE. Skipping peer broadcast (0% shared).")
+            return
+        }
+
         val prefs = context.getSharedPreferences("plansguru_prefs", Context.MODE_PRIVATE)
         val httpUrl = prefs.getString("server_url", "https://plansguru-austin.loca.lt")?.trimEnd('/') ?: "https://plansguru-austin.loca.lt"
         val userId = prefs.getString("user_id", "local_user") ?: "local_user"
