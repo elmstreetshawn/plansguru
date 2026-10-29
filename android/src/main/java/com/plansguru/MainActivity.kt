@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import com.plansguru.data.model.Person
 import com.plansguru.data.repository.GraphRepository
 import com.plansguru.ui.navigation.NavGraph
@@ -108,6 +110,27 @@ class MainActivity : ComponentActivity() {
                 )
 
                 prefs.edit().putBoolean("pending_navigate_to_plans", true).apply()
+
+                val myDisplayName = repository.getPerson(localUserId)?.displayName?.takeIf { it.isNotBlank() && it != localUserId } ?: "Me"
+
+                // Broadcast PLAN_JOIN notification over session_$planId so inviter's app receives joiner details
+                try {
+                    val syncClient = com.plansguru.data.sync.EncryptedSyncClient(this, "session_$planId")
+                    syncClient.connect { _ -> }
+                    val jsonParser = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+                    val rawPayload = jsonParser.encodeToString(mapOf("planId" to planId, "joinerName" to myDisplayName))
+                    val encryptedPayload = com.plansguru.data.crypto.ChannelCryptoHelper.encryptSession(rawPayload, "session_$planId")
+                    val signature = com.plansguru.data.crypto.KeyManager.sign(this, encryptedPayload)
+                    val joinMsg = com.plansguru.data.model.ProtocolMessage(
+                        type = "PLAN_JOIN",
+                        senderId = localUserId,
+                        sessionId = "session_$planId",
+                        payload = encryptedPayload,
+                        signature = signature,
+                        timestamp = System.currentTimeMillis()
+                    )
+                    syncClient.sendEncryptedPayload(jsonParser.encodeToString(joinMsg))
+                } catch (_: Exception) {}
 
                 Toast.makeText(this, "✨ Joined '$group' with $displayName!", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {

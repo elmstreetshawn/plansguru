@@ -69,6 +69,27 @@ fun RecommendationsScreen(
                             )
                         )
                     }
+                } else if (msg.type == "PLAN_JOIN") {
+                    val decryptedPayload = ChannelCryptoHelper.decryptSession(msg.payload, sessionId)
+                    val payload = jsonParser.decodeFromString<Map<String, String>>(decryptedPayload)
+                    val joinerName = payload["joinerName"] ?: msg.senderId
+                    if (joinerName.isNotBlank() && joinerName != myName) {
+                        val existing = repository.getPlanRecord(planId)
+                        if (existing != null) {
+                            val updatedParts = (existing.participants + joinerName).distinct()
+                            repository.savePlanRecord(
+                                planId = existing.id,
+                                title = existing.title,
+                                restaurantName = existing.restaurantName,
+                                cuisine = existing.cuisine,
+                                price = existing.price,
+                                participants = updatedParts,
+                                consensusScore = existing.consensusScore,
+                                date = existing.date,
+                                isUpcoming = existing.isUpcoming
+                            )
+                        }
+                    }
                 }
             } catch (_: Exception) {}
         }
@@ -354,19 +375,21 @@ fun RecommendationsScreen(
 
             Button(
                 onClick = {
-                    val topRec = recommendations.firstOrNull()
+                    val topRec = displayRecs.firstOrNull()
                     if (topRec != null) {
-                        val planId = "plan_${System.currentTimeMillis()}"
-                        val participants = listOf(myName) + chatMessages.map { it.sender }.distinct().filter { it != myName }
+                        val pIdToSave = if (planId == "group_discussion_session") "plan_${System.currentTimeMillis()}" else planId
+                        val titleToSave = if (savedPlanRecord != null) savedPlanRecord.title else if (groupTitle.isNotBlank()) groupTitle else "Group Dinner Consensus"
+                        val existingParticipants = savedPlanRecord?.participants ?: emptyList()
+                        val participants = (listOf(myName) + existingParticipants + chatMessages.map { it.sender }).distinct().filter { it.isNotBlank() }
                         repository.savePlanRecord(
-                            planId = planId,
-                            title = "Group Dinner Consensus",
+                            planId = pIdToSave,
+                            title = titleToSave,
                             restaurantName = topRec.restaurant.name,
                             cuisine = topRec.restaurant.cuisine,
                             price = topRec.restaurant.priceRange,
                             participants = participants,
                             consensusScore = "${(topRec.minSatisfaction * 100).toInt()}% Match",
-                            date = "Active Now",
+                            date = savedPlanRecord?.date ?: "Active Now",
                             isUpcoming = true
                         )
                     }
