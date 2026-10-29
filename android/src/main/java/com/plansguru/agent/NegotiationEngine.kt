@@ -106,6 +106,23 @@ class NegotiationEngine {
                     score += 0.10f
                 }
 
+                // Target Dining Time & Slot Matching (+0.15)
+                val timePrefs = assertions.filter { it.predicate == "preferred_time" || it.predicate == "dining_time" }
+                if (timePrefs.isNotEmpty()) {
+                    for (tPref in timePrefs) {
+                        val tVal = tPref.value.lowercase()
+                        if (tVal.contains("brunch") && restaurant.openingHours.contains("11", true)) {
+                            score += 0.20f
+                        } else if (tVal.contains("late night") && (restaurant.openingHours.contains("12 AM", true) || restaurant.openingHours.contains("1 AM", true) || restaurant.openingHours.contains("11 PM", true))) {
+                            score += 0.20f
+                        } else {
+                            score += 0.15f
+                        }
+                    }
+                } else {
+                    score += 0.10f
+                }
+
                 satisfactionScores.add(min(1.0f, max(0.0f, score)))
             }
 

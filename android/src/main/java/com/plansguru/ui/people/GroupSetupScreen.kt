@@ -29,6 +29,7 @@ fun GroupSetupScreen(
     onAskGuru: (String, List<String>) -> Unit
 ) {
     var groupName by remember { mutableStateOf("") }
+    var selectedTargetTime by remember { mutableStateOf("Tonight @ 7:00 PM") }
     val context = LocalContext.current
     val repository = remember { GraphRepository(context) }
     val prefs = context.getSharedPreferences("plansguru_prefs", android.content.Context.MODE_PRIVATE)
@@ -99,6 +100,26 @@ fun GroupSetupScreen(
                     modifier = Modifier.weight(1f),
                     shape = MaterialTheme.shapes.medium
                 )
+            }
+
+            Text("Target Dining Date & Time Slot:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                val timeOptions = listOf(
+                    "Tonight @ 7:00 PM",
+                    "Tomorrow @ 6:30 PM",
+                    "Friday @ 7:30 PM",
+                    "Saturday @ 8:00 PM"
+                )
+                timeOptions.forEach { timeOpt ->
+                    FilterChip(
+                        selected = selectedTargetTime == timeOpt,
+                        onClick = { selectedTargetTime = timeOpt },
+                        label = { Text(timeOpt, style = MaterialTheme.typography.labelSmall) }
+                    )
+                }
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -189,6 +210,20 @@ fun GroupSetupScreen(
                     val syncClient = com.plansguru.data.sync.EncryptedSyncClient(context)
                     val gName = groupName.ifBlank { "Dinner Group" }
                     val fullParticipants = (listOf(userDisplayName) + selectedMembers.toList()).distinct()
+                    repository.saveAssertion(
+                        com.plansguru.data.model.Assertion(
+                            assertionId = java.util.UUID.randomUUID().toString(),
+                            observerId = localUserId,
+                            subjectId = localUserId,
+                            predicate = "preferred_time",
+                            value = selectedTargetTime,
+                            source = "GROUP_SETUP",
+                            confidence = 1.0f,
+                            validityTimestampStart = System.currentTimeMillis(),
+                            validityTimestampEnd = null,
+                            visibilityPolicy = "PRIVATE"
+                        )
+                    )
                     syncClient.broadcastPlanRequest(gName, fullParticipants)
                     onAskGuru(gName, fullParticipants)
                 },

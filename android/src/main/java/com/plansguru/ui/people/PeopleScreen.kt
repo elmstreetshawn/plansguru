@@ -855,6 +855,7 @@ fun PersonProfileAndPreferencesDialog(
         "dislikes_cuisine" to "🚫 Dislikes Cuisine",
         "dietary_restriction" to "🥗 Dietary / Allergy",
         "budget" to "💰 Budget / Price ($ - $$$$)",
+        "preferred_time" to "⏰ Dining Time Slot",
         "max_travel_time" to "🚗 Travel Distance / Drive",
         "noise_preference" to "🤫 Noise / Crowd Level",
         "locationZip" to "📍 Zip Code"
@@ -865,10 +866,11 @@ fun PersonProfileAndPreferencesDialog(
         "dislikes_cuisine" -> listOf("Spicy", "Fast Food", "Seafood", "Indian", "BBQ")
         "dietary_restriction" -> listOf("Vegan", "Gluten-Free", "Vegetarian", "Dairy-Free", "Halal", "Kosher", "Peanut Allergy")
         "budget" -> listOf("$ (Cheap / Under $15)", "$$ (Moderate / $15-$30)", "$$$ (Fine Dining)", "$$$$ (Luxury)")
+        "preferred_time" -> listOf("Friday @ 7:30 PM", "Tonight @ 7:00 PM", "Tomorrow @ 6:30 PM", "Weekend Brunch (11:00 AM)", "Late Night (after 9:00 PM)")
         "max_travel_time" -> listOf("10 min", "15 min", "20 min", "30 min")
         "noise_preference" -> listOf("Quiet / Low Crowds", "Moderate", "Vibrant / Loud")
         "locationZip" -> listOf("78626", "78681", "78701", "78704", "78652", "78748")
-        else -> listOf("Italian", "Vegan", "$ (Cheap / Under $15)")
+        else -> listOf("Italian", "Vegan", "Friday @ 7:30 PM")
     }
 
     AlertDialog(

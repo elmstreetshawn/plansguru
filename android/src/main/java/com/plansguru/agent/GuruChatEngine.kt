@@ -507,6 +507,27 @@ class GuruChatEngine(private val context: Context) {
                 }
             }
 
+            // 3D. Target Date & Time Slot Parsing (Friday @ 7pm, tonight, brunch, late night)
+            val mentionsTime = clauseLower.contains("tonight") || clauseLower.contains("tomorrow") ||
+                    clauseLower.contains("friday") || clauseLower.contains("saturday") ||
+                    clauseLower.contains("sunday") || clauseLower.contains("brunch") ||
+                    clauseLower.contains("late night") || clauseLower.contains("pm") || clauseLower.contains("am")
+
+            if (mentionsTime) {
+                val timeVal = when {
+                    clauseLower.contains("brunch") -> "Weekend Brunch (11:00 AM)"
+                    clauseLower.contains("late night") -> "Late Night (after 9:00 PM)"
+                    clauseLower.contains("friday") -> "Friday @ 7:30 PM"
+                    clauseLower.contains("saturday") -> "Saturday @ 8:00 PM"
+                    clauseLower.contains("tomorrow") -> "Tomorrow @ 6:30 PM"
+                    else -> "Tonight @ 7:00 PM"
+                }
+                val exists = results.any { it.subject == clauseSubject && (it.predicate == "preferred_time" || it.predicate == "dining_time") }
+                if (!exists) {
+                    results.add(StructuredAssertion(clauseSubject, "preferred_time", timeVal))
+                }
+            }
+
             // 4. Noise & Crowd Preference
             if (clauseLower.contains("loud") || clauseLower.contains("crowd") || clauseLower.contains("quiet") ||
                 clauseLower.contains("noise") || clauseLower.contains("vibe") || clauseLower.contains("busy") ||
