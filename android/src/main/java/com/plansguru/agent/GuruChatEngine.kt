@@ -271,7 +271,7 @@ class GuruChatEngine(private val context: Context) {
         val responseText = buildString {
             append(agentReply)
             if (assertions.isNotEmpty()) {
-                append("\n\n📌 Mapped Social Graph Assertions:\n")
+                append("\n\n📌 Mapped Preferences & Notes:\n")
                 append(assertions.joinToString("\n") {
                     val displaySubj = if (it.subject == localUserId) myName else it.subject
                     "• [$displaySubj] ${it.predicate.replace('_', ' ')}: ${it.value}"

@@ -41,7 +41,7 @@ fun NewPlanScreen(
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text("Less planning. More doing.", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text("Independent AI agents negotiate across your encrypted social graph to find the perfect spot.", style = MaterialTheme.typography.bodySmall)
+                    Text("Independent AI agents negotiate across your private social graph to find the perfect spot.", style = MaterialTheme.typography.bodySmall)
                 }
             }
 

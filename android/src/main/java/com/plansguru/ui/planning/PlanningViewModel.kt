@@ -110,7 +110,7 @@ class PlanningViewModel(application: Application) : AndroidViewModel(application
             kotlinx.coroutines.delay(1200)
 
             val evaluated = negotiationEngine.evaluateCandidates(root.restaurants, participantsAssertions)
-            val top3 = evaluated.take(3)
+            val top3 = evaluated.filter { it.hardConstraintPassed }.take(3).ifEmpty { evaluated.take(3) }
 
             _recommendations.value = top3
             _coordinationStatus.value = "Consensus Reached! Top 3 Recommendations Computed."

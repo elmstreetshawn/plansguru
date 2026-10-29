@@ -319,7 +319,7 @@ fun RecommendationsScreen(
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
 
-            Text("🔒 E2E Encrypted Group Discussion", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
+            Text("💬 Group Discussion", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary)
 
             LazyColumn(
                 modifier = Modifier
@@ -349,7 +349,7 @@ fun RecommendationsScreen(
                 OutlinedTextField(
                     value = inputMessage,
                     onValueChange = { inputMessage = it },
-                    placeholder = { Text("Send encrypted message to plan group...") },
+                    placeholder = { Text("Type a message to group...") },
                     modifier = Modifier.weight(1f),
                     shape = MaterialTheme.shapes.extraLarge
                 )

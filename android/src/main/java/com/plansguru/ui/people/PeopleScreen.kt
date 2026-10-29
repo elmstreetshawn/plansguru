@@ -92,7 +92,7 @@ fun PeopleScreen(
     val myName = myPersonState?.displayName?.takeIf { it.isNotBlank() && it != localUserId } ?: "Me"
     val rawZip = myPersonState?.locationZip
     val myZip = rawZip?.takeIf { it.isNotBlank() }
-    val zipDisplay = if (myZip != null) "📍 Zip: $myZip • Encrypted Profile" else "📍 Zip not set • Encrypted Profile"
+    val zipDisplay = if (myZip != null) "📍 Zip: $myZip • Private Profile" else "📍 Zip not set • Private Profile"
     var showEditMyProfileDialog by remember { mutableStateOf(false) }
 
     val defaultFriends = listOf(
@@ -661,7 +661,7 @@ fun PeopleScreen(
     }
 
     if (showMyQrDialog) {
-        val serverUrl = prefs.getString("server_url", "https://fluffy-snakes-warn.loca.lt")?.trimEnd('/') ?: "https://fluffy-snakes-warn.loca.lt"
+        val serverUrl = prefs.getString("server_url", "https://plansguru-austin.loca.lt")?.trimEnd('/') ?: "https://plansguru-austin.loca.lt"
         var userId = prefs.getString("user_id", null)
         if (userId.isNullOrBlank() || userId == "local_user") {
             userId = java.util.UUID.randomUUID().toString()
@@ -958,7 +958,7 @@ fun PersonProfileAndPreferencesDialog(
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-                Text("Current Encrypted Preferences:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                Text("Current Private Preferences:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
                 if (friendAssertions.isEmpty()) {
                     Text("No preferences recorded yet. Add one below!", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 } else {

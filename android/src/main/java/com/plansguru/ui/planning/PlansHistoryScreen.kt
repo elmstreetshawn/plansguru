@@ -433,7 +433,7 @@ fun PlansHistoryScreen(
                         shape = CircleShape,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("💬 Open Live E2E Group Chat")
+                        Text("💬 Open Group Chat")
                     }
 
                     Spacer(modifier = Modifier.height(4.dp))

@@ -159,7 +159,7 @@ fun PreferencesScreen(
                     val myDisplayName = myPerson?.displayName?.takeIf { it.isNotBlank() && it != localUserId } ?: "You (Local User)"
 
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Text("Encrypted Social Graph • People & Preference Assertions", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+                        Text("Private Social Graph • People & Preference Assertions", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
                         Text("Manage connected profiles and their individual preference variables directly.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
                         LazyColumn(
