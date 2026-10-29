@@ -153,8 +153,13 @@ fun RecommendationsScreen(
                             }
                             val groupTitle = "Dinner Plan"
                             val pId = if (planId == "group_discussion_session") "plan_${System.currentTimeMillis()}" else planId
+                            val rName = topRec.restaurant.name
+                            val cName = topRec.restaurant.cuisine
+                            val pPrice = topRec.restaurant.priceRange
+                            val cScore = "${(topRec.minSatisfaction * 100).toInt()}% Match"
+                            val pList = (listOf(myName) + chatMessages.map { it.sender }).distinct().joinToString(",")
 
-                            val deepLink = "$serverUrl/join?inviter=${Uri.encode(userId)}&pubkey=${Uri.encode(publicKey)}&name=${Uri.encode(myName)}&group=${Uri.encode(groupTitle)}&planid=${Uri.encode(pId)}&date=${Uri.encode("Active Now")}"
+                            val deepLink = "$serverUrl/join?inviter=${Uri.encode(userId)}&pubkey=${Uri.encode(publicKey)}&name=${Uri.encode(myName)}&group=${Uri.encode(groupTitle)}&planid=${Uri.encode(pId)}&date=${Uri.encode("Active Now")}&restaurant=${Uri.encode(rName)}&cuisine=${Uri.encode(cName)}&price=${Uri.encode(pPrice)}&score=${Uri.encode(cScore)}&participants=${Uri.encode(pList)}"
 
                             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                 type = "text/plain"

@@ -46,9 +46,20 @@ class MainActivity : ComponentActivity() {
             val group = uri.getQueryParameter("group") ?: "Dinner Plan"
             val rawPlanId = uri.getQueryParameter("planid")
             val planDate = uri.getQueryParameter("date") ?: "Active Now"
+            val restaurant = uri.getQueryParameter("restaurant")?.takeIf { it.isNotBlank() } ?: "Suerte"
+            val cuisine = uri.getQueryParameter("cuisine")?.takeIf { it.isNotBlank() } ?: "Interior Mexican"
+            val price = uri.getQueryParameter("price")?.takeIf { it.isNotBlank() } ?: "$$$"
+            val score = uri.getQueryParameter("score")?.takeIf { it.isNotBlank() } ?: "98% Match"
+            val rawParticipants = uri.getQueryParameter("participants")
 
             // Fallback to old format for backwards compatibility
             val displayName = uri.getQueryParameter("name") ?: inviterId ?: "Friend"
+
+            val participantsList = if (!rawParticipants.isNullOrBlank()) {
+                (listOf("Me") + rawParticipants.split(",")).distinct()
+            } else {
+                listOf("Me", displayName)
+            }
 
             try {
                 val repository = GraphRepository(this)
@@ -75,11 +86,11 @@ class MainActivity : ComponentActivity() {
                 repository.savePlanRecord(
                     planId = planId,
                     title = group,
-                    restaurantName = "Suerte",
-                    cuisine = "Interior Mexican",
-                    price = "$$$",
-                    participants = listOf("Me", displayName),
-                    consensusScore = "98% Match",
+                    restaurantName = restaurant,
+                    cuisine = cuisine,
+                    price = price,
+                    participants = participantsList,
+                    consensusScore = score,
                     date = planDate,
                     isUpcoming = true
                 )

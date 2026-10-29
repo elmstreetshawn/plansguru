@@ -266,7 +266,8 @@ fun PlansHistoryScreen(
                                             prefs.edit().putString("public_key", publicKey).apply()
                                         }
 
-                                        val deepLink = "$serverUrl/join?inviter=${java.net.URLEncoder.encode(userId, "UTF-8")}&pubkey=${java.net.URLEncoder.encode(publicKey, "UTF-8")}&name=${java.net.URLEncoder.encode(userDisplayName, "UTF-8")}&group=${java.net.URLEncoder.encode(plan.title, "UTF-8")}&planid=${java.net.URLEncoder.encode(plan.id, "UTF-8")}&date=${java.net.URLEncoder.encode(plan.date, "UTF-8")}"
+                                        val partsEnc = java.net.URLEncoder.encode(plan.participants.joinToString(","), "UTF-8")
+                                        val deepLink = "$serverUrl/join?inviter=${java.net.URLEncoder.encode(userId, "UTF-8")}&pubkey=${java.net.URLEncoder.encode(publicKey, "UTF-8")}&name=${java.net.URLEncoder.encode(userDisplayName, "UTF-8")}&group=${java.net.URLEncoder.encode(plan.title, "UTF-8")}&planid=${java.net.URLEncoder.encode(plan.id, "UTF-8")}&date=${java.net.URLEncoder.encode(plan.date, "UTF-8")}&restaurant=${java.net.URLEncoder.encode(plan.restaurantName, "UTF-8")}&cuisine=${java.net.URLEncoder.encode(plan.cuisine, "UTF-8")}&price=${java.net.URLEncoder.encode(plan.price, "UTF-8")}&score=${java.net.URLEncoder.encode(plan.consensusScore, "UTF-8")}&participants=$partsEnc"
 
                                         val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                                             type = "text/plain"

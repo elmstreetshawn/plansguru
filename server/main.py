@@ -64,13 +64,31 @@ def landing_page():
     return HTMLResponse(content=html_content)
 
 @app.get("/join", response_class=HTMLResponse)
-def join_redirect(inviter: str = "Friend", pubkey: Optional[str] = None, name: Optional[str] = None, group: str = "Dinner Plan", planid: Optional[str] = None, date: Optional[str] = None):
+def join_redirect(
+    inviter: str = "Friend",
+    pubkey: Optional[str] = None,
+    name: Optional[str] = None,
+    group: str = "Dinner Plan",
+    planid: Optional[str] = None,
+    date: Optional[str] = None,
+    restaurant: Optional[str] = None,
+    cuisine: Optional[str] = None,
+    price: Optional[str] = None,
+    score: Optional[str] = None,
+    participants: Optional[str] = None
+):
     """Handle plan join deep link redirects with support for UUID-based identity."""
     # Use name parameter if provided (display name), fallback to inviter
     display_name = name or inviter
     p_id = planid or ""
     p_date = date or "Active Now"
-    app_deep_link = f"plansguru://plan/join?inviter={inviter}&pubkey={pubkey or ''}&name={display_name}&group={group}&planid={p_id}&date={p_date}"
+    p_rest = restaurant or ""
+    p_cuis = cuisine or ""
+    p_price = price or ""
+    p_score = score or ""
+    p_parts = participants or ""
+
+    app_deep_link = f"plansguru://plan/join?inviter={inviter}&pubkey={pubkey or ''}&name={display_name}&group={group}&planid={p_id}&date={p_date}&restaurant={p_rest}&cuisine={p_cuis}&price={p_price}&score={p_score}&participants={p_parts}"
 
     html_content = f"""
     <!DOCTYPE html>
