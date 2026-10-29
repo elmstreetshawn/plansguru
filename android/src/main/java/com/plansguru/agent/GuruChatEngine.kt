@@ -120,6 +120,7 @@ class GuruChatEngine(private val context: Context) {
                             if (modelFile.exists()) modelFile.delete()
                             val request = Request.Builder()
                                 .url("$serverUrl/api/model/gemma")
+                                .addHeader("Bypass-Tunnel-Reminder", "true")
                                 .addHeader("Bypass-Tunnel-Remainder", "true")
                                 .addHeader("ngrok-skip-browser-warning", "true")
                                 .addHeader("User-Agent", "PlansGuruApp/1.0")

@@ -63,7 +63,7 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
         wizardSubject = subject ?: localUserId
         wizardStep = 1
         val subjName = if (wizardSubject == localUserId) "your" else "${wizardSubject}'s"
-        val firstPrompt = "🧙‍♂️ Let me guide you through setting up $subjName profile step-by-step!\n\nStep 1 of 5: What foods or cuisines do you love? (e.g. Tacos, Italian, Pizza, Sushi, Steak, Burgers)"
+        val firstPrompt = "🧙‍♂️ Let me guide you through setting up $subjName profile step-by-step!\n\nStep 1 of 6: What foods or cuisines do you love? (e.g. Tacos, Italian, Pizza, Sushi, Steak, Burgers)"
         val botMsg = ChatMessage(UUID.randomUUID().toString(), firstPrompt, false)
         _messages.value = _messages.value + botMsg
     }
@@ -226,14 +226,15 @@ class GuruChatViewModel(application: Application) : AndroidViewModel(application
 
             wizardStep++
             val nextPrompt = when (wizardStep) {
-                2 -> "Awesome! Step 2 of 5: What foods do you dislike or want to avoid? (e.g. Spicy food, American Cheese, Fast Food, None)"
-                3 -> "Got it! Step 3 of 5: Any dietary restrictions or medical allergies? (e.g. Vegan, Gluten-Free, Nut Allergy, Halal, Kosher, None)"
-                4 -> "Step 4 of 5: What's your local zip code and maximum drive time for dinner? (e.g. 78626, under 20 minutes)"
-                5 -> "Final Step 5 of 5: Do you prefer quiet, cozy spots or lively, vibrant atmospheres?"
+                2 -> "Awesome! Step 2 of 6: What foods do you dislike or want to avoid? (e.g. Spicy food, Fast Food, None)"
+                3 -> "Got it! Step 3 of 6: Any dietary restrictions or medical allergies? (e.g. Vegan, Gluten-Free, Nut Allergy, Halal, Kosher, None)"
+                4 -> "Step 4 of 6: 💵 What is your preferred budget or price tier for dinner? (e.g. $ Cheap/Under $15, $$ Moderate, $$$ Fine Dining)"
+                5 -> "Step 5 of 6: What's your local zip code and maximum drive time for dinner? (e.g. 78626, under 20 minutes)"
+                6 -> "Final Step 6 of 6: Do you prefer quiet, cozy spots or lively, vibrant atmospheres?"
                 else -> {
                     wizardStep = 0
                     val targetName = if (wizardSubject == localUserId) "Your" else "$wizardSubject's"
-                    "✨ $targetName profile setup is complete! All preferences have been structured and saved into your encrypted social graph database."
+                    "✨ $targetName profile setup is complete! All preferences (cuisines, dietary restrictions, budget, drive time, and vibe) have been structured and saved into your encrypted social graph database."
                 }
             }
 

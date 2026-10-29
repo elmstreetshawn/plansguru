@@ -146,9 +146,23 @@ fun ModelDownloadScreen(
                         Text("Server URL / Ngrok")
                     }
                 }
+
+                TextButton(
+                    onClick = onModelReady,
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text("Skip & Continue to App ➔", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                }
             } else if (isDownloading) {
                 TextButton(onClick = { showServerUrlDialog = true }) {
                     Text("Change Server URL / Ngrok")
+                }
+
+                TextButton(
+                    onClick = onModelReady,
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Text("Skip & Continue to App ➔", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
                 }
             }
 
