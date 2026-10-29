@@ -1,6 +1,8 @@
 package com.plansguru.ui.settings
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -191,29 +193,62 @@ fun SettingsScreen(
         }
     }
 
+    val attributeOptions = listOf(
+        "likes_cuisine" to "🍕 Cuisines",
+        "dietary_restriction" to "🥗 Dietary / Allergies",
+        "max_distance" to "🚗 Travel Distance",
+        "noise_preference" to "🤫 Noise & Crowd Vibe",
+        "locationZip" to "📍 Zip Code"
+    )
+
     // Add Circle Dialog
     if (showAddCircleDialog) {
         var name by remember { mutableStateOf("") }
         var policy by remember { mutableStateOf("Authorized Peers") }
-        var attrs by remember { mutableStateOf("") }
+        val selectedAttrs = remember { mutableStateListOf<String>("likes_cuisine", "dietary_restriction") }
 
         AlertDialog(
             onDismissRequest = { showAddCircleDialog = false },
             title = { Text("Add Dining Circle") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Circle Name") }, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = policy, onValueChange = { policy = it }, label = { Text("Privacy Policy") }, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = attrs, onValueChange = { attrs = it }, label = { Text("Shared Attributes") }, modifier = Modifier.fillMaxWidth())
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Circle Name") }, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium)
+                    OutlinedTextField(value = policy, onValueChange = { policy = it }, label = { Text("Privacy Policy") }, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium)
+
+                    Text("Toggle Shared Variables for this Circle:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        attributeOptions.forEach { (attrKey, attrLabel) ->
+                            val isChecked = selectedAttrs.contains(attrKey)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        if (isChecked) selectedAttrs.remove(attrKey) else selectedAttrs.add(attrKey)
+                                    }
+                                    .padding(vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(checked = isChecked, onCheckedChange = { checked ->
+                                    if (checked) selectedAttrs.add(attrKey) else selectedAttrs.remove(attrKey)
+                                })
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(attrLabel, style = MaterialTheme.typography.bodyMedium)
+                            }
+                        }
+                    }
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    if (name.isNotBlank()) {
-                        circles.add(CirclePolicy(System.currentTimeMillis().toString(), name.trim(), policy.trim(), attrs.trim()))
-                        showAddCircleDialog = false
-                    }
-                }) { Text("Create") }
+                Button(
+                    onClick = {
+                        if (name.isNotBlank()) {
+                            val attrsSummary = if (selectedAttrs.isEmpty()) "None (Private / Isolated)" else selectedAttrs.map { key -> attributeOptions.find { it.first == key }?.second ?: key }.joinToString(", ")
+                            circles.add(CirclePolicy(System.currentTimeMillis().toString(), name.trim(), policy.trim(), attrsSummary))
+                            showAddCircleDialog = false
+                        }
+                    },
+                    shape = CircleShape
+                ) { Text("Create Circle") }
             },
             dismissButton = { TextButton(onClick = { showAddCircleDialog = false }) { Text("Cancel") } }
         )
@@ -223,26 +258,59 @@ fun SettingsScreen(
     if (editingCircle != null) {
         var name by remember { mutableStateOf(editingCircle!!.name) }
         var policy by remember { mutableStateOf(editingCircle!!.policy) }
-        var attrs by remember { mutableStateOf(editingCircle!!.sharedAttributes) }
+        val selectedAttrs = remember {
+            val initial = mutableStateListOf<String>()
+            attributeOptions.forEach { (key, label) ->
+                if (editingCircle!!.sharedAttributes.contains(label, ignoreCase = true) || editingCircle!!.sharedAttributes.contains(key, ignoreCase = true)) {
+                    initial.add(key)
+                }
+            }
+            initial
+        }
 
         AlertDialog(
             onDismissRequest = { editingCircle = null },
             title = { Text("Edit Dining Circle") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Circle Name") }, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = policy, onValueChange = { policy = it }, label = { Text("Privacy Policy") }, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = attrs, onValueChange = { attrs = it }, label = { Text("Shared Attributes") }, modifier = Modifier.fillMaxWidth())
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Circle Name") }, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium)
+                    OutlinedTextField(value = policy, onValueChange = { policy = it }, label = { Text("Privacy Policy") }, modifier = Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium)
+
+                    Text("Toggle Shared Variables for this Circle:", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        attributeOptions.forEach { (attrKey, attrLabel) ->
+                            val isChecked = selectedAttrs.contains(attrKey)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        if (isChecked) selectedAttrs.remove(attrKey) else selectedAttrs.add(attrKey)
+                                    }
+                                    .padding(vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(checked = isChecked, onCheckedChange = { checked ->
+                                    if (checked) selectedAttrs.add(attrKey) else selectedAttrs.remove(attrKey)
+                                })
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(attrLabel, style = MaterialTheme.typography.bodyMedium)
+                            }
+                        }
+                    }
                 }
             },
             confirmButton = {
-                Button(onClick = {
-                    val idx = circles.indexOfFirst { it.id == editingCircle!!.id }
-                    if (idx != -1) {
-                        circles[idx] = CirclePolicy(editingCircle!!.id, name.trim(), policy.trim(), attrs.trim())
-                    }
-                    editingCircle = null
-                }) { Text("Update") }
+                Button(
+                    onClick = {
+                        val idx = circles.indexOfFirst { it.id == editingCircle!!.id }
+                        if (idx != -1) {
+                            val attrsSummary = if (selectedAttrs.isEmpty()) "None (Private / Isolated)" else selectedAttrs.map { key -> attributeOptions.find { it.first == key }?.second ?: key }.joinToString(", ")
+                            circles[idx] = CirclePolicy(editingCircle!!.id, name.trim(), policy.trim(), attrsSummary)
+                        }
+                        editingCircle = null
+                    },
+                    shape = CircleShape
+                ) { Text("Update Circle") }
             },
             dismissButton = { TextButton(onClick = { editingCircle = null }) { Text("Cancel") } }
         )
