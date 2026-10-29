@@ -112,7 +112,7 @@ fun SettingsScreen(
                 }
             }
 
-            items(circles, key = { it.id }) { circle ->
+            items(circles, key = { "circle_${it.id}" }) { circle ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
@@ -152,7 +152,7 @@ fun SettingsScreen(
                 }
             }
 
-            items(variables, key = { it.id }) { v ->
+            items(variables, key = { "var_${it.id}" }) { v ->
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
