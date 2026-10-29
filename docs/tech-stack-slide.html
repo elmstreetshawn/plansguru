@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlansGuru — Technology Stack & Architecture</title>
+    <style>
+        :root {
+            --bg-color: #0F0D13;
+            --card-bg: #1D192B;
+            --card-border: #49454F;
+            --primary: #D0BCFF;
+            --primary-container: #381E72;
+            --on-primary: #381E72;
+            --text-main: #E6E1E5;
+            --text-sub: #CAC4D0;
+            --accent-green: #A6EEA8;
+            --accent-blue: #A8C7FF;
+            --accent-orange: #FFB787;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 20px;
+            overflow-x: hidden;
+        }
+
+        .slide-container {
+            width: 100%;
+            max-width: 1280px;
+            background: linear-gradient(145deg, #181524 0%, #0F0D13 100%);
+            border: 1px solid var(--card-border);
+            border-radius: 28px;
+            padding: 48px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            position: relative;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 36px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 20px;
+        }
+
+        .title-group {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .title-group h1 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #E8DEF8 0%, #D0BCFF 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .badge {
+            background: var(--primary-container);
+            color: var(--primary);
+            padding: 6px 16px;
+            border-radius: 100px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border: 1px solid var(--primary);
+        }
+
+        .version-tag {
+            color: var(--text-sub);
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .tech-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 24px;
+            transition: transform 0.25s ease, border-color 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .tech-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card-icon {
+            font-size: 2rem;
+            width: 48px;
+            height: 48px;
+            background: rgba(208, 188, 255, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-title {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .tech-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .tech-list li {
+            font-size: 0.95rem;
+            color: var(--text-sub);
+            line-height: 1.4;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .tech-list li::before {
+            content: "•";
+            color: var(--primary);
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .highlight {
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        .highlight-blue {
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+
+        .highlight-orange {
+            color: var(--accent-orange);
+            font-weight: 600;
+        }
+
+        .footer-banner {
+            margin-top: 36px;
+            background: rgba(56, 30, 114, 0.4);
+            border: 1px solid var(--primary-container);
+            border-radius: 16px;
+            padding: 20px 28px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-text {
+            font-size: 1.1rem;
+            color: var(--text-main);
+        }
+
+        .footer-stats {
+            display: flex;
+            gap: 32px;
+        }
+
+        .stat-item {
+            text-align: right;
+        }
+
+        .stat-val {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .stat-lbl {
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        @media (max-width: 1024px) {
+            .grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            .slide-container {
+                padding: 24px;
+            }
+            .title-group h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="slide-container">
+
+        <!-- Header -->
+        <div class="header">
+            <div class="title-group">
+                <h1>🌮 PlansGuru</h1>
+                <span class="badge">Tech Stack & Architecture</span>
+            </div>
+            <div class="version-tag">
+                v1.2.6 (Build 21) • Greater Austin, TX
+            </div>
+        </div>
+
+        <!-- 6 Technical Pillars Grid -->
+        <div class="grid">
+
+            <!-- 1. On-Device AI -->
+            <div class="tech-card">
+                <div class="card-header">
+                    <div class="card-icon">🤖</div>
+                    <div class="card-title">On-Device AI Engine</div>
+                </div>
+                <ul class="tech-list">
+                    <li><span class="highlight">Google LiteRT-LM Android Engine</span> running Gemma 3 (584 MB) 100% locally.</li>
+                    <li><span class="highlight-blue">7-Step Guided Setup Concierge</span> with instant intent parsing (0 ms).</li>
+                    <li><span class="highlight-orange">Sentiment & Agreement Intent Analyzer</span> for natural profile creation.</li>
+                    <li>Persistent, local chat conversation history storage.</li>
+                </ul>
+            </div>
+
+            <!-- 2. Security & Storage -->
+            <div class="tech-card">
+                <div class="card-header">
+                    <div class="card-icon">🔒</div>
+                    <div class="card-title">Security & 16KB Storage</div>
+                </div>
+                <ul class="tech-list">
+                    <li><span class="highlight">Android 15+ 16KB Page-Size Compliant</span> SQLite database (`androidx.sqlite`).</li>
+                    <li><span class="highlight-blue">Hardware Keystore Protection</span> via `EncryptedSharedPreferences` & `MasterKey`.</li>
+                    <li><span class="highlight-orange">Granular Dining Circles</span> (Circle 1, Circle 2, Work Circle).</li>
+                    <li>Per-variable visibility chips (`Private`, `Circle 1`, `Circle 2`).</li>
+                </ul>
+            </div>
+
+            <!-- 3. Multi-Agent Consensus -->
+            <div class="tech-card">
+                <div class="card-header">
+                    <div class="card-icon">🧠</div>
+                    <div class="card-title">Consensus Engine</div>
+                </div>
+                <ul class="tech-list">
+                    <li><span class="highlight">Multi-Agent NegotiationEngine</span> evaluating group candidate satisfaction.</li>
+                    <li><span class="highlight-blue">Hard Constraint Enforcement</span> for allergies, dietary needs, & budget ($ - $$$$).</li>
+                    <li><span class="highlight-orange">Opening Hours & Time Slot Matching</span> (+20% match boost).</li>
+                    <li>Automatic dropping of places that violate hard limits.</li>
+                </ul>
+            </div>
+
+            <!-- 4. Zero-Trust Identity & Sync -->
+            <div class="tech-card">
+                <div class="card-header">
+                    <div class="card-icon">🛡️</div>
+                    <div class="card-title">Identity & Sync Protocol</div>
+                </div>
+                <ul class="tech-list">
+                    <li><span class="highlight">ECDSA SHA256 Signatures</span> (`KeyManager.kt`) for cryptographic proof.</li>
+                    <li><span class="highlight-blue">AES-128-GCM Session Encryption</span> (`ChannelCryptoHelper.kt`).</li>
+                    <li><span class="highlight-orange">Participant Trust Badges</span> (`Friend (Circle 1)`, `Friend-of-Friend 🛡️`).</li>
+                    <li>Optical QR & deep-link invitation with 11-variable serialization.</li>
+                </ul>
+            </div>
+
+            <!-- 5. Python Backend & MCP -->
+            <div class="tech-card">
+                <div class="card-header">
+                    <div class="card-icon">⚡</div>
+                    <div class="card-title">Relay & MCP Server</div>
+                </div>
+                <ul class="tech-list">
+                    <li><span class="highlight">FastAPI Relay Server</span> (`server/main.py`) with WebSocket session rooms.</li>
+                    <li><span class="highlight-blue">Server-Side Short URL Engine</span> (`/i/{code}` & `/api/shorten`).</li>
+                    <li><span class="highlight-orange">Model Context Protocol (MCP) Server</span> (`server/mcp_server.py`) for external AI agents (Claude, Cursor).</li>
+                    <li>Resilient ASGI WebSocket relay error handling.</li>
+                </ul>
+            </div>
+
+            <!-- 6. Native Android UI -->
+            <div class="tech-card">
+                <div class="card-header">
+                    <div class="card-icon">📱</div>
+                    <div class="card-title">Modern Native Android</div>
+                </div>
+                <ul class="tech-list">
+                    <li><span class="highlight">Jetpack Compose & Material 3</span> declarative UI.</li>
+                    <li><span class="highlight-blue">Kotlin Coroutines & StateFlow</span> reactive state management.</li>
+                    <li><span class="highlight-orange">Interactive "How was it? Do it again! 🔄"</span> post-dinner loop.</li>
+                    <li>Clean mascot brand iconography and adaptive launcher.</li>
+                </ul>
+            </div>
+
+        </div>
+
+        <!-- Footer Banner -->
+        <div class="footer-banner">
+            <div class="footer-text">
+                <b>PlansGuru</b> — Solving group dinner friction with zero cloud storage and 100% on-device AI.
+            </div>
+            <div class="footer-stats">
+                <div class="stat-item">
+                    <div class="stat-val">0 KB</div>
+                    <div class="stat-lbl">Cloud Preferences</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-val">100%</div>
+                    <div class="stat-lbl">16KB Compliant</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-val">0 ms</div>
+                    <div class="stat-lbl">Wizard Delay</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>
